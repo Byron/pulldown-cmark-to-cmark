@@ -1,0 +1,7 @@
+.idea/
+.vscode/
+/.docker-cargo-cache
+.DS_Store
+target/
+/Cargo.lock
+sy-*.tar.gz
