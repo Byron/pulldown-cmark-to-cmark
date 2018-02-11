@@ -5,9 +5,9 @@ authors = ["Sebastian Thiel <byronimo@gmail.com>"]
 
 description = "Convert pulldown-cmark Events back to the string they were parsed from"
 license = "Apache-2.0"
-keywords = ["markdown", "common-mark", "render"]
-repository = "https://github.com/Byron/termbook"
-homepage = "https://github.com/Byron/termbook/lib/pulldown-cmark-to-cmark"
+keywords = ["markdown", "common-mark", "render", "converter"]
+repository = "https://github.com/Byron/pulldown-cmark-to-cmark"
+homepage = "https://github.com/Byron/pulldown-cmark-to-cmark"
 documentation = "https://docs.rs/crate/pulldown-cmark-to-cmark"
 readme = "README.md"
 

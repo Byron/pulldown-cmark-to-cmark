@@ -17,7 +17,7 @@ It's easiest to get this library into your `Cargo.toml` using `cargo-add`:
 cargo add pulldown-cmark-to-cmark
 ```
 
-[sc-example]: https://github.com/Byron/termbook/blob/8af7230ec7b9d5e72f43214dfa7540f90a2e6da9/lib/pulldown-cmark-to-cmark/examples/stupicat.rs#L21
+[sc-example]: https://github.com/Byron/pulldown-cmark-to-cmark/blob/76667725b61be24890fbdfed5e7ecdb4c1ad1dc8/examples/stupicat.rs#L21
 [api]: https://docs.rs/crate/pulldown-cmark-to-cmark
 
 ### Maintenance Guide
