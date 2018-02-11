@@ -20,6 +20,13 @@ cargo add pulldown-cmark-to-cmark
 [sc-example]: https://github.com/Byron/pulldown-cmark-to-cmark/blob/76667725b61be24890fbdfed5e7ecdb4c1ad1dc8/examples/stupicat.rs#L21
 [api]: https://docs.rs/crate/pulldown-cmark-to-cmark
 
+### Friends of this project
+
+ * [**termbook**](https://github.com/Byron/termbook)
+   * A runner for `mdbooks` to keep your documentation tested.  
+ * [**Share Secrets Safely**](https://github.com/Byron/share-secrets-safely)
+   * share secrets within teams to avoid plain-text secrets from day one 
+
 ### Maintenance Guide
 
 #### Making a new release
