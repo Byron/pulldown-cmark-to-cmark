@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/Byron/termbook.svg?branch=master)](https://travis-ci.org/Byron/termbook)
+[![Build Status](https://travis-ci.org/Byron/pulldown-cmark-to-cmark.svg?branch=master)](https://travis-ci.org/Byron/pulldown-cmark-to-cmark)
 
 A utility library which translates [`Event`][pdcm-event] back to markdown.
 It's the prerequisite for writing markdown filters which can work as
@@ -27,5 +27,5 @@ cargo add pulldown-cmark-to-cmark
  * **Assure all documentation is up-to-date and tests are green**
  * update the `version` in `Cargo.toml` and `git commit`
  * run `cargo publish`
- * run `git tag -s pulldown-cmark-to-cmark_<version>`
+ * run `git tag -s <version>`
  * run `git push --tags origin master`
