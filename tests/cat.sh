@@ -9,9 +9,10 @@ source "$root/utilities.sh"
 
 SUCCESSFULLY=0
 
-title ""
 fixture="$root/fixtures"
 snapshot="$fixture/snapshots"
+
+title "stupicat"
 
 (with "a table"
   it "succeeds" && \
