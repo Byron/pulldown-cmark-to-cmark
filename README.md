@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/Byron/pulldown-cmark-to-cmark.svg?branch=master)](https://travis-ci.org/Byron/pulldown-cmark-to-cmark)
+[![dependency status](https://deps.rs/repo/github/byron/pulldown-cmark-to-cmark/status.svg)](https://deps.rs/repo/github/byron/pulldown-cmark-to-cmark)
 
 A utility library which translates [`Event`][pdcm-event] back to markdown.
 It's the prerequisite for writing markdown filters which can work as
