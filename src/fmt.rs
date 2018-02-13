@@ -214,7 +214,8 @@ where
                     } else {
                         Ok(())
                     },
-                    CodeBlock(ref info) => formatter.write_str("```")
+                    CodeBlock(ref info) => formatter
+                        .write_str("````")
                         .and(formatter.write_str(info))
                         .and(formatter.write_char('\n'))
                         .and(padding(&mut formatter, &state.padding)),
@@ -248,7 +249,7 @@ where
                     if state.newlines_before_start < options.newlines_after_codeblock {
                         state.newlines_before_start = options.newlines_after_codeblock;
                     }
-                    formatter.write_str("```")
+                    formatter.write_str("````")
                 }
                 Rule => {
                     if state.newlines_before_start < options.newlines_after_rule {
@@ -272,7 +273,9 @@ where
                     formatter.write_char('|')?;
 
                     if let &TableHead = t {
-                        formatter.write_char('\n').and(padding(&mut formatter, &state.padding))?;
+                        formatter
+                            .write_char('\n')
+                            .and(padding(&mut formatter, &state.padding))?;
                         for (alignment, name) in state
                             .table_alignments
                             .iter()
@@ -320,8 +323,12 @@ where
                 }
                 FootnoteDefinition(_) => Ok(()),
             },
-            HardBreak => formatter.write_str("  \n").and(padding(&mut formatter, &state.padding)),
-            SoftBreak => formatter.write_char('\n').and(padding(&mut formatter, &state.padding)),
+            HardBreak => formatter
+                .write_str("  \n")
+                .and(padding(&mut formatter, &state.padding)),
+            SoftBreak => formatter
+                .write_char('\n')
+                .and(padding(&mut formatter, &state.padding)),
             Text(ref text) => {
                 if state.table_alignments.len() != state.table_headers.len() {
                     state.table_headers.push(text.clone().into());

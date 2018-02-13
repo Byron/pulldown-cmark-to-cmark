@@ -38,7 +38,7 @@ mod start {
     }
     #[test]
     fn codeblock() {
-        assert_eq!(s(Start(CodeBlock("asdf".into()))), "```asdf\n")
+        assert_eq!(s(Start(CodeBlock("asdf".into()))), "````asdf\n")
     }
     #[test]
     fn list_unordered() {
@@ -129,7 +129,7 @@ mod end {
     }
     #[test]
     fn codeblock() {
-        assert_eq!(s(End(CodeBlock("asdf".into()))), "```")
+        assert_eq!(s(End(CodeBlock("asdf".into()))), "````")
     }
     #[test]
     fn footnote_definition() {

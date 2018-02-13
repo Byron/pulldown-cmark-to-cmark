@@ -104,44 +104,44 @@ Before we continue, have a ruler:
 
 Code blocks without syntax highlighting:
 
-```
+````
 Some plain
 code block
    fooo
-```
+````
 
 Or with syntax highlighting, eg, Rust:
 
-```rust
+````rust
 fn main() {
     println!("Hello world")
 }
-```
+````
 
 Or Haskell:
 
-```haskell
+````haskell
 main :: IO ()
 main = putStrLn "Hello World"
-```
+````
 
 Or Scala:
 
-```scala
+````scala
 object HelloWorld {
   def main(args: Array[String]): Unit = {
     println("Hello, world!")
   }
 }
-```
+````
 
 Or raw codeblocks:
 
-```
+````
 ```bash
 echo 'hi from the innner codeblock'
 ```
-```
+````
 
 ## HTML
 

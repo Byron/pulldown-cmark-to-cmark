@@ -68,7 +68,7 @@ mod lazy_newlines {
 
     #[test]
     fn after_some_types_it_has_multiple_newlines() {
-        for md in &["paragraph", "## headline", "```\n```", "---"] {
+        for md in &["paragraph", "## headline", "````\n````", "---"] {
             assert_eq!(
                 fmts(md),
                 (
@@ -289,7 +289,7 @@ mod blockquote {
              > ```
             "
             )).0,
-            " > ```a\n > t1\n > t2\n > ```",
+            " > ````a\n > t1\n > t2\n > ````",
         )
     }
     #[test]
@@ -332,9 +332,9 @@ mod codeblock {
     #[test]
     fn simple_and_paragraph() {
         assert_eq!(
-            fmts("```hi\nsome\ntext\n```\na"),
+            fmts("````hi\nsome\ntext\n````\na"),
             (
-                "```hi\nsome\ntext\n```\n\na".into(),
+                "````hi\nsome\ntext\n````\n\na".into(),
                 State {
                     newlines_before_start: 2,
                     ..Default::default()
@@ -347,7 +347,7 @@ mod codeblock {
         assert_eq!(
             fmts("```\n```"),
             (
-                "```\n```".into(),
+                "````\n````".into(),
                 State {
                     newlines_before_start: 2,
                     ..Default::default()
@@ -360,7 +360,7 @@ mod codeblock {
         assert_eq!(
             fmts("```hi\nsome\ntext\n```"),
             (
-                "```hi\nsome\ntext\n```".into(),
+                "````hi\nsome\ntext\n````".into(),
                 State {
                     newlines_before_start: 2,
                     ..Default::default()

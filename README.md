@@ -6,7 +6,8 @@ It's the prerequisite for writing markdown filters which can work as
 [mdbook-preprocessors][mdbook-prep].
 
 This library takes great pride in supporting **everything that `pulldown-cmark`** supports,
-including *tables* and *footnotes*, while assuring *quality* with a powerful test suite.
+including *tables* and *footnotes* and *codeblocks in codeblocks*,
+while assuring *quality* with a powerful test suite.
 
 [pdcm-event]: https://docs.rs/pulldown-cmark/0.1.0/pulldown_cmark/enum.Event.html
 [mdbook-prep]: https://rust-lang-nursery.github.io/mdBook/for_developers/preprocessors.html
