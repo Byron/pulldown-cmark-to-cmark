@@ -135,6 +135,14 @@ object HelloWorld {
 }
 ```
 
+Or raw codeblocks:
+
+```
+```bash
+echo 'hi from the innner codeblock'
+```
+```
+
 ## HTML
 
 We can have block html:
