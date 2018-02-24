@@ -1,3 +1,4 @@
+[![](http://meritbadge.herokuapp.com/pulldown-cmark-to-cmark)](https://crates.io/crates/pulldown-cmark-to-cmark)
 [![Build Status](https://travis-ci.org/Byron/pulldown-cmark-to-cmark.svg?branch=master)](https://travis-ci.org/Byron/pulldown-cmark-to-cmark)
 [![dependency status](https://deps.rs/repo/github/byron/pulldown-cmark-to-cmark/status.svg)](https://deps.rs/repo/github/byron/pulldown-cmark-to-cmark)
 
