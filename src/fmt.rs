@@ -195,8 +195,8 @@ where
                     TableHead => Ok(()),
                     TableRow => Ok(()),
                     TableCell => formatter.write_char('|'),
-                    Link(_, _) => formatter.write_char('['),
-                    Image(_, _) => formatter.write_str("!["),
+                    Link(..) => formatter.write_char('['),
+                    Image(..) => formatter.write_str("!["),
                     Emphasis => formatter.write_char('*'),
                     Strong => formatter.write_str("**"),
                     Code => formatter.write_char('`'),
@@ -220,10 +220,12 @@ where
                         .and(formatter.write_char('\n'))
                         .and(padding(&mut formatter, &state.padding)),
                     List(_) => Ok(()),
+                    HtmlBlock => Ok(()),
+                    Strikethrough => formatter.write_str("~~"),
                 }
             }
             End(ref tag) => match *tag {
-                Image(ref uri, ref title) | Link(ref uri, ref title) => {
+                Image(_, ref uri, ref title) | Link(_, ref uri, ref title) => {
                     if title.is_empty() {
                         write!(formatter, "]({})", uri)
                     } else {
@@ -322,6 +324,15 @@ where
                     Ok(())
                 }
                 FootnoteDefinition(_) => Ok(()),
+                HtmlBlock => {
+                    consume_newlines(&mut formatter, &mut state)?;
+
+                    if state.newlines_before_start < options.newlines_after_html {
+                        state.newlines_before_start = options.newlines_after_html;
+                    }
+                    Ok(())
+                },
+                Strikethrough => formatter.write_str("~~"),
             },
             HardBreak => formatter
                 .write_str("  \n")
@@ -331,22 +342,18 @@ where
                 .and(padding(&mut formatter, &state.padding)),
             Text(ref text) => {
                 if state.table_alignments.len() != state.table_headers.len() {
-                    state.table_headers.push(text.clone().into());
+                    state.table_headers.push(text.to_owned().into_string());
                 }
                 consume_newlines(&mut formatter, &mut state)?;
                 print_text(text, &mut formatter, &state.padding)
             }
-            Html(ref text) => {
-                consume_newlines(&mut formatter, &mut state)?;
-                print_text(text, &mut formatter, &state.padding)?;
-
-                if state.newlines_before_start < options.newlines_after_html {
-                    state.newlines_before_start = options.newlines_after_html;
-                }
-                Ok(())
-            }
+            Html(ref text) => print_text(text, &mut formatter, &state.padding),
             InlineHtml(ref name) => formatter.write_str(name),
             FootnoteReference(ref name) => write!(formatter, "[^{}]", name),
+            TaskListMarker(checked) => {
+                let check = if checked { "x" } else { " " };
+                write!(formatter, "[{}] ", check)
+            }
         }?
     }
     Ok(state)

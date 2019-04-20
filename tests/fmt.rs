@@ -4,7 +4,7 @@ extern crate pulldown_cmark;
 extern crate pulldown_cmark_to_cmark;
 
 use pulldown_cmark_to_cmark::fmt::{cmark, State};
-use pulldown_cmark::{Alignment, Event, Options, Parser, Tag};
+use pulldown_cmark::{Alignment, Event, LinkType, Options, Parser, Tag};
 
 fn fmts(s: &str) -> (String, State<'static>) {
     let mut buf = String::new();
@@ -26,7 +26,7 @@ fn fmte(e: &[Event]) -> (String, State<'static>) {
 
 mod lazy_newlines {
     use super::{fmte, fmts};
-    use super::{Event, State, Tag};
+    use super::{Event, LinkType, State, Tag};
 
     #[test]
     fn after_emphasis_there_is_no_newline() {
@@ -35,8 +35,8 @@ mod lazy_newlines {
             Tag::Strong,
             Tag::Code,
             Tag::BlockQuote,
-            Tag::Link("".into(), "".into()),
-            Tag::Image("".into(), "".into()),
+            Tag::Link(LinkType::Inline, "".into(), "".into()),
+            Tag::Image(LinkType::Inline, "".into(), "".into()),
             Tag::FootnoteDefinition("".into()),
         ] {
             assert_eq!(
@@ -107,7 +107,11 @@ fn it_applies_newlines_before_start_before_text() {
 fn it_applies_newlines_before_start_before_html_and_enforces_newline_after() {
     assert_eq!(
         fmtes(
-            &[Event::Html("<e>".into())],
+            &[
+                Event::Start(Tag::HtmlBlock),
+                Event::Html("<e>".into()),
+                Event::End(Tag::HtmlBlock),
+            ],
             State {
                 newlines_before_start: 2,
                 ..Default::default()
@@ -229,6 +233,14 @@ mod inline_elements {
                 }
             )
         )
+    }
+
+    #[test]
+    fn strikethrough() {
+        assert_eq!(
+            fmts("~~strikethrough~~").0,
+            "~~strikethrough~~",
+        );
     }
 }
 
@@ -507,5 +519,19 @@ mod list {
                 }
             )
         )
+    }
+
+    #[test]
+    fn checkboxes() {
+        assert_eq!(
+            fmts(indoc!(
+                "
+            * [ ] foo
+            * [x] bar
+            "
+            )).0,
+            "* [ ] foo\n* [x] bar",
+        );
+
     }
 }

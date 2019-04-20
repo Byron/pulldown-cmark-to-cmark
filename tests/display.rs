@@ -12,6 +12,7 @@ fn s(e: Event) -> String {
 
 mod start {
     use pulldown_cmark::Event::*;
+    use pulldown_cmark::LinkType::*;
     use pulldown_cmark::Tag::*;
     use pulldown_cmark::Alignment::{self, Center, Left, Right};
     use super::s;
@@ -70,19 +71,19 @@ mod start {
     }
     #[test]
     fn link() {
-        assert_eq!(s(Start(Link("uri".into(), "title".into()))), "[")
+        assert_eq!(s(Start(Link(Inline, "uri".into(), "title".into()))), "[")
     }
     #[test]
     fn link_without_title() {
-        assert_eq!(s(Start(Link("uri".into(), "".into()))), "[")
+        assert_eq!(s(Start(Link(Inline, "uri".into(), "".into()))), "[")
     }
     #[test]
     fn image() {
-        assert_eq!(s(Start(Image("uri".into(), "title".into()))), "![")
+        assert_eq!(s(Start(Image(Inline, "uri".into(), "title".into()))), "![")
     }
     #[test]
     fn image_without_title() {
-        assert_eq!(s(Start(Image("uri".into(), "".into()))), "![")
+        assert_eq!(s(Start(Image(Inline, "uri".into(), "".into()))), "![")
     }
     #[test]
     fn table() {
@@ -107,6 +108,7 @@ mod start {
 
 mod end {
     use pulldown_cmark::Event::*;
+    use pulldown_cmark::LinkType::*;
     use pulldown_cmark::Tag::*;
     use pulldown_cmark::Alignment::{self, Center, Left, Right};
     use super::s;
@@ -162,24 +164,24 @@ mod end {
     #[test]
     fn link() {
         assert_eq!(
-            s(End(Link("/uri".into(), "title".into()))),
+            s(End(Link(Inline, "/uri".into(), "title".into()))),
             "](/uri \"title\")"
         )
     }
     #[test]
     fn link_without_title() {
-        assert_eq!(s(End(Link("/uri".into(), "".into()))), "](/uri)")
+        assert_eq!(s(End(Link(Inline, "/uri".into(), "".into()))), "](/uri)")
     }
     #[test]
     fn image() {
         assert_eq!(
-            s(End(Image("/uri".into(), "title".into()))),
+            s(End(Image(Inline, "/uri".into(), "title".into()))),
             "](/uri \"title\")"
         )
     }
     #[test]
     fn image_without_title() {
-        assert_eq!(s(End(Image("/uri".into(), "".into()))), "](/uri)")
+        assert_eq!(s(End(Image(Inline, "/uri".into(), "".into()))), "](/uri)")
     }
     #[test]
     fn table() {
