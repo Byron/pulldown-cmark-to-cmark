@@ -1,10 +1,11 @@
 #[macro_use]
 extern crate indoc;
+extern crate pretty_assertions;
 extern crate pulldown_cmark;
 extern crate pulldown_cmark_to_cmark;
 
-use pulldown_cmark_to_cmark::fmt::{cmark, State};
 use pulldown_cmark::{Alignment, Event, LinkType, Options, Parser, Tag};
+use pulldown_cmark_to_cmark::fmt::{cmark, State};
 
 fn fmts(s: &str) -> (String, State<'static>) {
     let mut buf = String::new();
@@ -33,7 +34,6 @@ mod lazy_newlines {
         for t in &[
             Tag::Emphasis,
             Tag::Strong,
-            Tag::Code,
             Tag::BlockQuote,
             Tag::Link(LinkType::Inline, "".into(), "".into()),
             Tag::Image(LinkType::Inline, "".into(), "".into()),
@@ -237,10 +237,7 @@ mod inline_elements {
 
     #[test]
     fn strikethrough() {
-        assert_eq!(
-            fmts("~~strikethrough~~").0,
-            "~~strikethrough~~",
-        );
+        assert_eq!(fmts("~~strikethrough~~").0, "~~strikethrough~~",);
     }
 }
 
@@ -256,7 +253,8 @@ mod blockquote {
                     padding: vec![" > ".into()],
                     ..Default::default()
                 }
-            ).1,
+            )
+            .1,
             State {
                 padding: vec![],
                 ..Default::default()
@@ -282,7 +280,8 @@ mod blockquote {
                 "
          > <table>
          > </table>"
-            )).0,
+            ))
+            .0,
             " > <table>\n > </table>",
         )
     }
@@ -300,7 +299,8 @@ mod blockquote {
              > t2
              > ```
             "
-            )).0,
+            ))
+            .0,
             " > ````a\n > t1\n > t2\n > ````",
         )
     }
@@ -314,7 +314,8 @@ mod blockquote {
              >
              > c
             "
-            )).0,
+            ))
+            .0,
             " > a\n >  > \n >  > b\n > \n > c",
         )
     }
@@ -384,6 +385,7 @@ mod codeblock {
 
 mod table {
     use super::{fmte, fmtes, Alignment as TableAlignment, Event, State, Tag};
+    use pretty_assertions::assert_eq;
     use pulldown_cmark_to_cmark::fmt::Alignment;
 
     #[test]
@@ -396,7 +398,8 @@ mod table {
                     table_headers: vec!["a".into(), "b".into()],
                     ..Default::default()
                 }
-            ).1,
+            )
+            .1,
             State {
                 newlines_before_start: 2,
                 ..Default::default()
@@ -416,7 +419,8 @@ mod table {
                 Event::Text("a".into()),
                 Event::Start(Tag::TableCell),
                 Event::Text("b".into()),
-            ]).1,
+            ])
+            .1,
             State {
                 table_alignments: vec![Alignment::None, Alignment::Center],
                 table_headers: vec!["a".into(), "b".into()],
@@ -441,12 +445,17 @@ mod table {
 
         let (generated_markdown, _) = fmte(&original_events);
 
-        assert_eq!(generated_markdown, indoc!("
-            |Tables        |Are           |Cool  |yo |
-            |--------------|:------------:|-----:|:--|
-            |col 3 is      |right-aligned |$1600 |x  |
-            |col 2 is      |centered      |$12 |y  |
-            |zebra stripes |are neat      |$1 |z  |"));
+        assert_eq!(
+            generated_markdown,
+            indoc!(
+                "
+            |Tables|Are|Cool|yo|
+            |------|:-:|---:|:-|
+            |col 3 is|right-aligned|$1600|x|
+            |col 2 is|centered|$12|y|
+            |zebra stripes|are neat|$1|z|"
+            )
+        );
 
         let p = Parser::new_ext(&generated_markdown, Options::all());
         let generated_events: Vec<_> = p.into_iter().collect();
@@ -467,7 +476,8 @@ mod list {
                     list_stack: vec![None, None],
                     ..Default::default()
                 }
-            ).1,
+            )
+            .1,
             State {
                 list_stack: vec![None],
                 ..Default::default()
@@ -558,9 +568,9 @@ mod list {
             * [ ] foo
             * [x] bar
             "
-            )).0,
+            ))
+            .0,
             "* [ ] foo\n* [x] bar",
         );
-
     }
 }

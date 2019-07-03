@@ -9,13 +9,22 @@ fn s(e: Event) -> String {
     fmt::cmark([e].iter(), &mut buf, None).unwrap();
     buf
 }
+mod code {
+    use super::s;
+    use pulldown_cmark::Event::*;
+
+    #[test]
+    fn code() {
+        assert_eq!(s(Code("foo\nbar".into())), "`foo\nbar`")
+    }
+}
 
 mod start {
+    use super::s;
+    use pulldown_cmark::Alignment::{self, Center, Left, Right};
     use pulldown_cmark::Event::*;
     use pulldown_cmark::LinkType::*;
     use pulldown_cmark::Tag::*;
-    use pulldown_cmark::Alignment::{self, Center, Left, Right};
-    use super::s;
 
     #[test]
     fn paragraph() {
@@ -66,10 +75,6 @@ mod start {
         assert_eq!(s(Start(Strong)), "**")
     }
     #[test]
-    fn code() {
-        assert_eq!(s(Start(Code)), "`")
-    }
-    #[test]
     fn link() {
         assert_eq!(s(Start(Link(Inline, "uri".into(), "title".into()))), "[")
     }
@@ -107,11 +112,11 @@ mod start {
 }
 
 mod end {
+    use super::s;
+    use pulldown_cmark::Alignment::{self, Center, Left, Right};
     use pulldown_cmark::Event::*;
     use pulldown_cmark::LinkType::*;
     use pulldown_cmark::Tag::*;
-    use pulldown_cmark::Alignment::{self, Center, Left, Right};
-    use super::s;
 
     #[test]
     fn header() {
@@ -156,10 +161,6 @@ mod end {
     #[test]
     fn item() {
         assert_eq!(s(End(Item)), "")
-    }
-    #[test]
-    fn code() {
-        assert_eq!(s(End(Code)), "`")
     }
     #[test]
     fn link() {

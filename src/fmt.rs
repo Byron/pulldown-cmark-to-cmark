@@ -1,7 +1,7 @@
-use std::fmt;
+use pulldown_cmark::{Alignment as TableAlignment, Event};
 use std::borrow::Borrow;
 use std::borrow::Cow;
-use pulldown_cmark::{Alignment as TableAlignment, Event};
+use std::fmt;
 
 /// Similar to [Pulldown-Cmark-Alignment][pd-alignment], but with required
 /// traits for comparison to allow testing.
@@ -162,6 +162,10 @@ where
         use pulldown_cmark::Event::*;
         use pulldown_cmark::Tag::*;
         match *event.borrow() {
+            Code(ref text) => formatter
+                .write_char('`')
+                .and_then(|_| formatter.write_str(text))
+                .and_then(|_| formatter.write_char('`')),
             Start(ref tag) => {
                 match *tag {
                     BlockQuote => state.padding.push(" > ".into()),
@@ -199,7 +203,6 @@ where
                     Image(..) => formatter.write_str("!["),
                     Emphasis => formatter.write_char('*'),
                     Strong => formatter.write_str("**"),
-                    Code => formatter.write_char('`'),
                     FootnoteDefinition(ref name) => write!(formatter, "[^{}]: ", name),
                     Paragraph => Ok(()),
                     Rule => formatter.write_str("---"),
@@ -209,11 +212,13 @@ where
                         }
                         formatter.write_char(' ')
                     }
-                    BlockQuote => if !left_on_padded_newlines {
-                        padding(&mut formatter, &state.padding)
-                    } else {
-                        Ok(())
-                    },
+                    BlockQuote => {
+                        if !left_on_padded_newlines {
+                            padding(&mut formatter, &state.padding)
+                        } else {
+                            Ok(())
+                        }
+                    }
                     CodeBlock(ref info) => formatter
                         .write_str("````")
                         .and(formatter.write_str(info))
@@ -232,7 +237,6 @@ where
                         write!(formatter, "]({uri} \"{title}\")", uri = uri, title = title)
                     }
                 }
-                Code => formatter.write_char('`'),
                 Emphasis => formatter.write_char('*'),
                 Strong => formatter.write_str("**"),
                 Header(_) => {
@@ -286,17 +290,19 @@ where
                             formatter.write_char('|')?;
                             let last_minus_one = name.len() - 1;
                             for c in 0..name.len() {
-                                formatter.write_char(if (c == 0
-                                    && (alignment == &Alignment::Center
-                                        || alignment == &Alignment::Left))
-                                    || (c == last_minus_one
+                                formatter.write_char(
+                                    if (c == 0
                                         && (alignment == &Alignment::Center
-                                            || alignment == &Alignment::Right))
-                                {
-                                    ':'
-                                } else {
-                                    '-'
-                                })?;
+                                            || alignment == &Alignment::Left))
+                                        || (c == last_minus_one
+                                            && (alignment == &Alignment::Center
+                                                || alignment == &Alignment::Right))
+                                    {
+                                        ':'
+                                    } else {
+                                        '-'
+                                    },
+                                )?;
                             }
                         }
                         formatter.write_char('|')?;
@@ -331,7 +337,7 @@ where
                         state.newlines_before_start = options.newlines_after_html;
                     }
                     Ok(())
-                },
+                }
                 Strikethrough => formatter.write_str("~~"),
             },
             HardBreak => formatter

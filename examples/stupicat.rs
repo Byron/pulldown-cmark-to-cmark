@@ -6,9 +6,9 @@ use pulldown_cmark_to_cmark::fmt::cmark;
 use std::env;
 use std::io::stdout;
 
-use std::io::{Read, Write};
-use std::fs::File;
 use std::ffi::OsString;
+use std::fs::File;
+use std::io::{Read, Write};
 
 fn main() {
     let path = env::args_os()
@@ -22,7 +22,8 @@ fn main() {
         Parser::new_ext(&md, pulldown_cmark::Options::all()),
         &mut buf,
         None,
-    ).unwrap();
+    )
+    .unwrap();
     stdout().write_all(buf.as_bytes()).unwrap();
 }
 
