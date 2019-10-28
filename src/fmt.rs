@@ -303,7 +303,9 @@ where
                             .zip(state.table_headers.iter())
                         {
                             formatter.write_char('|')?;
-                            let last_minus_one = name.len() - 1;
+                            // NOTE: For perfect counting, count grapheme clusters.
+                            // The reason this is not done is to avoid the dependency.
+                            let last_minus_one = name.chars().count() - 1;
                             for c in 0..name.len() {
                                 formatter.write_char(
                                     if (c == 0
