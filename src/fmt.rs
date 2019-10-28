@@ -42,6 +42,10 @@ pub struct State<'a> {
     pub table_alignments: Vec<Alignment>,
     /// Keeps the current table headers, if we are currently serializing a table.
     pub table_headers: Vec<String>,
+    /// If set, the next 'text' will be stored for later use
+    pub store_next_text: bool,
+    /// The last seen text when serializing a header
+    pub text_for_header: Option<String>,
 }
 
 /// Configuration for the `cmark` function.
@@ -198,7 +202,10 @@ where
                     }
                     TableHead => Ok(()),
                     TableRow => Ok(()),
-                    TableCell => formatter.write_char('|'),
+                    TableCell => {
+                        state.store_next_text = true;
+                        formatter.write_char('|')
+                    }
                     Link(..) => formatter.write_char('['),
                     Image(..) => formatter.write_str("!["),
                     Emphasis => formatter.write_char('*'),
@@ -271,7 +278,15 @@ where
                     state.table_headers.clear();
                     Ok(())
                 }
-                TableCell => Ok(()),
+                TableCell => {
+                    state
+                        .table_headers
+                        .push(match state.text_for_header.take() {
+                            Some(text) => text,
+                            None => "  ".into(),
+                        });
+                    Ok(())
+                }
                 ref t @ TableRow | ref t @ TableHead => {
                     if state.newlines_before_start < options.newlines_after_rest {
                         state.newlines_before_start = options.newlines_after_rest;
@@ -347,8 +362,9 @@ where
                 .write_char('\n')
                 .and(padding(&mut formatter, &state.padding)),
             Text(ref text) => {
-                if state.table_alignments.len() != state.table_headers.len() {
-                    state.table_headers.push(text.to_owned().into_string());
+                if state.store_next_text {
+                    state.store_next_text = false;
+                    state.text_for_header = Some(text.to_owned().into_string())
                 }
                 consume_newlines(&mut formatter, &mut state)?;
                 print_text(text, &mut formatter, &state.padding)

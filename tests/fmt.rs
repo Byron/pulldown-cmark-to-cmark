@@ -389,7 +389,7 @@ mod table {
     use pulldown_cmark_to_cmark::fmt::Alignment;
 
     #[test]
-    fn it_forget_alignments_and_headers_at_the_end_of_tables() {
+    fn it_forgets_alignments_and_headers_at_the_end_of_tables() {
         assert_eq!(
             fmtes(
                 &[Event::End(Tag::Table(vec![])),],
@@ -417,8 +417,10 @@ mod table {
                 Event::Start(Tag::TableHead),
                 Event::Start(Tag::TableCell),
                 Event::Text("a".into()),
+                Event::End(Tag::TableCell),
                 Event::Start(Tag::TableCell),
                 Event::Text("b".into()),
+                Event::End(Tag::TableCell),
             ])
             .1,
             State {
@@ -434,11 +436,11 @@ mod table {
 
         let original_table_markdown = indoc!(
             "
-            | Tables        | Are           | Cool  | yo |
-            |---------------|:-------------:|------:|:---|
-            | col 3 is      | right-aligned | $1600 | x  |
-            | col 2 is      | centered      |   $12 | y  |
-            | zebra stripes | are neat      |    $1 | z  |"
+            | Tables        | Are           | Cool  | yo ||
+            |---------------|:-------------:|------:|:---|--|
+            | col 3 is      | right-aligned | $1600 | x  |01|
+            | col 2 is      | centered      |   $12 | y  |02|
+            | zebra stripes | are neat      |    $1 | z  |03|"
         );
         let p = Parser::new_ext(original_table_markdown, Options::all());
         let original_events: Vec<_> = p.into_iter().collect();
@@ -449,11 +451,11 @@ mod table {
             generated_markdown,
             indoc!(
                 "
-            |Tables|Are|Cool|yo|
-            |------|:-:|---:|:-|
-            |col 3 is|right-aligned|$1600|x|
-            |col 2 is|centered|$12|y|
-            |zebra stripes|are neat|$1|z|"
+            |Tables|Are|Cool|yo||
+            |------|:-:|---:|:-|--|
+            |col 3 is|right-aligned|$1600|x|01|
+            |col 2 is|centered|$12|y|02|
+            |zebra stripes|are neat|$1|z|03|"
             )
         );
 
