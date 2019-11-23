@@ -319,6 +319,21 @@ mod blockquote {
             " > a\n >  > \n >  > b\n > \n > c",
         )
     }
+
+    #[test]
+    fn initially_nested() {
+        assert_eq!(
+            fmts(indoc!(
+                "
+             > > foo
+             > bar
+             > > baz
+            "
+            ))
+                .0,
+            " >  > foo\n >  > bar\n >  > baz",
+        )
+    }
     #[test]
     fn simple() {
         assert_eq!(
@@ -330,6 +345,25 @@ mod blockquote {
             )),
             (
                 " > a\n > b  \n > c".into(),
+                State {
+                    newlines_before_start: 2,
+                    ..Default::default()
+                }
+            )
+        )
+    }
+
+    #[test]
+    fn with_blank_line() {
+        assert_eq!(
+            fmts(indoc!(
+                "
+                > foo
+
+                > bar"
+            )),
+            (
+                " > foo\n\n > bar".into(),
                 State {
                     newlines_before_start: 2,
                     ..Default::default()
