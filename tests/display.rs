@@ -44,7 +44,7 @@ mod start {
     }
     #[test]
     fn blockquote() {
-        assert_eq!(s(Start(BlockQuote)), " > ")
+        assert_eq!(s(Start(BlockQuote)), "\n > ")
     }
     #[test]
     fn codeblock() {

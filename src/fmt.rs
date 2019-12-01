@@ -63,6 +63,7 @@ pub struct Options {
     pub newlines_after_html: usize,
     pub newlines_after_rule: usize,
     pub newlines_after_list: usize,
+    pub newlines_after_blockquote: usize,
     pub newlines_after_rest: usize,
 }
 
@@ -76,6 +77,7 @@ impl Default for Options {
             newlines_after_html: 1,
             newlines_after_rule: 2,
             newlines_after_list: 2,
+            newlines_after_blockquote: 2,
             newlines_after_rest: 1,
         }
     }
@@ -172,7 +174,6 @@ where
                 .and_then(|_| formatter.write_char('`')),
             Start(ref tag) => {
                 match *tag {
-                    BlockQuote => state.padding.push(" > ".into()),
                     List(ref list_type) => {
                         state.list_stack.push(list_type.clone());
                         if state.list_stack.len() > 1 {
@@ -183,7 +184,7 @@ where
                     }
                     _ => {}
                 }
-                let left_on_padded_newlines = state.newlines_before_start != 0;
+                let consumed_newlines = state.newlines_before_start != 0;
                 consume_newlines(&mut formatter, &mut state)?;
                 match *tag {
                     Item => match state.list_stack.last() {
@@ -220,10 +221,18 @@ where
                         formatter.write_char(' ')
                     }
                     BlockQuote => {
-                        if !left_on_padded_newlines {
-                            padding(&mut formatter, &state.padding)
-                        } else {
-                            Ok(())
+                        state.padding.push(" > ".into());
+                        state.newlines_before_start = 1;
+
+                        // if we consumed some newlines, we know that we can just write out the next
+                        // level in our blockquote. This should work regardless if we have other
+                        // padding or if we're in a list
+                        if consumed_newlines {
+                            formatter.write_str(" > ")
+                        }
+                        else {
+                            formatter.write_char('\n')
+                                .and(padding(&mut formatter, &state.padding))
                         }
                     }
                     CodeBlock(ref info) => formatter
@@ -344,6 +353,11 @@ where
                 }
                 BlockQuote => {
                     state.padding.pop();
+
+                    if state.newlines_before_start < options.newlines_after_blockquote {
+                        state.newlines_before_start = options.newlines_after_blockquote;
+                    }
+
                     Ok(())
                 }
                 FootnoteDefinition(_) => Ok(()),
