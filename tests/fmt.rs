@@ -25,6 +25,19 @@ fn fmte(e: &[Event]) -> (String, State<'static>) {
     (buf, s)
 }
 
+/// Asserts that if we parse our `str` s into a series of events, then serialize them with `cmark`
+/// that we'll get the same series of events when we parse them again.
+fn assert_events_eq(s: &str) {
+    let before_events = Parser::new_ext(s, Options::all());
+
+    let mut buf = String::new();
+    cmark(before_events.clone(), &mut buf, None).unwrap();
+
+    let after_events = Parser::new_ext(&buf, Options::all());
+    println!("{}", buf);
+    assert_eq!(before_events.collect::<Vec<_>>(), after_events.collect::<Vec<_>>());
+}
+
 mod lazy_newlines {
     use super::{fmte, fmts};
     use super::{Event, LinkType, State, Tag};
@@ -34,7 +47,6 @@ mod lazy_newlines {
         for t in &[
             Tag::Emphasis,
             Tag::Strong,
-            Tag::BlockQuote,
             Tag::Link(LinkType::Inline, "".into(), "".into()),
             Tag::Image(LinkType::Inline, "".into(), "".into()),
             Tag::FootnoteDefinition("".into()),
@@ -243,6 +255,7 @@ mod inline_elements {
 
 mod blockquote {
     use super::{fmte, fmtes, fmts, Event, State, Tag};
+    use assert_events_eq;
 
     #[test]
     fn it_pops_padding_on_quote_end() {
@@ -256,6 +269,7 @@ mod blockquote {
             )
             .1,
             State {
+                newlines_before_start: 2,
                 padding: vec![],
                 ..Default::default()
             }
@@ -267,6 +281,7 @@ mod blockquote {
         assert_eq!(
             fmte(&[Event::Start(Tag::BlockQuote),]).1,
             State {
+                newlines_before_start: 1,
                 padding: vec![" > ".into()],
                 ..Default::default()
             }
@@ -275,67 +290,219 @@ mod blockquote {
 
     #[test]
     fn with_html() {
+        let s = indoc!("
+             > <table>
+             > </table>
+             ");
+
+        assert_events_eq(s);
+
         assert_eq!(
-            fmts(indoc!(
-                "
-         > <table>
-         > </table>"
-            ))
+            fmts(s)
             .0,
-            " > <table>\n > </table>",
+            "\n > \n > <table>\n > </table>\n > ",
         )
     }
     #[test]
     fn with_inlinehtml() {
-        assert_eq!(fmts(" > <br>").0, " > <br>",)
+        assert_eq!(fmts(" > <br>").0, "\n > \n > <br>")
     }
     #[test]
     fn with_codeblock() {
-        assert_eq!(
-            fmts(indoc!(
-                "
+        let s = indoc!("
              > ```a
              > t1
              > t2
              > ```
-            "
-            ))
+            ");
+
+        assert_events_eq(s);
+
+        assert_eq!(
+            fmts(s)
             .0,
-            " > ````a\n > t1\n > t2\n > ````",
+            "\n > \n > ````a\n > t1\n > t2\n > ````",
         )
     }
     #[test]
     fn nested() {
-        assert_eq!(
-            fmts(indoc!(
-                "
+        let s = indoc!("
              > a
+             >
              > > b
              >
              > c
-            "
-            ))
+            ");
+
+        assert_events_eq(s);
+
+        assert_eq!(
+            fmts(s)
             .0,
-            " > a\n >  > \n >  > b\n > \n > c",
+            "\n > \n > a\n > \n >  > \n >  > b\n > \n > c",
         )
     }
+
+    #[test]
+    fn initially_nested() {
+        let s = indoc!("
+             > > foo
+             > bar
+             > > baz
+            ");
+
+        assert_events_eq(s);
+
+        assert_eq!(
+            fmts(s)
+                .0,
+            "\n > \n >  > \n >  > foo\n >  > bar\n >  > baz",
+        )
+    }
+
     #[test]
     fn simple() {
-        assert_eq!(
-            fmts(indoc!(
-                "
+        let s = indoc!("
              > a
              > b  
-             > c"
-            )),
+             > c
+             ");
+
+        assert_events_eq(s);
+
+        assert_eq!(
+            fmts(s),
             (
-                " > a\n > b  \n > c".into(),
+                "\n > \n > a\n > b  \n > c".into(),
                 State {
                     newlines_before_start: 2,
                     ..Default::default()
                 }
             )
         )
+    }
+
+    #[test]
+    fn empty() {
+        let s = " > ";
+
+        assert_events_eq(s);
+
+        assert_eq!(
+            fmts(s),
+            (
+                "\n > ".into(),
+                State {
+                    newlines_before_start: 2,
+                    ..Default::default()
+                }
+            )
+        )
+    }
+
+    #[test]
+    fn with_blank_line() {
+        let s = indoc!("
+            > foo
+
+            > bar
+            ");
+
+        assert_events_eq(s);
+
+        assert_eq!(
+            fmts(s),
+            (
+                "\n > \n > foo\n\n > \n > bar".into(),
+                State {
+                    newlines_before_start: 2,
+                    ..Default::default()
+                }
+            )
+        )
+    }
+
+    #[test]
+    fn with_lazy_continuation() {
+        let s = indoc!("
+            > foo
+            baz
+
+            > bar
+            ");
+
+        assert_events_eq(s);
+
+
+        assert_eq!(
+            fmts(s),
+            (
+                "\n > \n > foo\n > baz\n\n > \n > bar".into(),
+                State {
+                    newlines_before_start: 2,
+                    ..Default::default()
+                }
+            )
+        )
+    }
+
+    #[test]
+    fn with_lists() {
+        let s = indoc!("
+            - > * foo
+              >     * baz
+                - > bar
+            ");
+
+        assert_events_eq(s);
+
+        assert_eq!(
+            fmts(s),
+            (
+                "* \n   > \n   > * foo\n   >   * baz\n  \n  * \n     > \n     > bar".into(),
+                State {
+                    newlines_before_start: 2,
+                    ..Default::default()
+                }
+            )
+        )
+    }
+
+    #[test]
+    fn complex_nesting() {
+        assert_events_eq(indoc!(
+            "
+            > one
+            > > two
+            > > three
+            > four
+            >
+            > > five
+            >
+            > > six
+            > seven
+            > > > eight
+            nine
+
+            > ten
+
+            >
+
+            >
+            > >
+
+
+            > >
+            
+            > - eleven
+            >    - twelve
+            > > thirteen
+            > -
+            
+            - > fourteen
+                - > fifteen
+            "
+        ));
     }
 }
 
