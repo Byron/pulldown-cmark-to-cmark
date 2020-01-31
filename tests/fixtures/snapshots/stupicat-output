@@ -45,9 +45,7 @@ Unordered lists:
 * dolor sit amet
   * Nested
   
-  * With
-    
-    Paragraphs and nested blocks:
+  * With Paragraphs and nested blocks:
     
      > 
      > A quote
@@ -59,23 +57,19 @@ Unordered lists:
 Ordered lists:
 
 1. Lorem impsum
-   
    1. Nested
    1. Inline
    1. Text
 1. dolor sit amet
-   
    1. Nested
    
-   1. With
-   
-   ````
-   Paragraphs and nested blocks:
-   
-   > A quote
-   
-   And some text at the end
-   ````
+   1. With 
+      Paragraphs and nested blocks:
+      
+       > 
+       > A quote
+      
+      And some text at the end
 
 1. consetetur sadipscing elitr
 
@@ -154,16 +148,27 @@ echo 'hi from the innner codeblock'
 We can have block html:
 
 <div class="hero">
+
 <p>
+
 Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod
+
 tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At
+
 vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren,
+
 no sea takimata sanctus est Lorem ipsum dolor sit amet.
+
 </p>
+
 </div>
 
 Or inline HTML, as in this paragraph: Lorem ipsum dolor sit amet, consetetur
-sadipscing elitr, sed <abbr>diam</abbr> nonumy eirmod tempor invidunt ut labore
+sadipscing elitr, sed <abbr>
+diam</abbr>
+ nonumy eirmod tempor invidunt ut labore
 et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et
-justo duo dolores et ea rebum. <strong>Stet clita kasd gubergren</strong>, no
+justo duo dolores et ea rebum. <strong>
+Stet clita kasd gubergren</strong>
+, no
 sea takimata sanctus est Lorem ipsum dolor sit amet.

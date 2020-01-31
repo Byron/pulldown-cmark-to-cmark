@@ -47,9 +47,7 @@ Unordered lists:
 * dolor sit amet
     * Nested
 
-    * With
-
-      Paragraphs and nested blocks:
+    * With Paragraphs and nested blocks:
 
       > A quote
 
@@ -65,8 +63,7 @@ Ordered lists:
 2. dolor sit amet
     1. Nested
 
-    2. With
-      
+    2. With 
        Paragraphs and nested blocks:
 
        > A quote

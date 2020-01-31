@@ -19,6 +19,16 @@ mod code {
     }
 }
 
+mod rule {
+    use super::s;
+    use pulldown_cmark::Event::*;
+
+    #[test]
+    fn rule() {
+        assert_eq!(s(Rule), "---")
+    }
+}
+
 mod start {
     use super::s;
     use pulldown_cmark::Alignment::{self, Center, Left, Right};
@@ -31,16 +41,12 @@ mod start {
         assert_eq!(s(Start(Paragraph)), "")
     }
     #[test]
-    fn rule() {
-        assert_eq!(s(Start(Rule)), "---")
-    }
-    #[test]
     fn header1() {
-        assert_eq!(s(Start(Header(1))), "# ")
+        assert_eq!(s(Start(Heading(1))), "# ")
     }
     #[test]
     fn header2() {
-        assert_eq!(s(Start(Header(2))), "## ")
+        assert_eq!(s(Start(Heading(2))), "## ")
     }
     #[test]
     fn blockquote() {
@@ -120,15 +126,11 @@ mod end {
 
     #[test]
     fn header() {
-        assert_eq!(s(End(Header(2))), "")
+        assert_eq!(s(End(Heading(2))), "")
     }
     #[test]
     fn paragraph() {
         assert_eq!(s(End(Paragraph)), "")
-    }
-    #[test]
-    fn rule() {
-        assert_eq!(s(End(Rule)), "")
     }
     #[test]
     fn blockquote() {
@@ -215,10 +217,6 @@ fn html() {
         s(Event::Html("<table>hi</table>".into())),
         "<table>hi</table>"
     )
-}
-#[test]
-fn inlinehtml() {
-    assert_eq!(s(Event::InlineHtml("<br>".into())), "<br>")
 }
 #[test]
 fn text() {

@@ -34,7 +34,7 @@ pub struct State<'a> {
     /// The amount of newlines to insert after `Event::Start(...)`
     pub newlines_before_start: usize,
     /// The lists and their types for which we have seen a `Event::Start(List(...))` tag
-    pub list_stack: Vec<Option<usize>>,
+    pub list_stack: Vec<Option<u64>>,
     /// The computed padding and prefix to print after each newline.
     /// This changes with the level of `BlockQuote` and `List` events.
     pub padding: Vec<Cow<'a, str>>,
@@ -153,7 +153,7 @@ where
         }
     }
 
-    fn padding_of(l: Option<usize>) -> Cow<'static, str> {
+    fn padding_of(l: Option<u64>) -> Cow<'static, str> {
         match l {
             None => "  ".into(),
             Some(n) => format!("{}. ", n)
@@ -168,6 +168,13 @@ where
         use pulldown_cmark::Event::*;
         use pulldown_cmark::Tag::*;
         match *event.borrow() {
+            Rule => {
+                consume_newlines(&mut formatter, &mut state)?;
+                if state.newlines_before_start < options.newlines_after_rule {
+                    state.newlines_before_start = options.newlines_after_rule;
+                }
+                formatter.write_str("---")
+            },
             Code(ref text) => formatter
                 .write_char('`')
                 .and_then(|_| formatter.write_str(text))
@@ -186,7 +193,7 @@ where
                 }
                 let consumed_newlines = state.newlines_before_start != 0;
                 consume_newlines(&mut formatter, &mut state)?;
-                match *tag {
+                match tag {
                     Item => match state.list_stack.last() {
                         Some(inner) => {
                             state.padding.push(padding_of(*inner));
@@ -213,9 +220,8 @@ where
                     Strong => formatter.write_str("**"),
                     FootnoteDefinition(ref name) => write!(formatter, "[^{}]: ", name),
                     Paragraph => Ok(()),
-                    Rule => formatter.write_str("---"),
-                    Header(n) => {
-                        for _ in 0..n {
+                    Heading(n) => {
+                        for _ in 0..*n {
                             formatter.write_char('#')?;
                         }
                         formatter.write_char(' ')
@@ -241,11 +247,10 @@ where
                         .and(formatter.write_char('\n'))
                         .and(padding(&mut formatter, &state.padding)),
                     List(_) => Ok(()),
-                    HtmlBlock => Ok(()),
                     Strikethrough => formatter.write_str("~~"),
                 }
             }
-            End(ref tag) => match *tag {
+            End(ref tag) => match tag {
                 Image(_, ref uri, ref title) | Link(_, ref uri, ref title) => {
                     if title.is_empty() {
                         write!(formatter, "]({})", uri)
@@ -255,7 +260,7 @@ where
                 }
                 Emphasis => formatter.write_char('*'),
                 Strong => formatter.write_str("**"),
-                Header(_) => {
+                Heading(_) => {
                     if state.newlines_before_start < options.newlines_after_headline {
                         state.newlines_before_start = options.newlines_after_headline;
                     }
@@ -272,12 +277,6 @@ where
                         state.newlines_before_start = options.newlines_after_codeblock;
                     }
                     formatter.write_str("````")
-                }
-                Rule => {
-                    if state.newlines_before_start < options.newlines_after_rule {
-                        state.newlines_before_start = options.newlines_after_rule;
-                    }
-                    Ok(())
                 }
                 Table(_) => {
                     if state.newlines_before_start < options.newlines_after_table {
@@ -361,14 +360,6 @@ where
                     Ok(())
                 }
                 FootnoteDefinition(_) => Ok(()),
-                HtmlBlock => {
-                    consume_newlines(&mut formatter, &mut state)?;
-
-                    if state.newlines_before_start < options.newlines_after_html {
-                        state.newlines_before_start = options.newlines_after_html;
-                    }
-                    Ok(())
-                }
                 Strikethrough => formatter.write_str("~~"),
             },
             HardBreak => formatter
@@ -385,8 +376,14 @@ where
                 consume_newlines(&mut formatter, &mut state)?;
                 print_text(text, &mut formatter, &state.padding)
             }
-            Html(ref text) => print_text(text, &mut formatter, &state.padding),
-            InlineHtml(ref name) => formatter.write_str(name),
+            Html(ref text) => {
+                consume_newlines(&mut formatter, &mut state)?;
+
+                if state.newlines_before_start < options.newlines_after_html {
+                    state.newlines_before_start = options.newlines_after_html;
+                }
+                print_text(text, &mut formatter, &state.padding)
+            }
             FootnoteReference(ref name) => write!(formatter, "[^{}]", name),
             TaskListMarker(checked) => {
                 let check = if checked { "x" } else { " " };
