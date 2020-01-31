@@ -10,6 +10,7 @@ repository = "https://github.com/Byron/pulldown-cmark-to-cmark"
 homepage = "https://github.com/Byron/pulldown-cmark-to-cmark"
 documentation = "https://docs.rs/crate/pulldown-cmark-to-cmark"
 readme = "README.md"
+exclude = ["tests", "examples"]
 
 [dependencies]
 pulldown-cmark = {version = "0.6.1", default-features = false}
