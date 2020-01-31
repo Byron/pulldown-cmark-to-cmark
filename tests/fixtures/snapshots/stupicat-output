@@ -160,3 +160,42 @@ sadipscing elitr, sed <abbr>diam</abbr> nonumy eirmod tempor invidunt ut labore
 et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et
 justo duo dolores et ea rebum. <strong>Stet clita kasd gubergren</strong>, no
 sea takimata sanctus est Lorem ipsum dolor sit amet.
+
+## Escapes
+
+We now support escaping special characters, such as in \_\_init\_\_.py and in formulas
+like \\( \int x dx = \frac{x^2}{2} + C \\).
+
+What about \*this\* or \*\*that\*\*?
+
+\# heading?
+
+\[disabled inline link](target)
+
+\[disabled named link]: target
+
+[named-link](bah)
+
+\[disabled named link]\[disabled]
+
+\|table|
+\|-----|
+
+\`code\`
+
+] a closing bracket does nothing
+
+\<html>
+
+\> inline code blocks
+
+In code blocks, there will be no escaping:
+
+````
+A raw block inside
+```
+foo
+```
+
+* | < > # 
+````

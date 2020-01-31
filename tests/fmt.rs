@@ -170,9 +170,9 @@ mod inline_elements {
     #[test]
     fn image() {
         assert_eq!(
-            fmts("![a](b)\n![c][d]\n[d]: e"),
+            fmts("![a](b)\n![c][d]\n\n[d]: e"),
             (
-                "![a](b)\n![c][d]\n[d]: e".into(),
+                "![a](b)\n![c](e)".into(),
                 State {
                     newlines_before_start: 2,
                     ..Default::default()
@@ -201,9 +201,9 @@ mod inline_elements {
     #[test]
     fn links() {
         assert_eq!(
-            fmts("[a](b)\n[c][d]\n[d]: e"),
+            fmts("[a](b)\n[c][d]\n\n[d]: e"),
             (
-                "[a](b)\n[c][d]\n[d]: e".into(),
+                "[a](b)\n[c](e)".into(),
                 State {
                     newlines_before_start: 2,
                     ..Default::default()
@@ -634,7 +634,12 @@ mod escapes {
     }
 
     #[test]
-    fn it_does_not_recreate_escapes_for_special_characters_in_the_middle_of_a_word() {}
+    fn it_does_not_recreate_escapes_for_underscores_in_the_middle_of_a_word() {
+        assert_eq!(
+            fmts("\\_hello_world_").0,
+            "\\_hello_world\\_" // it actually makes mal-formatted markdown better
+        );
+    }
 
     #[test]
     fn it_recreates_escapes_for_known_special_characters_at_the_beginning_of_the_word() {

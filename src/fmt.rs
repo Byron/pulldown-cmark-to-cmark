@@ -3,7 +3,7 @@ use std::borrow::Borrow;
 use std::borrow::Cow;
 use std::fmt;
 
-pub const SPECIAL_CHARACTERS: &str = r#"#\_*<>`|"#;
+pub const SPECIAL_CHARACTERS: &str = r#"#\_*<>`|["#;
 
 /// Similar to [Pulldown-Cmark-Alignment][pd-alignment], but with required
 /// traits for comparison to allow testing.
@@ -140,18 +140,18 @@ where
         if is_in_block_quote {
             return Cow::Borrowed(t);
         }
-        t.chars()
-            .next()
-            .and_then(|c| SPECIAL_CHARACTERS.find(c).map(|_| c))
-            .map(|c| {
-                Cow::from({
-                    let mut s = String::with_capacity(2);
-                    s.push('\\');
-                    s.push(c);
-                    s
-                })
-            })
-            .unwrap_or_else(|| Cow::Borrowed(t))
+        let mut chars = t.chars();
+        match chars.next()
+            .and_then(|c| SPECIAL_CHARACTERS.find(c).map(|_| c)) {
+            Some(c) => {
+                let mut s = String::with_capacity(t.len() + 1);
+                s.push('\\');
+                s.push(c);
+                s.extend(chars);
+                Cow::Owned(s)
+            }
+            None => Cow::Borrowed(t)
+        }
     }
 
     fn print_text_without_trailing_newline<'a, F>(
