@@ -3,7 +3,7 @@ use std::borrow::Borrow;
 use std::borrow::Cow;
 use std::fmt;
 
-pub const SPECIAL_CHARACTERS: &str = r#"#\_*<>`|["#;
+pub const SPECIAL_CHARACTERS: &[u8; 9] = br#"#\_*<>`|["#;
 
 /// Similar to [Pulldown-Cmark-Alignment][pd-alignment], but with required
 /// traits for comparison to allow testing.
@@ -137,22 +137,20 @@ where
     }
 
     fn escape_leading_special_characters(t: &str, is_in_block_quote: bool) -> Cow<'_, str> {
-        if is_in_block_quote {
+        if is_in_block_quote || t.is_empty() {
             return Cow::Borrowed(t);
         }
-        let mut chars = t.chars();
-        match chars
-            .next()
-            .and_then(|c| SPECIAL_CHARACTERS.find(c).map(|_| c))
-        {
-            Some(c) => {
-                let mut s = String::with_capacity(t.len() + 1);
-                s.push('\\');
-                s.push(c);
-                s.extend(chars);
-                Cow::Owned(s)
-            }
-            None => Cow::Borrowed(t),
+
+        use std::convert::TryFrom;
+        let first = t.as_bytes()[0];
+        if SPECIAL_CHARACTERS.contains(&first) {
+            let mut s = String::with_capacity(t.len() + 1);
+            s.push('\\');
+            s.push(char::try_from(first as u32).expect("we know it's valid utf8"));
+            s.push_str(&t[1..]);
+            Cow::Owned(s)
+        } else {
+            Cow::Borrowed(t)
         }
     }
 

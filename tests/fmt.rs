@@ -626,7 +626,9 @@ mod escapes {
     use pulldown_cmark::CowStr;
 
     fn run_test_on_each_special_char(f: impl Fn(String, CowStr)) {
-        for c in SPECIAL_CHARACTERS.chars() {
+        use std::convert::TryFrom;
+        for c in SPECIAL_CHARACTERS.iter() {
+            let c = char::try_from(*c as u32).unwrap();
             let s = format!(r#"\{special}"#, special = c);
             f(s, c.to_string().into())
         }
