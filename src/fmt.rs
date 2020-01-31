@@ -172,7 +172,7 @@ where
                     state.newlines_before_start = options.newlines_after_rule;
                 }
                 formatter.write_str("---")
-            },
+            }
             Code(ref text) => formatter
                 .write_char('`')
                 .and_then(|_| formatter.write_str(text))
@@ -233,9 +233,9 @@ where
                         // padding or if we're in a list
                         if consumed_newlines {
                             formatter.write_str(" > ")
-                        }
-                        else {
-                            formatter.write_char('\n')
+                        } else {
+                            formatter
+                                .write_char('\n')
                                 .and(padding(&mut formatter, &state.padding))
                         }
                     }

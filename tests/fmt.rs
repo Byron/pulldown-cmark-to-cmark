@@ -35,7 +35,10 @@ fn assert_events_eq(s: &str) {
 
     let after_events = Parser::new_ext(&buf, Options::all());
     println!("{}", buf);
-    assert_eq!(before_events.collect::<Vec<_>>(), after_events.collect::<Vec<_>>());
+    assert_eq!(
+        before_events.collect::<Vec<_>>(),
+        after_events.collect::<Vec<_>>()
+    );
 }
 
 mod lazy_newlines {
@@ -266,18 +269,16 @@ mod blockquote {
 
     #[test]
     fn with_html() {
-        let s = indoc!("
+        let s = indoc!(
+            "
              > <table>
              > </table>
-             ");
+             "
+        );
 
         assert_events_eq(s);
 
-        assert_eq!(
-            fmts(s)
-            .0,
-            "\n > \n > <table>\n > </table>\n > ",
-        )
+        assert_eq!(fmts(s).0, "\n > \n > <table>\n > </table>\n > ",)
     }
     #[test]
     fn with_inlinehtml() {
@@ -285,64 +286,60 @@ mod blockquote {
     }
     #[test]
     fn with_codeblock() {
-        let s = indoc!("
+        let s = indoc!(
+            "
              > ```a
              > t1
              > t2
              > ```
-            ");
+            "
+        );
 
         assert_events_eq(s);
 
-        assert_eq!(
-            fmts(s)
-            .0,
-            "\n > \n > ````a\n > t1\n > t2\n > ````",
-        )
+        assert_eq!(fmts(s).0, "\n > \n > ````a\n > t1\n > t2\n > ````",)
     }
     #[test]
     fn nested() {
-        let s = indoc!("
+        let s = indoc!(
+            "
              > a
              >
              > > b
              >
              > c
-            ");
+            "
+        );
 
         assert_events_eq(s);
 
-        assert_eq!(
-            fmts(s)
-            .0,
-            "\n > \n > a\n > \n >  > \n >  > b\n > \n > c",
-        )
+        assert_eq!(fmts(s).0, "\n > \n > a\n > \n >  > \n >  > b\n > \n > c",)
     }
 
     #[test]
     fn initially_nested() {
-        let s = indoc!("
+        let s = indoc!(
+            "
              > > foo
              > bar
              > > baz
-            ");
+            "
+        );
 
         assert_events_eq(s);
 
-        assert_eq!(
-            fmts(s)
-                .0,
-            "\n > \n >  > \n >  > foo\n >  > bar\n >  > baz",
-        )
+        assert_eq!(fmts(s).0, "\n > \n >  > \n >  > foo\n >  > bar\n >  > baz",)
     }
 
     #[test]
     fn simple() {
-        let s = indoc!("
+        let s = indoc!(
+            "
              > a
              > b  
              > c
-             ");
+             "
+        );
 
         assert_events_eq(s);
 
@@ -378,11 +375,13 @@ mod blockquote {
 
     #[test]
     fn with_blank_line() {
-        let s = indoc!("
+        let s = indoc!(
+            "
             > foo
 
             > bar
-            ");
+            "
+        );
 
         assert_events_eq(s);
 
@@ -400,15 +399,16 @@ mod blockquote {
 
     #[test]
     fn with_lazy_continuation() {
-        let s = indoc!("
+        let s = indoc!(
+            "
             > foo
             baz
 
             > bar
-            ");
+            "
+        );
 
         assert_events_eq(s);
-
 
         assert_eq!(
             fmts(s),
@@ -424,11 +424,13 @@ mod blockquote {
 
     #[test]
     fn with_lists() {
-        let s = indoc!("
+        let s = indoc!(
+            "
             - > * foo
               >     * baz
                 - > bar
-            ");
+            "
+        );
 
         assert_events_eq(s);
 
