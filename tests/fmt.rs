@@ -5,7 +5,7 @@ extern crate pulldown_cmark;
 extern crate pulldown_cmark_to_cmark;
 
 use pulldown_cmark::{Alignment, Event, LinkType, Options, Parser, Tag};
-use pulldown_cmark_to_cmark::fmt::{cmark, State};
+use pulldown_cmark_to_cmark::fmt::{cmark, State, SPECIAL_CHARACTERS};
 
 fn fmts(s: &str) -> (String, State<'static>) {
     let mut buf = String::new();
@@ -485,7 +485,18 @@ mod blockquote {
 }
 
 mod codeblock {
-    use super::{fmts, State};
+    use super::{fmte, fmts, Event, State, Tag};
+
+    #[test]
+    fn it_keeps_track_of_the_presence_of_a_code_block() {
+        assert_eq!(
+            fmte(&[Event::Start(Tag::CodeBlock("s".into())),]).1,
+            State {
+                is_in_code_block: true,
+                ..Default::default()
+            }
+        )
+    }
 
     #[test]
     fn simple_and_paragraph() {
@@ -608,6 +619,115 @@ mod table {
         let generated_events: Vec<_> = p.into_iter().collect();
 
         assert_eq!(original_events, generated_events);
+    }
+}
+
+mod escapes {
+    use super::{fmts, Event, Parser, Tag, SPECIAL_CHARACTERS};
+    use pulldown_cmark::CowStr;
+
+    fn run_test_on_each_special_char(f: impl Fn(String, CowStr)) {
+        for c in SPECIAL_CHARACTERS.chars() {
+            let s = format!(r#"\{special}"#, special = c);
+            f(s, c.to_string().into())
+        }
+    }
+
+    #[test]
+    fn it_does_not_recreate_escapes_for_special_characters_in_the_middle_of_a_word() {}
+
+    #[test]
+    fn it_recreates_escapes_for_known_special_characters_at_the_beginning_of_the_word() {
+        run_test_on_each_special_char(|escaped_special_character, _| {
+            assert_eq!(
+                fmts(&escaped_special_character).0,
+                escaped_special_character
+            );
+        })
+    }
+
+    #[test]
+    fn are_not_needed_for_underscores_within_a_word_and_no_spaces() {
+        let e: Vec<_> = Parser::new("hello_there_and__hello again_").collect();
+        assert_eq!(
+            e,
+            vec![
+                Event::Start(Tag::Paragraph),
+                Event::Text("hello_there_and__hello again".into()),
+                Event::Text("_".into()),
+                Event::End(Tag::Paragraph),
+            ]
+        )
+    }
+
+    #[test]
+    fn would_be_needed_for_single_backticks() {
+        let e: Vec<_> = Parser::new(r#"\`hi`"#).collect();
+        assert_eq!(
+            e,
+            vec![
+                Event::Start(Tag::Paragraph),
+                Event::Text("`".into()),
+                Event::Text("hi".into()),
+                Event::Text("`".into()),
+                Event::End(Tag::Paragraph),
+            ]
+        )
+    }
+
+    #[test]
+    fn make_special_characters_into_text_blocks() {
+        let e: Vec<_> = Parser::new(r#"hello\*there*and\*\*hello again\*\*"#).collect();
+        assert_eq!(
+            e,
+            vec![
+                Event::Start(Tag::Paragraph),
+                Event::Text("hello".into()),
+                Event::Text("*there".into()),
+                Event::Text("*".into()),
+                Event::Text("and".into()),
+                Event::Text("*".into()),
+                Event::Text("*hello again".into()),
+                Event::Text("*".into()),
+                Event::Text("*".into()),
+                Event::End(Tag::Paragraph),
+            ]
+        )
+    }
+
+    #[test]
+    fn would_be_needed_for_asterisks_within_a_word_and_no_spaces() {
+        let e: Vec<_> = Parser::new("hello*there*and**hello again**").collect();
+        assert_eq!(
+            e,
+            vec![
+                Event::Start(Tag::Paragraph),
+                Event::Text("hello".into()),
+                Event::Start(Tag::Emphasis),
+                Event::Text("there".into()),
+                Event::End(Tag::Emphasis),
+                Event::Text("and".into()),
+                Event::Start(Tag::Strong),
+                Event::Text("hello again".into()),
+                Event::End(Tag::Strong),
+                Event::End(Tag::Paragraph),
+            ]
+        )
+    }
+
+    #[test]
+    fn are_not_specifically_provided_as_events() {
+        run_test_on_each_special_char(|s, c| {
+            let e: Vec<_> = Parser::new(&s).collect();
+            assert_eq!(
+                e,
+                vec![
+                    Event::Start(Tag::Paragraph),
+                    Event::Text(c.to_string().into()),
+                    Event::End(Tag::Paragraph),
+                ]
+            )
+        })
     }
 }
 

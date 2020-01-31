@@ -3,6 +3,8 @@ use std::borrow::Borrow;
 use std::borrow::Cow;
 use std::fmt;
 
+pub const SPECIAL_CHARACTERS: &str = r#"#\_*<>`|"#;
+
 /// Similar to [Pulldown-Cmark-Alignment][pd-alignment], but with required
 /// traits for comparison to allow testing.
 ///
@@ -46,6 +48,8 @@ pub struct State<'a> {
     pub store_next_text: bool,
     /// The last seen text when serializing a header
     pub text_for_header: Option<String>,
+    /// Is set while we are handling text in a code block
+    pub is_in_code_block: bool,
 }
 
 /// Configuration for the `cmark` function.
@@ -132,14 +136,36 @@ where
         Ok(())
     }
 
-    fn print_text<'a, F>(t: &str, f: &mut F, p: &[Cow<'a, str>]) -> fmt::Result
+    fn escape_leading_special_characters(t: &str, is_in_block_quote: bool) -> Cow<'_, str> {
+        if is_in_block_quote {
+            return Cow::Borrowed(t);
+        }
+        t.chars()
+            .next()
+            .and_then(|c| SPECIAL_CHARACTERS.find(c).map(|_| c))
+            .map(|c| {
+                Cow::from({
+                    let mut s = String::with_capacity(2);
+                    s.push('\\');
+                    s.push(c);
+                    s
+                })
+            })
+            .unwrap_or_else(|| Cow::Borrowed(t))
+    }
+
+    fn print_text_without_trailing_newline<'a, F>(
+        t: &str,
+        f: &mut F,
+        p: &[Cow<'a, str>],
+    ) -> fmt::Result
     where
         F: fmt::Write,
     {
         if t.contains('\n') {
-            let ntokens = t.split('\n').count();
+            let line_count = t.split('\n').count();
             for (tid, token) in t.split('\n').enumerate() {
-                f.write_str(token).and(if tid + 1 == ntokens {
+                f.write_str(token).and(if tid + 1 == line_count {
                     Ok(())
                 } else {
                     f.write_char('\n').and(padding(f, p))
@@ -239,11 +265,14 @@ where
                                 .and(padding(&mut formatter, &state.padding))
                         }
                     }
-                    CodeBlock(ref info) => formatter
-                        .write_str("````")
-                        .and(formatter.write_str(info))
-                        .and(formatter.write_char('\n'))
-                        .and(padding(&mut formatter, &state.padding)),
+                    CodeBlock(ref info) => {
+                        state.is_in_code_block = true;
+                        formatter
+                            .write_str("````")
+                            .and(formatter.write_str(info))
+                            .and(formatter.write_char('\n'))
+                            .and(padding(&mut formatter, &state.padding))
+                    }
                     List(_) => Ok(()),
                     Strikethrough => formatter.write_str("~~"),
                 }
@@ -274,6 +303,7 @@ where
                     if state.newlines_before_start < options.newlines_after_codeblock {
                         state.newlines_before_start = options.newlines_after_codeblock;
                     }
+                    state.is_in_code_block = false;
                     formatter.write_str("````")
                 }
                 Table(_) => {
@@ -372,11 +402,15 @@ where
                     state.text_for_header = Some(text.to_owned().into_string())
                 }
                 consume_newlines(&mut formatter, &mut state)?;
-                print_text(text, &mut formatter, &state.padding)
+                print_text_without_trailing_newline(
+                    &escape_leading_special_characters(text, state.is_in_code_block),
+                    &mut formatter,
+                    &state.padding,
+                )
             }
             Html(ref text) => {
                 consume_newlines(&mut formatter, &mut state)?;
-                print_text(text, &mut formatter, &state.padding)
+                print_text_without_trailing_newline(text, &mut formatter, &state.padding)
             }
             FootnoteReference(ref name) => write!(formatter, "[^{}]", name),
             TaskListMarker(checked) => {
