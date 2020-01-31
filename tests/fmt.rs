@@ -210,7 +210,6 @@ mod inline_elements {
     }
 
     #[test]
-    #[ignore]
     fn various() {
         assert_eq!(
             fmts("*a* b **c**\n<br>\nd\n\ne `c`"),
@@ -277,7 +276,7 @@ mod blockquote {
         assert_eq!(
             fmts(s)
             .0,
-            "\n > \n > <table>\n > \n > </table>\n > ",
+            "\n > \n > <table>\n > </table>\n > ",
         )
     }
     #[test]

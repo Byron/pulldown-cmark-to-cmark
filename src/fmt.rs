@@ -60,7 +60,6 @@ pub struct Options {
     pub newlines_after_paragraph: usize,
     pub newlines_after_codeblock: usize,
     pub newlines_after_table: usize,
-    pub newlines_after_html: usize,
     pub newlines_after_rule: usize,
     pub newlines_after_list: usize,
     pub newlines_after_blockquote: usize,
@@ -74,7 +73,6 @@ impl Default for Options {
             newlines_after_paragraph: 2,
             newlines_after_codeblock: 2,
             newlines_after_table: 2,
-            newlines_after_html: 1,
             newlines_after_rule: 2,
             newlines_after_list: 2,
             newlines_after_blockquote: 2,
@@ -378,10 +376,6 @@ where
             }
             Html(ref text) => {
                 consume_newlines(&mut formatter, &mut state)?;
-
-                if state.newlines_before_start < options.newlines_after_html {
-                    state.newlines_before_start = options.newlines_after_html;
-                }
                 print_text(text, &mut formatter, &state.padding)
             }
             FootnoteReference(ref name) => write!(formatter, "[^{}]", name),
