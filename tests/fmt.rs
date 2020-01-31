@@ -233,8 +233,7 @@ mod inline_elements {
 }
 
 mod blockquote {
-    use super::{fmte, fmtes, fmts, Event, State, Tag};
-    use assert_events_eq;
+    use super::{assert_events_eq, fmte, fmtes, fmts, Event, State, Tag};
 
     #[test]
     fn it_pops_padding_on_quote_end() {

@@ -141,8 +141,10 @@ where
             return Cow::Borrowed(t);
         }
         let mut chars = t.chars();
-        match chars.next()
-            .and_then(|c| SPECIAL_CHARACTERS.find(c).map(|_| c)) {
+        match chars
+            .next()
+            .and_then(|c| SPECIAL_CHARACTERS.find(c).map(|_| c))
+        {
             Some(c) => {
                 let mut s = String::with_capacity(t.len() + 1);
                 s.push('\\');
@@ -150,7 +152,7 @@ where
                 s.extend(chars);
                 Cow::Owned(s)
             }
-            None => Cow::Borrowed(t)
+            None => Cow::Borrowed(t),
         }
     }
 
