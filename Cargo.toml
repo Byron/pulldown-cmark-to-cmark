@@ -14,7 +14,7 @@ exclude = ["tests", "examples"]
 edition = "2018"
 
 [dependencies]
-pulldown-cmark = {version = "0.6.1", default-features = false}
+pulldown-cmark = { version = "0.7.0", default-features = false }
 
 [dev-dependencies]
 indoc = "0.3.4"
