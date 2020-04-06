@@ -1,3 +1,3 @@
-extern crate pulldown_cmark;
+pub extern crate pulldown_cmark;
 
 pub mod fmt;
