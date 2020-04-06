@@ -4,7 +4,7 @@ extern crate pretty_assertions;
 extern crate pulldown_cmark;
 extern crate pulldown_cmark_to_cmark;
 
-use pulldown_cmark::{Alignment, Event, LinkType, Options, Parser, Tag};
+use pulldown_cmark::{Alignment, Event, LinkType, Options, Parser, Tag, CodeBlockKind};
 use pulldown_cmark_to_cmark::fmt::{cmark, State, SPECIAL_CHARACTERS};
 
 fn fmts(s: &str) -> (String, State<'static>) {
@@ -484,12 +484,12 @@ mod blockquote {
 }
 
 mod codeblock {
-    use super::{fmte, fmts, Event, State, Tag};
+    use super::{fmte, fmts, Event, State, Tag, CodeBlockKind};
 
     #[test]
     fn it_keeps_track_of_the_presence_of_a_code_block() {
         assert_eq!(
-            fmte(&[Event::Start(Tag::CodeBlock("s".into())),]).1,
+            fmte(&[Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced("s".into()))),]).1,
             State {
                 is_in_code_block: true,
                 ..Default::default()
