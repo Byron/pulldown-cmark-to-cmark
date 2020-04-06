@@ -39,6 +39,4 @@ cargo add pulldown-cmark-to-cmark
 
  * **Assure all documentation is up-to-date and tests are green**
  * update the `version` in `Cargo.toml` and `git commit`
- * run `cargo publish`
- * run `git tag -s <version>`
- * run `git push --tags origin master`
+ * run `cargo release --no-dev-version`
