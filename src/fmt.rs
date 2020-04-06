@@ -191,6 +191,7 @@ where
     for event in events {
         use pulldown_cmark::Event::*;
         use pulldown_cmark::Tag::*;
+        use pulldown_cmark::CodeBlockKind;
         match *event.borrow() {
             Rule => {
                 consume_newlines(&mut formatter, &mut state)?;
@@ -265,7 +266,14 @@ where
                                 .and(padding(&mut formatter, &state.padding))
                         }
                     }
-                    CodeBlock(ref info) => {
+                    CodeBlock(CodeBlockKind::Indented) => {
+                        state.is_in_code_block = true;
+                        formatter
+                            .write_str("````")
+                            .and(formatter.write_char('\n'))
+                            .and(padding(&mut formatter, &state.padding))
+                    }
+                    CodeBlock(CodeBlockKind::Fenced(ref info)) => {
                         state.is_in_code_block = true;
                         formatter
                             .write_str("````")
