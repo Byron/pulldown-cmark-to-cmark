@@ -1,0 +1,19 @@
+name: Rust
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: tests
+      run: |
+        cargo doc
+        cargo test --all
+        ./tests/cat.sh
+
