@@ -1,6 +1,5 @@
-[![](http://meritbadge.herokuapp.com/pulldown-cmark-to-cmark)](https://crates.io/crates/pulldown-cmark-to-cmark)
-[![Build Status](https://travis-ci.org/Byron/pulldown-cmark-to-cmark.svg?branch=master)](https://travis-ci.org/Byron/pulldown-cmark-to-cmark)
-[![dependency status](https://deps.rs/repo/github/byron/pulldown-cmark-to-cmark/status.svg)](https://deps.rs/repo/github/byron/pulldown-cmark-to-cmark)
+[![Crates.io](https://img.shields.io/crates/v/pulldown-cmark-to-cmark)](https://crates.io/crates/pulldown-cmark-to-cmark)
+![Rust](https://github.com/Byron/pulldown-cmark-to-cmark/workflows/Rust/badge.svg)
 
 A utility library which translates [`Event`][pdcm-event] back to markdown.
 It's the prerequisite for writing markdown filters which can work as
