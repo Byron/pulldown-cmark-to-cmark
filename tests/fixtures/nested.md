@@ -1,0 +1,11 @@
+<div>
+
+*emphasized*
+
+</div>
+
+<div>
+second line
+</div>
+
+inline <abbr>html</abbr> element

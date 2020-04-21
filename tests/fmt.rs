@@ -217,7 +217,7 @@ mod inline_elements {
         assert_eq!(
             fmts("*a* b **c**\n<br>\nd\n\ne `c`"),
             (
-                "*a* b **c**\n<br>\nd\n\ne `c`".into(),
+                "*a* b **c**\n<br>\n\nd\n\ne `c`".into(),
                 State {
                     newlines_before_start: 2,
                     ..Default::default()
@@ -277,11 +277,19 @@ mod blockquote {
 
         assert_events_eq(s);
 
-        assert_eq!(fmts(s).0, "\n > \n > <table>\n > </table>\n > ",)
+        assert_eq!(fmts(s).0, "\n > \n > <table>\n > </table>\n > \n")
     }
     #[test]
     fn with_inlinehtml() {
-        assert_eq!(fmts(" > <br>").0, "\n > \n > <br>")
+        assert_eq!(fmts(" > <br>").0, "\n > \n > <br>\n")
+    }
+    #[test]
+    fn with_plaintext_in_html() {
+        assert_eq!(fmts("<del>\n*foo*\n</del>").0, "<del>\n*foo*\n</del>")
+    }
+    #[test]
+    fn with_markdown_nested_in_html() {
+        assert_eq!(fmts("<del>\n\n*foo*\n\n</del>").0, "<del>\n\n*foo*\n\n</del>")
     }
     #[test]
     fn with_codeblock() {

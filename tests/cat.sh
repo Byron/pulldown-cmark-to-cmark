@@ -38,3 +38,9 @@ title "stupicat"
     expect_run_sh $SUCCESSFULLY "${exe[*]} $fixture/common-mark.md 2>/dev/null"
 )
 
+
+(with "markdown and html nested"
+  it "succeeds" && \
+    WITH_SNAPSHOT="$snapshot/stupicat-nested-output" \
+    expect_run_sh $SUCCESSFULLY "${exe[*]} $fixture/nested.md 2>/dev/null"
+)

@@ -188,11 +188,33 @@ where
         }
     }
 
+    let mut last_was_html = false;
+
     for event in events {
         use pulldown_cmark::Event::*;
         use pulldown_cmark::Tag::*;
         use pulldown_cmark::CodeBlockKind;
-        match *event.borrow() {
+
+        let event = event.borrow();
+
+        // Markdown allows for HTML elements, into which further markdown formatting is nested.
+        // However only if the HTML element is spaced by an additional newline.
+        //
+        // Relevant spec: https://spec.commonmark.org/0.28/#html-blocks
+        if last_was_html {
+            match event {
+                Html(_) => { /* no newlines if HTML continues */ },
+                Text(_) => { /* no newlines for inline HTML */ }
+                _ => {
+                    // Ensure next Markdown block is rendered properly
+                    // by adding a newline after an HTML element.
+                    formatter.write_char('\n')?;
+                }
+            }
+        }
+
+        last_was_html = false;
+        match *event {
             Rule => {
                 consume_newlines(&mut formatter, &mut state)?;
                 if state.newlines_before_start < options.newlines_after_rule {
@@ -417,6 +439,7 @@ where
                 )
             }
             Html(ref text) => {
+                last_was_html = true;
                 consume_newlines(&mut formatter, &mut state)?;
                 print_text_without_trailing_newline(text, &mut formatter, &state.padding)
             }
