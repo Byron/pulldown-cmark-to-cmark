@@ -32,10 +32,10 @@ mod rule {
 mod start {
     use super::s;
     use pulldown_cmark::Alignment::{self, Center, Left, Right};
+    use pulldown_cmark::CodeBlockKind;
     use pulldown_cmark::Event::*;
     use pulldown_cmark::LinkType::*;
     use pulldown_cmark::Tag::*;
-    use pulldown_cmark::CodeBlockKind;
 
     #[test]
     fn paragraph() {
@@ -55,7 +55,10 @@ mod start {
     }
     #[test]
     fn codeblock() {
-        assert_eq!(s(Start(CodeBlock(CodeBlockKind::Fenced("asdf".into())))), "````asdf\n")
+        assert_eq!(
+            s(Start(CodeBlock(CodeBlockKind::Fenced("asdf".into())))),
+            "````asdf\n"
+        )
     }
     #[test]
     fn list_unordered() {
@@ -121,10 +124,10 @@ mod start {
 mod end {
     use super::s;
     use pulldown_cmark::Alignment::{self, Center, Left, Right};
+    use pulldown_cmark::CodeBlockKind;
     use pulldown_cmark::Event::*;
     use pulldown_cmark::LinkType::*;
     use pulldown_cmark::Tag::*;
-    use pulldown_cmark::CodeBlockKind;
 
     #[test]
     fn header() {
@@ -140,7 +143,10 @@ mod end {
     }
     #[test]
     fn codeblock() {
-        assert_eq!(s(End(CodeBlock(CodeBlockKind::Fenced("asdf".into())))), "````")
+        assert_eq!(
+            s(End(CodeBlock(CodeBlockKind::Fenced("asdf".into())))),
+            "````"
+        )
     }
     #[test]
     fn footnote_definition() {

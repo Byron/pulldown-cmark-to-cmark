@@ -1,7 +1,5 @@
 use pulldown_cmark::{Alignment as TableAlignment, Event};
-use std::borrow::Borrow;
-use std::borrow::Cow;
-use std::fmt;
+use std::{borrow::Borrow, borrow::Cow, fmt};
 
 pub const SPECIAL_CHARACTERS: &[u8; 9] = br#"#\_*<>`|["#;
 
@@ -50,6 +48,8 @@ pub struct State<'a> {
     pub text_for_header: Option<String>,
     /// Is set while we are handling text in a code block
     pub is_in_code_block: bool,
+    /// True if the last event was html. Used to inject additional newlines to support markdown inside of HTML tags.
+    pub last_was_html: bool,
 }
 
 /// Configuration for the `cmark` function.
@@ -188,12 +188,10 @@ where
         }
     }
 
-    let mut last_was_html = false;
-
     for event in events {
+        use pulldown_cmark::CodeBlockKind;
         use pulldown_cmark::Event::*;
         use pulldown_cmark::Tag::*;
-        use pulldown_cmark::CodeBlockKind;
 
         let event = event.borrow();
 
@@ -201,9 +199,9 @@ where
         // However only if the HTML element is spaced by an additional newline.
         //
         // Relevant spec: https://spec.commonmark.org/0.28/#html-blocks
-        if last_was_html {
+        if state.last_was_html {
             match event {
-                Html(_) => { /* no newlines if HTML continues */ },
+                Html(_) => { /* no newlines if HTML continues */ }
                 Text(_) => { /* no newlines for inline HTML */ }
                 _ => {
                     // Ensure next Markdown block is rendered properly
@@ -213,7 +211,7 @@ where
             }
         }
 
-        last_was_html = false;
+        state.last_was_html = false;
         match *event {
             Rule => {
                 consume_newlines(&mut formatter, &mut state)?;
@@ -439,7 +437,7 @@ where
                 )
             }
             Html(ref text) => {
-                last_was_html = true;
+                state.last_was_html = true;
                 consume_newlines(&mut formatter, &mut state)?;
                 print_text_without_trailing_newline(text, &mut formatter, &state.padding)
             }
