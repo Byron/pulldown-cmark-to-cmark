@@ -1,3 +1,8 @@
+### v4.0.0 (2020-04-22)
+
+* BREAKING: Move all types from `pulldown_cmark_to_cmark::fmt::*` into `pulldown_cmark_to_cmark::*` for simplicity. 
+  For most common use-cases, this means that users of `pulldown_cmark_to_cmark::fmt::cmark` now use `pulldown_cmark_to_cmark::cmark` instead.
+
 ### v3.0.1 (2020-04-22)
 
 * support for markdown embedded in HTML tags, like

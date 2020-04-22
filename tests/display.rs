@@ -1,9 +1,9 @@
 use pulldown_cmark::Event;
-use pulldown_cmark_to_cmark::fmt;
+use pulldown_cmark_to_cmark::*;
 
 fn s(e: Event) -> String {
     let mut buf = String::new();
-    fmt::cmark([e].iter(), &mut buf, None).unwrap();
+    cmark([e].iter(), &mut buf, None).unwrap();
     buf
 }
 mod code {

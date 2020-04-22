@@ -1,14 +1,12 @@
-extern crate pulldown_cmark;
-extern crate pulldown_cmark_to_cmark;
-
 use pulldown_cmark::Parser;
-use pulldown_cmark_to_cmark::fmt::cmark;
-use std::env;
-use std::io::stdout;
-
-use std::ffi::OsString;
-use std::fs::File;
-use std::io::{Read, Write};
+use pulldown_cmark_to_cmark::cmark;
+use std::{
+    env,
+    ffi::OsString,
+    fs::File,
+    io::stdout,
+    io::{Read, Write},
+};
 
 fn main() {
     let path = env::args_os()

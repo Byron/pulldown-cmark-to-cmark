@@ -2,7 +2,7 @@
 extern crate indoc;
 
 use pulldown_cmark::{Alignment, CodeBlockKind, Event, LinkType, Options, Parser, Tag};
-use pulldown_cmark_to_cmark::fmt::{cmark, State, SPECIAL_CHARACTERS};
+use pulldown_cmark_to_cmark::{cmark, State, SPECIAL_CHARACTERS};
 
 fn fmts(s: &str) -> (String, State<'static>) {
     let mut buf = String::new();
@@ -552,7 +552,7 @@ mod codeblock {
 mod table {
     use super::{fmte, fmtes, Alignment as TableAlignment, Event, State, Tag};
     use pretty_assertions::assert_eq;
-    use pulldown_cmark_to_cmark::fmt::Alignment;
+    use pulldown_cmark_to_cmark::Alignment;
 
     #[test]
     fn it_forgets_alignments_and_headers_at_the_end_of_tables() {
