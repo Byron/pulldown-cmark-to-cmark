@@ -1,6 +1,3 @@
-extern crate pulldown_cmark;
-extern crate pulldown_cmark_to_cmark;
-
 use pulldown_cmark::Event;
 use pulldown_cmark_to_cmark::fmt;
 

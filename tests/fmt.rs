@@ -1,8 +1,5 @@
 #[macro_use]
 extern crate indoc;
-extern crate pretty_assertions;
-extern crate pulldown_cmark;
-extern crate pulldown_cmark_to_cmark;
 
 use pulldown_cmark::{Alignment, CodeBlockKind, Event, LinkType, Options, Parser, Tag};
 use pulldown_cmark_to_cmark::fmt::{cmark, State, SPECIAL_CHARACTERS};
