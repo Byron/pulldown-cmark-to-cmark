@@ -295,11 +295,18 @@ where
                     }
                     CodeBlock(CodeBlockKind::Fenced(ref info)) => {
                         state.is_in_code_block = true;
-                        formatter
-                            .write_str("````")
-                            .and(formatter.write_str(info))
-                            .and(formatter.write_char('\n'))
-                            .and(padding(&mut formatter, &state.padding))
+                        let s = if !consumed_newlines {
+                            formatter
+                                .write_char('\n')
+                                .and_then(|_| padding(&mut formatter, &state.padding))
+                        } else {
+                            Ok(())
+                        };
+
+                        s.and_then(|_| formatter.write_str("````"))
+                            .and_then(|_| formatter.write_str(info))
+                            .and_then(|_| formatter.write_char('\n'))
+                            .and_then(|_| padding(&mut formatter, &state.padding))
                     }
                     List(_) => Ok(()),
                     Strikethrough => formatter.write_str("~~"),
