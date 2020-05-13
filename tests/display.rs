@@ -54,7 +54,7 @@ mod start {
     fn codeblock() {
         assert_eq!(
             s(Start(CodeBlock(CodeBlockKind::Fenced("asdf".into())))),
-            "````asdf\n"
+            "\n````asdf\n"
         )
     }
     #[test]
