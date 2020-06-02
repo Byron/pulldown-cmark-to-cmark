@@ -220,10 +220,17 @@ where
                 }
                 formatter.write_str("---")
             }
-            Code(ref text) => formatter
-                .write_char('`')
-                .and_then(|_| formatter.write_str(text))
-                .and_then(|_| formatter.write_char('`')),
+            Code(ref text) => {
+                if state.store_next_text {
+                    state.store_next_text = false;
+                    let code = format!("`{}`", text);
+                    state.text_for_header = Some(code)
+                }
+                formatter
+                    .write_char('`')
+                    .and_then(|_| formatter.write_str(text))
+                    .and_then(|_| formatter.write_char('`'))
+            }
             Start(ref tag) => {
                 match *tag {
                     List(ref list_type) => {
