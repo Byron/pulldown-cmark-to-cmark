@@ -383,7 +383,7 @@ where
                             formatter.write_char('|')?;
                             // NOTE: For perfect counting, count grapheme clusters.
                             // The reason this is not done is to avoid the dependency.
-                            let last_minus_one = name.chars().count() - 1;
+                            let last_minus_one = name.chars().count().saturating_sub(1);
                             for c in 0..name.len() {
                                 formatter.write_char(
                                     if (c == 0
