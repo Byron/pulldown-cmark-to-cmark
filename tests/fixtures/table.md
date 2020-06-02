@@ -24,3 +24,9 @@ raw Markdown line up prettily. You can also use inline Markdown.
 | `aarch64-unknown-linux-gnu`   |  ✓  |     |     | ARM64 Linux (2.6.18+)      |
 | `mips-unknown-linux-gnu`      |  ✓  |     |     | MIPS Linux (2.6.18+)       |
 | `mipsel-unknown-linux-gnu`    |  ✓  |     |     | MIPS (LE) Linux (2.6.18+)  |
+
+Tables with formatting in header
+
+| header | `code` | _emphasize_ | *strong* |
+| ------ | ------ | ----------- | -------- |
+| data 1 | data 2 | data 3      | data 4   |
