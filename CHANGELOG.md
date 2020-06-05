@@ -1,3 +1,7 @@
+### v4.0.2 (2020-04-22)
+
+* Fixed table header handling ([see PR for details](https://github.com/Byron/pulldown-cmark-to-cmark/pull/15))
+
 ### v4.0.0 (2020-04-22)
 
 * BREAKING: Move all types from `pulldown_cmark_to_cmark::fmt::*` into `pulldown_cmark_to_cmark::*` for simplicity. 
