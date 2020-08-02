@@ -68,6 +68,7 @@ pub struct Options {
     pub newlines_after_list: usize,
     pub newlines_after_blockquote: usize,
     pub newlines_after_rest: usize,
+    pub code_block_backticks: usize,
 }
 
 impl Default for Options {
@@ -81,6 +82,7 @@ impl Default for Options {
             newlines_after_list: 2,
             newlines_after_blockquote: 2,
             newlines_after_rest: 1,
+            code_block_backticks: 4,
         }
     }
 }
@@ -296,7 +298,7 @@ where
                     CodeBlock(CodeBlockKind::Indented) => {
                         state.is_in_code_block = true;
                         formatter
-                            .write_str("````")
+                            .write_str(&"`".repeat(options.code_block_backticks))
                             .and(formatter.write_char('\n'))
                             .and(padding(&mut formatter, &state.padding))
                     }
@@ -310,7 +312,7 @@ where
                             Ok(())
                         };
 
-                        s.and_then(|_| formatter.write_str("````"))
+                        s.and_then(|_| formatter.write_str(&"`".repeat(options.code_block_backticks)))
                             .and_then(|_| formatter.write_str(info))
                             .and_then(|_| formatter.write_char('\n'))
                             .and_then(|_| padding(&mut formatter, &state.padding))
@@ -346,7 +348,7 @@ where
                         state.newlines_before_start = options.newlines_after_codeblock;
                     }
                     state.is_in_code_block = false;
-                    formatter.write_str("````")
+                    formatter.write_str(&"`".repeat(options.code_block_backticks))
                 }
                 Table(_) => {
                     if state.newlines_before_start < options.newlines_after_table {
