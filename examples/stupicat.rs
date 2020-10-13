@@ -8,6 +8,8 @@ use std::{
     io::{Read, Write},
 };
 
+use pulldown_cmark::Options;
+
 fn main() {
     let path = env::args_os()
         .skip(1)
@@ -16,12 +18,9 @@ fn main() {
 
     let md = read_to_string(path);
     let mut buf = String::with_capacity(md.len() + 128);
-    cmark(
-        Parser::new_ext(&md, pulldown_cmark::Options::all()),
-        &mut buf,
-        None,
-    )
-    .unwrap();
+    let mut options = Options::all();
+    options.remove(Options::ENABLE_SMART_PUNCTUATION);
+    cmark(Parser::new_ext(&md, options), &mut buf, None).unwrap();
     stdout().write_all(buf.as_bytes()).unwrap();
 }
 
