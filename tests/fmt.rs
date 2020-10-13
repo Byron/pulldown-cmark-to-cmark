@@ -28,8 +28,9 @@ fn assert_events_eq(s: &str) {
     let before_events = Parser::new_ext(s, Options::all());
 
     let mut buf = String::new();
-    cmark(before_events.clone(), &mut buf, None).unwrap();
+    cmark(before_events, &mut buf, None).unwrap();
 
+    let before_events = Parser::new_ext(s, Options::all());
     let after_events = Parser::new_ext(&buf, Options::all());
     println!("{}", buf);
     assert_eq!(
