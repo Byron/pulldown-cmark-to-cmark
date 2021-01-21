@@ -3,10 +3,8 @@ use std::{borrow::Borrow, borrow::Cow, fmt};
 
 pub const SPECIAL_CHARACTERS: &[u8; 9] = br#"#\_*<>`|["#;
 
-/// Similar to [Pulldown-Cmark-Alignment][pd-alignment], but with required
+/// Similar to [Pulldown-Cmark-Alignment][Alignment], but with required
 /// traits for comparison to allow testing.
-///
-/// [pd-alignment]: https://docs.rs/pulldown-cmark/*/pulldown_cmark/enum.Alignment.html
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Alignment {
     None,
@@ -26,7 +24,7 @@ impl<'a> From<&'a TableAlignment> for Alignment {
     }
 }
 
-/// The state of the `cmark` function.
+/// The state of the [`cmark()`] function.
 /// This does not only allow introspection, but enables the user
 /// to halt the serialization at any time, and resume it later.
 #[derive(Clone, Default, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -52,7 +50,7 @@ pub struct State<'a> {
     pub last_was_html: bool,
 }
 
-/// Configuration for the `cmark` function.
+/// Configuration for the [`cmark()`] function.
 /// The defaults should provide decent spacing and most importantly, will
 /// provide a faithful rendering of your markdown document particularly when
 /// rendering it to HTML.
@@ -87,10 +85,10 @@ impl Default for Options {
     }
 }
 
-/// Serialize a stream of [pulldown-cmark-Events][pd-event] into a string-backed buffer.
+/// Serialize a stream of [pulldown-cmark-Events][Event] into a string-backed buffer.
 ///
 /// 1. **events**
-///   * An iterator over [`Events`][pd-event], for example as returned by the [`Parser`][pd-parser]
+///   * An iterator over [`Events`][Event], for example as returned by the [`Parser`][pulldown_cmark::Parser]
 /// 1. **formatter**
 ///   * A format writer, can be a `String`.
 /// 1. **state**
@@ -99,12 +97,9 @@ impl Default for Options {
 ///   * Customize the appearance of the serialization. All otherwise magic values are contained
 ///     here.
 ///
-/// *Returns* the `State` of the serialization on success. You can use it as initial state in the
+/// *Returns* the [`State`] of the serialization on success. You can use it as initial state in the
 /// next call if you are halting event serialization.
 /// *Errors* are only happening if the underlying buffer fails, which is unlikely.
-///
-/// [pd-event]: https://docs.rs/pulldown-cmark/*/pulldown_cmark/enum.Event.html
-/// [pd-parser]: https://docs.rs/pulldown-cmark/*/pulldown_cmark/struct.Parser.html
 pub fn cmark_with_options<'a, I, E, F>(
     events: I,
     mut formatter: F,
@@ -466,7 +461,7 @@ where
     Ok(state)
 }
 
-/// As `cmark_with_options`, but with default `Options`.
+/// As [`cmark_with_options()`], but with default [`Options`].
 pub fn cmark<'a, I, E, F>(
     events: I,
     formatter: F,
