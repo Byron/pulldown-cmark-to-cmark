@@ -102,12 +102,53 @@ impl Default for Options {
 /// *Errors* are only happening if the underlying buffer fails, which is unlikely.
 pub fn cmark_with_options<'a, I, E, F>(
     events: I,
-    mut formatter: F,
+    formatter: F,
     state: Option<State<'static>>,
     options: Options,
 ) -> Result<State<'static>, fmt::Error>
 where
     I: Iterator<Item = E>,
+    E: Borrow<Event<'a>>,
+    F: fmt::Write,
+{
+    cmark_with_options_and_buffer(events.map(|e| (None, e)), formatter, state, options)
+}
+
+/// As `cmark_with_options`, but with default `Options`.
+pub fn cmark<'a, I, E, F>(
+    events: I,
+    formatter: F,
+    state: Option<State<'static>>,
+) -> Result<State<'static>, fmt::Error>
+where
+    I: Iterator<Item = E>,
+    E: Borrow<Event<'a>>,
+    F: fmt::Write,
+{
+    cmark_with_options(events, formatter, state, Options::default())
+}
+
+/// As [`cmark_with_options()`], but optionally supporting a buffer matching the ranges returned by the iterator.
+///
+/// # Example
+/// ```
+/// use pulldown_cmark_to_cmark::{cmark_with_options_and_buffer, Options};
+/// let input = "# hello";
+/// let mut out = String::new();
+/// cmark_with_options_and_buffer(pulldown_cmark::Parser::new_ext(input, pulldown_cmark::Options::all())
+///                                                       .into_offset_iter()
+///                                                       .map(|(e, range)| (Some((input, range)), e)),
+///                               &mut out, None, Options::default()).expect("success");
+/// assert_eq!(out, "# hello");
+/// ```
+pub fn cmark_with_options_and_buffer<'a, I, E, F>(
+    events: I,
+    mut formatter: F,
+    state: Option<State<'static>>,
+    options: Options,
+) -> Result<State<'static>, fmt::Error>
+where
+    I: Iterator<Item = (Option<(&'a str, std::ops::Range<usize>)>, E)>,
     E: Borrow<Event<'a>>,
     F: fmt::Write,
 {
@@ -185,7 +226,7 @@ where
         }
     }
 
-    for event in events {
+    for (_buffer_and_range, event) in events {
         use pulldown_cmark::CodeBlockKind;
         use pulldown_cmark::Event::*;
         use pulldown_cmark::Tag::*;
@@ -459,18 +500,4 @@ where
         }?
     }
     Ok(state)
-}
-
-/// As [`cmark_with_options()`], but with default [`Options`].
-pub fn cmark<'a, I, E, F>(
-    events: I,
-    formatter: F,
-    state: Option<State<'static>>,
-) -> Result<State<'static>, fmt::Error>
-where
-    I: Iterator<Item = E>,
-    E: Borrow<Event<'a>>,
-    F: fmt::Write,
-{
-    cmark_with_options(events, formatter, state, Options::default())
 }
