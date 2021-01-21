@@ -234,16 +234,13 @@ where
                     .and_then(|_| formatter.write_char('`'))
             }
             Start(ref tag) => {
-                match *tag {
-                    List(ref list_type) => {
-                        state.list_stack.push(list_type.clone());
-                        if state.list_stack.len() > 1 {
-                            if state.newlines_before_start < options.newlines_after_rest {
-                                state.newlines_before_start = options.newlines_after_rest;
-                            }
-                        }
+                if let List(ref list_type) = *tag {
+                    state.list_stack.push(*list_type);
+                    if state.list_stack.len() > 1
+                        && state.newlines_before_start < options.newlines_after_rest
+                    {
+                        state.newlines_before_start = options.newlines_after_rest;
                     }
-                    _ => {}
                 }
                 let consumed_newlines = state.newlines_before_start != 0;
                 consume_newlines(&mut formatter, &mut state)?;
@@ -252,8 +249,8 @@ where
                         Some(inner) => {
                             state.padding.push(padding_of(*inner));
                             match inner {
-                                &Some(n) => write!(formatter, "{}. ", n),
-                                &None => formatter.write_str("* "),
+                                Some(n) => write!(formatter, "{}. ", n),
+                                None => formatter.write_str("* "),
                             }
                         }
                         None => Ok(()),
@@ -375,7 +372,7 @@ where
                     }
                     formatter.write_char('|')?;
 
-                    if let &TableHead = t {
+                    if let TableHead = t {
                         formatter
                             .write_char('\n')
                             .and(padding(&mut formatter, &state.padding))?;
@@ -417,7 +414,7 @@ where
                 }
                 List(_) => {
                     state.list_stack.pop();
-                    if state.list_stack.len() == 0
+                    if state.list_stack.is_empty()
                         && state.newlines_before_start < options.newlines_after_list
                     {
                         state.newlines_before_start = options.newlines_after_list;
