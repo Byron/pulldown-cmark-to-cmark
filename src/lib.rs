@@ -128,16 +128,23 @@ where
     cmark_with_options(events, formatter, state, Options::default())
 }
 
+pub fn into_buffer_offset_iter<'a>(
+    input: &'a str,
+    parser: pulldown_cmark::Parser<'a>,
+) -> impl Iterator<Item = (Option<(&'a str, std::ops::Range<usize>)>, Event<'a>)> {
+    parser
+        .into_offset_iter()
+        .map(move |(e, range)| (Some((input, range)), e))
+}
+
 /// As [`cmark_with_options()`], but optionally supporting a buffer matching the ranges returned by the iterator.
 ///
 /// # Example
 /// ```
-/// use pulldown_cmark_to_cmark::{cmark_with_options_and_buffer, Options};
+/// use pulldown_cmark_to_cmark::{cmark_with_options_and_buffer, Options, into_buffer_offset_iter};
 /// let input = "# hello";
 /// let mut out = String::new();
-/// cmark_with_options_and_buffer(pulldown_cmark::Parser::new_ext(input, pulldown_cmark::Options::all())
-///                                                       .into_offset_iter()
-///                                                       .map(|(e, range)| (Some((input, range)), e)),
+/// cmark_with_options_and_buffer(into_buffer_offset_iter(input, pulldown_cmark::Parser::new_ext(input, pulldown_cmark::Options::all())),
 ///                               &mut out, None, Options::default()).expect("success");
 /// assert_eq!(out, "# hello");
 /// ```
