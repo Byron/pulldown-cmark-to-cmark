@@ -312,10 +312,12 @@ where
                             Ok(())
                         };
 
-                        s.and_then(|_| formatter.write_str(&"`".repeat(options.code_block_backticks)))
-                            .and_then(|_| formatter.write_str(info))
-                            .and_then(|_| formatter.write_char('\n'))
-                            .and_then(|_| padding(&mut formatter, &state.padding))
+                        s.and_then(|_| {
+                            formatter.write_str(&"`".repeat(options.code_block_backticks))
+                        })
+                        .and_then(|_| formatter.write_str(info))
+                        .and_then(|_| formatter.write_char('\n'))
+                        .and_then(|_| padding(&mut formatter, &state.padding))
                     }
                     List(_) => Ok(()),
                     Strikethrough => formatter.write_str("~~"),
