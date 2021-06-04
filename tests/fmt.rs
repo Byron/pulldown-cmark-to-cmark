@@ -16,9 +16,9 @@ fn fmtes(e: &[Event], s: State<'static>) -> (String, State<'static>) {
     (buf, s)
 }
 
-fn fmte(e: &[Event]) -> (String, State<'static>) {
+fn fmte<'a>(e: impl AsRef<[Event<'a>]>) -> (String, State<'static>) {
     let mut buf = String::new();
-    let s = cmark(e.iter(), &mut buf, None).unwrap();
+    let s = cmark(e.as_ref().iter(), &mut buf, None).unwrap();
     (buf, s)
 }
 
@@ -634,7 +634,7 @@ mod table {
 }
 
 mod escapes {
-    use super::{fmts, Event, Parser, Tag, SPECIAL_CHARACTERS};
+    use crate::{fmts, Event, Parser, Tag, SPECIAL_CHARACTERS};
     use pulldown_cmark::CowStr;
 
     fn run_test_on_each_special_char(f: impl Fn(String, CowStr)) {
@@ -691,6 +691,14 @@ mod escapes {
                 Event::End(Tag::Paragraph),
             ]
         )
+    }
+
+    #[test]
+    fn the_way_it_informs_about_multiple_escapes() {
+        assert_eq!(
+            fmts(r#"[\[1\]](http://example.com)"#).0,
+            r#"[\[1\]](http://example.com)"#
+        );
     }
 
     #[test]

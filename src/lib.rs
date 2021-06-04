@@ -1,7 +1,7 @@
 use pulldown_cmark::{Alignment as TableAlignment, Event};
 use std::{borrow::Borrow, borrow::Cow, fmt};
 
-pub const SPECIAL_CHARACTERS: &[u8; 9] = br#"#\_*<>`|["#;
+pub const SPECIAL_CHARACTERS: &[u8] = br#"#\_*<>`|[]"#;
 
 /// Similar to [Pulldown-Cmark-Alignment][Alignment], but with required
 /// traits for comparison to allow testing.
