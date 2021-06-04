@@ -694,11 +694,19 @@ mod escapes {
     }
 
     #[test]
-    fn the_way_it_informs_about_multiple_escapes() {
+    fn it_escapes_closing_square_brackets() {
         assert_eq!(
             fmts(r#"[\[1\]](http://example.com)"#).0,
             r#"[\[1\]](http://example.com)"#
         );
+    }
+
+    #[test]
+    fn it_does_esscape_lone_square_brackets_in_text() {
+        assert_eq!(
+            fmts("] a closing bracket does nothing").0,
+            "\\] a closing bracket does nothing"
+        )
     }
 
     #[test]
