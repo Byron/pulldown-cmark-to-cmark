@@ -1,3 +1,7 @@
+### v6.0.1 (2021-06-04)
+
+* also escape ']' characters
+
 ### v5.0.0 (2020-08-02)
 
 * Allow configuring the [amount of backticks used in code blocks](https://github.com/Byron/pulldown-cmark-to-cmark/pull/18). 
