@@ -1,3 +1,7 @@
+### v6.0.1 (2021-06-23)
+
+* handline [html in tables correctly](https://github.com/Byron/pulldown-cmark-to-cmark/pull/26).
+
 ### v6.0.1 (2021-06-04)
 
 * also escape ']' characters
