@@ -275,11 +275,11 @@ mod blockquote {
 
         assert_events_eq(s);
 
-        assert_eq!(fmts(s).0, "\n > \n > <table>\n > </table>\n > \n")
+        assert_eq!(fmts(s).0, "\n > \n > <table>\n > </table>\n > ")
     }
     #[test]
     fn with_inlinehtml() {
-        assert_eq!(fmts(" > <br>").0, "\n > \n > <br>\n")
+        assert_eq!(fmts(" > <br>").0, "\n > \n > <br>")
     }
     #[test]
     fn with_plaintext_in_html() {
