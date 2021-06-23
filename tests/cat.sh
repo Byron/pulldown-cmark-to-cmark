@@ -49,3 +49,9 @@ title "stupicat"
     WITH_SNAPSHOT="$snapshot/stupicat-lists-nested-output" \
     expect_run_sh $SUCCESSFULLY "${exe[*]} $fixture/lists-nested.md 2>/dev/null"
 )
+
+(with "table with html"
+  it "succeeds" && \
+    WITH_SNAPSHOT="$snapshot/stupicat-table-with-html-output" \
+    expect_run_sh $SUCCESSFULLY "${exe[*]} $fixture/table-with-html.md 2>/dev/null"
+)
