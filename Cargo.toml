@@ -1,6 +1,6 @@
 [package]
 name = "pulldown-cmark-to-cmark"
-version = "6.0.2"
+version = "6.0.3"
 authors = ["Sebastian Thiel <byronimo@gmail.com>", "Dylan Owen <dyltotheo@gmail.com>"]
 
 description = "Convert pulldown-cmark Events back to the string they were parsed from"
