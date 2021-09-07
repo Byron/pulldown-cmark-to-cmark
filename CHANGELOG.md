@@ -1,3 +1,7 @@
+### v6.0.3 (2021-09-07)
+
+* handle spaces in links [better](https://github.com/Byron/pulldown-cmark-to-cmark/pull/27)
+
 ### v6.0.1 (2021-06-23)
 
 * handline [html in tables correctly](https://github.com/Byron/pulldown-cmark-to-cmark/pull/26).
