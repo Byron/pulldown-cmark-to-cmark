@@ -215,7 +215,7 @@ mod inline_elements {
         assert_eq!(
             fmts("*a* b **c**\n<br>\nd\n\ne `c`"),
             (
-                "*a* b **c**\n<br>\n\nd\n\ne `c`".into(),
+                "*a* b **c**\n<br>\nd\n\ne `c`".into(),
                 State {
                     newlines_before_start: 2,
                     ..Default::default()

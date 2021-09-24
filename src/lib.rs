@@ -201,6 +201,7 @@ where
                 Html(_) => { /* no newlines if HTML continues */ }
                 Text(_) => { /* no newlines for inline HTML */ }
                 End(_) => { /* no newlines if ending a previous opened tag */ }
+                SoftBreak => { /* SoftBreak will result in a newline later */ }
                 _ => {
                     // Ensure next Markdown block is rendered properly
                     // by adding a newline after an HTML element.
