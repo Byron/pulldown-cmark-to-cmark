@@ -33,15 +33,11 @@ fn assert_events_eq(s: &str) {
     let before_events = Parser::new_ext(s, Options::all());
     let after_events = Parser::new_ext(&buf, Options::all());
     println!("{}", buf);
-    assert_eq!(
-        before_events.collect::<Vec<_>>(),
-        after_events.collect::<Vec<_>>()
-    );
+    assert_eq!(before_events.collect::<Vec<_>>(), after_events.collect::<Vec<_>>());
 }
 
 mod lazy_newlines {
-    use super::{fmte, fmts};
-    use super::{Event, LinkType, State, Tag};
+    use super::{fmte, fmts, Event, LinkType, State, Tag};
 
     #[test]
     fn after_emphasis_there_is_no_newline() {
@@ -287,10 +283,7 @@ mod blockquote {
     }
     #[test]
     fn with_markdown_nested_in_html() {
-        assert_eq!(
-            fmts("<del>\n\n*foo*\n\n</del>").0,
-            "<del>\n\n*foo*\n\n</del>"
-        )
+        assert_eq!(fmts("<del>\n\n*foo*\n\n</del>").0, "<del>\n\n*foo*\n\n</del>")
     }
     #[test]
     fn with_codeblock() {
@@ -498,10 +491,7 @@ mod codeblock {
     #[test]
     fn it_keeps_track_of_the_presence_of_a_code_block() {
         assert_eq!(
-            fmte(&[Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(
-                "s".into()
-            ))),])
-            .1,
+            fmte(&[Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced("s".into()))),]).1,
             State {
                 is_in_code_block: true,
                 ..Default::default()
@@ -551,9 +541,10 @@ mod codeblock {
 }
 
 mod table {
-    use super::{fmte, fmtes, Alignment as TableAlignment, Event, State, Tag};
     use pretty_assertions::assert_eq;
     use pulldown_cmark_to_cmark::Alignment;
+
+    use super::{fmte, fmtes, Alignment as TableAlignment, Event, State, Tag};
 
     #[test]
     fn it_forgets_alignments_and_headers_at_the_end_of_tables() {
@@ -577,10 +568,7 @@ mod table {
     fn it_keeps_track_of_alignments_and_headers() {
         assert_eq!(
             fmte(&[
-                Event::Start(Tag::Table(vec![
-                    TableAlignment::None,
-                    TableAlignment::Center,
-                ])),
+                Event::Start(Tag::Table(vec![TableAlignment::None, TableAlignment::Center,])),
                 Event::Start(Tag::TableHead),
                 Event::Start(Tag::TableCell),
                 Event::Text("a".into()),
@@ -634,8 +622,9 @@ mod table {
 }
 
 mod escapes {
-    use crate::{fmts, Event, Parser, Tag, SPECIAL_CHARACTERS};
     use pulldown_cmark::CowStr;
+
+    use crate::{fmts, Event, Parser, Tag, SPECIAL_CHARACTERS};
 
     fn run_test_on_each_special_char(f: impl Fn(String, CowStr)) {
         use std::convert::TryFrom;
@@ -657,10 +646,7 @@ mod escapes {
     #[test]
     fn it_recreates_escapes_for_known_special_characters_at_the_beginning_of_the_word() {
         run_test_on_each_special_char(|escaped_special_character, _| {
-            assert_eq!(
-                fmts(&escaped_special_character).0,
-                escaped_special_character
-            );
+            assert_eq!(fmts(&escaped_special_character).0, escaped_special_character);
         })
     }
 

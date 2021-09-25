@@ -1,5 +1,9 @@
+use std::{
+    borrow::{Borrow, Cow},
+    fmt,
+};
+
 use pulldown_cmark::{Alignment as TableAlignment, Event};
-use std::{borrow::Borrow, borrow::Cow, fmt};
 
 pub const SPECIAL_CHARACTERS: &[u8] = br#"#\_*<>`|[]"#;
 
@@ -151,11 +155,7 @@ where
         }
     }
 
-    fn print_text_without_trailing_newline<'a, F>(
-        t: &str,
-        f: &mut F,
-        p: &[Cow<'a, str>],
-    ) -> fmt::Result
+    fn print_text_without_trailing_newline<'a, F>(t: &str, f: &mut F, p: &[Cow<'a, str>]) -> fmt::Result
     where
         F: fmt::Write,
     {
@@ -177,18 +177,12 @@ where
     fn padding_of(l: Option<u64>) -> Cow<'static, str> {
         match l {
             None => "  ".into(),
-            Some(n) => format!("{}. ", n)
-                .chars()
-                .map(|_| ' ')
-                .collect::<String>()
-                .into(),
+            Some(n) => format!("{}. ", n).chars().map(|_| ' ').collect::<String>().into(),
         }
     }
 
     for event in events {
-        use pulldown_cmark::CodeBlockKind;
-        use pulldown_cmark::Event::*;
-        use pulldown_cmark::Tag::*;
+        use pulldown_cmark::{CodeBlockKind, Event::*, Tag::*};
 
         let event = event.borrow();
 
@@ -233,9 +227,7 @@ where
             Start(ref tag) => {
                 if let List(ref list_type) = *tag {
                     state.list_stack.push(*list_type);
-                    if state.list_stack.len() > 1
-                        && state.newlines_before_start < options.newlines_after_rest
-                    {
+                    if state.list_stack.len() > 1 && state.newlines_before_start < options.newlines_after_rest {
                         state.newlines_before_start = options.newlines_after_rest;
                     }
                 }
@@ -284,9 +276,7 @@ where
                         if consumed_newlines {
                             formatter.write_str(" > ")
                         } else {
-                            formatter
-                                .write_char('\n')
-                                .and(padding(&mut formatter, &state.padding))
+                            formatter.write_char('\n').and(padding(&mut formatter, &state.padding))
                         }
                     }
                     CodeBlock(CodeBlockKind::Indented) => {
@@ -306,12 +296,10 @@ where
                             Ok(())
                         };
 
-                        s.and_then(|_| {
-                            formatter.write_str(&"`".repeat(options.code_block_backticks))
-                        })
-                        .and_then(|_| formatter.write_str(info))
-                        .and_then(|_| formatter.write_char('\n'))
-                        .and_then(|_| padding(&mut formatter, &state.padding))
+                        s.and_then(|_| formatter.write_str(&"`".repeat(options.code_block_backticks)))
+                            .and_then(|_| formatter.write_str(info))
+                            .and_then(|_| formatter.write_char('\n'))
+                            .and_then(|_| padding(&mut formatter, &state.padding))
                     }
                     List(_) => Ok(()),
                     Strikethrough => formatter.write_str("~~"),
@@ -359,12 +347,10 @@ where
                     Ok(())
                 }
                 TableCell => {
-                    state
-                        .table_headers
-                        .push(match state.text_for_header.take() {
-                            Some(text) => text,
-                            None => "  ".into(),
-                        });
+                    state.table_headers.push(match state.text_for_header.take() {
+                        Some(text) => text,
+                        None => "  ".into(),
+                    });
                     Ok(())
                 }
                 ref t @ TableRow | ref t @ TableHead => {
@@ -377,23 +363,16 @@ where
                         formatter
                             .write_char('\n')
                             .and(padding(&mut formatter, &state.padding))?;
-                        for (alignment, name) in state
-                            .table_alignments
-                            .iter()
-                            .zip(state.table_headers.iter())
-                        {
+                        for (alignment, name) in state.table_alignments.iter().zip(state.table_headers.iter()) {
                             formatter.write_char('|')?;
                             // NOTE: For perfect counting, count grapheme clusters.
                             // The reason this is not done is to avoid the dependency.
                             let last_minus_one = name.chars().count().saturating_sub(1);
                             for c in 0..name.len() {
                                 formatter.write_char(
-                                    if (c == 0
-                                        && (alignment == &Alignment::Center
-                                            || alignment == &Alignment::Left))
+                                    if (c == 0 && (alignment == &Alignment::Center || alignment == &Alignment::Left))
                                         || (c == last_minus_one
-                                            && (alignment == &Alignment::Center
-                                                || alignment == &Alignment::Right))
+                                            && (alignment == &Alignment::Center || alignment == &Alignment::Right))
                                     {
                                         ':'
                                     } else {
@@ -415,9 +394,7 @@ where
                 }
                 List(_) => {
                     state.list_stack.pop();
-                    if state.list_stack.is_empty()
-                        && state.newlines_before_start < options.newlines_after_list
-                    {
+                    if state.list_stack.is_empty() && state.newlines_before_start < options.newlines_after_list {
                         state.newlines_before_start = options.newlines_after_list;
                     }
                     Ok(())
@@ -434,12 +411,8 @@ where
                 FootnoteDefinition(_) => Ok(()),
                 Strikethrough => formatter.write_str("~~"),
             },
-            HardBreak => formatter
-                .write_str("  \n")
-                .and(padding(&mut formatter, &state.padding)),
-            SoftBreak => formatter
-                .write_char('\n')
-                .and(padding(&mut formatter, &state.padding)),
+            HardBreak => formatter.write_str("  \n").and(padding(&mut formatter, &state.padding)),
+            SoftBreak => formatter.write_char('\n').and(padding(&mut formatter, &state.padding)),
             Text(ref text) => {
                 if state.store_next_text {
                     state.store_next_text = false;
@@ -468,11 +441,7 @@ where
 }
 
 /// As [`cmark_with_options()`], but with default [`Options`].
-pub fn cmark<'a, I, E, F>(
-    events: I,
-    formatter: F,
-    state: Option<State<'static>>,
-) -> Result<State<'static>, fmt::Error>
+pub fn cmark<'a, I, E, F>(events: I, formatter: F, state: Option<State<'static>>) -> Result<State<'static>, fmt::Error>
 where
     I: Iterator<Item = E>,
     E: Borrow<Event<'a>>,

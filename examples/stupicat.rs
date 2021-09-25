@@ -1,14 +1,12 @@
-use pulldown_cmark::Parser;
-use pulldown_cmark_to_cmark::cmark;
 use std::{
     env,
     ffi::OsString,
     fs::File,
-    io::stdout,
-    io::{Read, Write},
+    io::{stdout, Read, Write},
 };
 
-use pulldown_cmark::Options;
+use pulldown_cmark::{Options, Parser};
+use pulldown_cmark_to_cmark::cmark;
 
 fn main() {
     let path = env::args_os()

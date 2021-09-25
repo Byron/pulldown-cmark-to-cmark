@@ -7,8 +7,9 @@ fn s(e: Event) -> String {
     buf
 }
 mod code {
-    use super::s;
     use pulldown_cmark::Event::*;
+
+    use super::s;
 
     #[test]
     fn code() {
@@ -17,8 +18,9 @@ mod code {
 }
 
 mod rule {
-    use super::s;
     use pulldown_cmark::Event::*;
+
+    use super::s;
 
     #[test]
     fn rule() {
@@ -27,12 +29,15 @@ mod rule {
 }
 
 mod start {
+    use pulldown_cmark::{
+        Alignment::{self, Center, Left, Right},
+        CodeBlockKind,
+        Event::*,
+        LinkType::*,
+        Tag::*,
+    };
+
     use super::s;
-    use pulldown_cmark::Alignment::{self, Center, Left, Right};
-    use pulldown_cmark::CodeBlockKind;
-    use pulldown_cmark::Event::*;
-    use pulldown_cmark::LinkType::*;
-    use pulldown_cmark::Tag::*;
 
     #[test]
     fn paragraph() {
@@ -99,10 +104,7 @@ mod start {
     }
     #[test]
     fn table() {
-        assert_eq!(
-            s(Start(Table(vec![Left, Center, Right, Alignment::None]))),
-            ""
-        )
+        assert_eq!(s(Start(Table(vec![Left, Center, Right, Alignment::None]))), "")
     }
     #[test]
     fn table_head() {
@@ -119,12 +121,15 @@ mod start {
 }
 
 mod end {
+    use pulldown_cmark::{
+        Alignment::{self, Center, Left, Right},
+        CodeBlockKind,
+        Event::*,
+        LinkType::*,
+        Tag::*,
+    };
+
     use super::s;
-    use pulldown_cmark::Alignment::{self, Center, Left, Right};
-    use pulldown_cmark::CodeBlockKind;
-    use pulldown_cmark::Event::*;
-    use pulldown_cmark::LinkType::*;
-    use pulldown_cmark::Tag::*;
 
     #[test]
     fn header() {
@@ -140,10 +145,7 @@ mod end {
     }
     #[test]
     fn codeblock() {
-        assert_eq!(
-            s(End(CodeBlock(CodeBlockKind::Fenced("asdf".into())))),
-            "````"
-        )
+        assert_eq!(s(End(CodeBlock(CodeBlockKind::Fenced("asdf".into())))), "````")
     }
     #[test]
     fn footnote_definition() {
@@ -171,10 +173,7 @@ mod end {
     }
     #[test]
     fn link() {
-        assert_eq!(
-            s(End(Link(Inline, "/uri".into(), "title".into()))),
-            "](/uri \"title\")"
-        )
+        assert_eq!(s(End(Link(Inline, "/uri".into(), "title".into()))), "](/uri \"title\")")
     }
     #[test]
     fn link_without_title() {
@@ -193,10 +192,7 @@ mod end {
     }
     #[test]
     fn table() {
-        assert_eq!(
-            s(End(Table(vec![Left, Center, Right, Alignment::None]))),
-            ""
-        )
+        assert_eq!(s(End(Table(vec![Left, Center, Right, Alignment::None]))), "")
     }
     #[test]
     fn table_row() {
@@ -218,10 +214,7 @@ fn softbreak() {
 }
 #[test]
 fn html() {
-    assert_eq!(
-        s(Event::Html("<table>hi</table>".into())),
-        "<table>hi</table>"
-    )
+    assert_eq!(s(Event::Html("<table>hi</table>".into())), "<table>hi</table>")
 }
 #[test]
 fn text() {

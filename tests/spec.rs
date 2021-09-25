@@ -14,27 +14,15 @@ fn is_example_fence(tag: &Tag<'_>) -> bool {
 }
 
 fn collect_test_case<'a>(events: &mut impl Iterator<Item = Event<'a>>) -> Option<(String, String)> {
-    let begin_tag = events.next().and_then(|e| {
-        if let Event::Start(tag) = e {
-            Some(tag)
-        } else {
-            None
-        }
-    })?;
-    let text = events.next().and_then(|e| {
-        if let Event::Text(text) = e {
-            Some(text)
-        } else {
-            None
-        }
-    })?;
-    let end_tag = events.next().and_then(|e| {
-        if let Event::End(tag) = e {
-            Some(tag)
-        } else {
-            None
-        }
-    })?;
+    let begin_tag = events
+        .next()
+        .and_then(|e| if let Event::Start(tag) = e { Some(tag) } else { None })?;
+    let text = events
+        .next()
+        .and_then(|e| if let Event::Text(text) = e { Some(text) } else { None })?;
+    let end_tag = events
+        .next()
+        .and_then(|e| if let Event::End(tag) = e { Some(tag) } else { None })?;
     if !(is_example_fence(&begin_tag) && is_example_fence(&end_tag)) {
         return None;
     }
@@ -86,8 +74,7 @@ fn commonmark_spec() {
         if let Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(fence_value))) = peeked_event {
             if &**fence_value == "example" {
                 // a new example, insert it into the testsuite.
-                let new_test_case =
-                    collect_test_case(&mut p).expect("Error parsing example text from spec.");
+                let new_test_case = collect_test_case(&mut p).expect("Error parsing example text from spec.");
                 testsuite.push(new_test_case);
                 continue;
             }
