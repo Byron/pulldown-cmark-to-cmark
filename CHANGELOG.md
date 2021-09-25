@@ -1,3 +1,8 @@
+### v6.0.4 (2021-09-25)
+
+* Improves newline handling when line ends with 
+  [inline HTML](https://github.com/Byron/pulldown-cmark-to-cmark/issues/28)
+
 ### v6.0.3 (2021-09-07)
 
 * handle spaces in links [better](https://github.com/Byron/pulldown-cmark-to-cmark/pull/27)
