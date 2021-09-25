@@ -16,9 +16,9 @@ fn fmtes(e: &[Event], s: State<'static>) -> (String, State<'static>) {
     (buf, s)
 }
 
-fn fmte(e: &[Event]) -> (String, State<'static>) {
+fn fmte<'a>(e: impl AsRef<[Event<'a>]>) -> (String, State<'static>) {
     let mut buf = String::new();
-    let s = cmark(e.iter(), &mut buf, None).unwrap();
+    let s = cmark(e.as_ref().iter(), &mut buf, None).unwrap();
     (buf, s)
 }
 
@@ -33,15 +33,11 @@ fn assert_events_eq(s: &str) {
     let before_events = Parser::new_ext(s, Options::all());
     let after_events = Parser::new_ext(&buf, Options::all());
     println!("{}", buf);
-    assert_eq!(
-        before_events.collect::<Vec<_>>(),
-        after_events.collect::<Vec<_>>()
-    );
+    assert_eq!(before_events.collect::<Vec<_>>(), after_events.collect::<Vec<_>>());
 }
 
 mod lazy_newlines {
-    use super::{fmte, fmts};
-    use super::{Event, LinkType, State, Tag};
+    use super::{fmte, fmts, Event, LinkType, State, Tag};
 
     #[test]
     fn after_emphasis_there_is_no_newline() {
@@ -215,7 +211,7 @@ mod inline_elements {
         assert_eq!(
             fmts("*a* b **c**\n<br>\nd\n\ne `c`"),
             (
-                "*a* b **c**\n<br>\n\nd\n\ne `c`".into(),
+                "*a* b **c**\n<br>\nd\n\ne `c`".into(),
                 State {
                     newlines_before_start: 2,
                     ..Default::default()
@@ -275,11 +271,11 @@ mod blockquote {
 
         assert_events_eq(s);
 
-        assert_eq!(fmts(s).0, "\n > \n > <table>\n > </table>\n > \n")
+        assert_eq!(fmts(s).0, "\n > \n > <table>\n > </table>\n > ")
     }
     #[test]
     fn with_inlinehtml() {
-        assert_eq!(fmts(" > <br>").0, "\n > \n > <br>\n")
+        assert_eq!(fmts(" > <br>").0, "\n > \n > <br>")
     }
     #[test]
     fn with_plaintext_in_html() {
@@ -287,10 +283,7 @@ mod blockquote {
     }
     #[test]
     fn with_markdown_nested_in_html() {
-        assert_eq!(
-            fmts("<del>\n\n*foo*\n\n</del>").0,
-            "<del>\n\n*foo*\n\n</del>"
-        )
+        assert_eq!(fmts("<del>\n\n*foo*\n\n</del>").0, "<del>\n\n*foo*\n\n</del>")
     }
     #[test]
     fn with_codeblock() {
@@ -498,10 +491,7 @@ mod codeblock {
     #[test]
     fn it_keeps_track_of_the_presence_of_a_code_block() {
         assert_eq!(
-            fmte(&[Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(
-                "s".into()
-            ))),])
-            .1,
+            fmte(&[Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced("s".into()))),]).1,
             State {
                 is_in_code_block: true,
                 ..Default::default()
@@ -551,9 +541,10 @@ mod codeblock {
 }
 
 mod table {
-    use super::{fmte, fmtes, Alignment as TableAlignment, Event, State, Tag};
     use pretty_assertions::assert_eq;
     use pulldown_cmark_to_cmark::Alignment;
+
+    use super::{fmte, fmtes, Alignment as TableAlignment, Event, State, Tag};
 
     #[test]
     fn it_forgets_alignments_and_headers_at_the_end_of_tables() {
@@ -577,10 +568,7 @@ mod table {
     fn it_keeps_track_of_alignments_and_headers() {
         assert_eq!(
             fmte(&[
-                Event::Start(Tag::Table(vec![
-                    TableAlignment::None,
-                    TableAlignment::Center,
-                ])),
+                Event::Start(Tag::Table(vec![TableAlignment::None, TableAlignment::Center,])),
                 Event::Start(Tag::TableHead),
                 Event::Start(Tag::TableCell),
                 Event::Text("a".into()),
@@ -634,8 +622,9 @@ mod table {
 }
 
 mod escapes {
-    use super::{fmts, Event, Parser, Tag, SPECIAL_CHARACTERS};
     use pulldown_cmark::CowStr;
+
+    use crate::{fmts, Event, Parser, Tag, SPECIAL_CHARACTERS};
 
     fn run_test_on_each_special_char(f: impl Fn(String, CowStr)) {
         use std::convert::TryFrom;
@@ -657,10 +646,7 @@ mod escapes {
     #[test]
     fn it_recreates_escapes_for_known_special_characters_at_the_beginning_of_the_word() {
         run_test_on_each_special_char(|escaped_special_character, _| {
-            assert_eq!(
-                fmts(&escaped_special_character).0,
-                escaped_special_character
-            );
+            assert_eq!(fmts(&escaped_special_character).0, escaped_special_character);
         })
     }
 
@@ -690,6 +676,22 @@ mod escapes {
                 Event::Text("`".into()),
                 Event::End(Tag::Paragraph),
             ]
+        )
+    }
+
+    #[test]
+    fn it_escapes_closing_square_brackets() {
+        assert_eq!(
+            fmts(r#"[\[1\]](http://example.com)"#).0,
+            r#"[\[1\]](http://example.com)"#
+        );
+    }
+
+    #[test]
+    fn it_does_esscape_lone_square_brackets_in_text() {
+        assert_eq!(
+            fmts("] a closing bracket does nothing").0,
+            "\\] a closing bracket does nothing"
         )
     }
 

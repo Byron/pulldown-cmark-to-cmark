@@ -171,20 +171,20 @@ What about \*this\* or \*\*that\*\*?
 
 \# heading?
 
-\[disabled inline link](target)
+\[disabled inline link\](target)
 
-\[disabled named link]: target
+\[disabled named link\]: target
 
 [named-link](bah)
 
-\[disabled named link]\[disabled]
+\[disabled named link\]\[disabled\]
 
 \|table|
 \|-----|
 
 \`code\`
 
-] a closing bracket does nothing
+\] a closing bracket does nothing
 
 \<html>
 
