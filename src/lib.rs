@@ -1,3 +1,5 @@
+#![deny(rust_2018_idioms)]
+
 use std::{
     borrow::{Borrow, Cow},
     fmt,
@@ -69,13 +71,13 @@ pub struct Options<'a> {
     pub newlines_after_blockquote: usize,
     pub newlines_after_rest: usize,
     pub code_block_token_count: usize,
-    pub code_block_token: &'a str,
-    pub list_token: &'a str,
-    pub emphasis_token: &'a str,
+    pub code_block_token: char,
+    pub list_token: char,
+    pub emphasis_token: char,
     pub strong_token: &'a str,
 }
 
-const DEFAULT_OPTIONS: Options = Options {
+const DEFAULT_OPTIONS: Options<'_> = Options {
     newlines_after_headline: 2,
     newlines_after_paragraph: 2,
     newlines_after_codeblock: 2,
@@ -85,9 +87,9 @@ const DEFAULT_OPTIONS: Options = Options {
     newlines_after_blockquote: 2,
     newlines_after_rest: 1,
     code_block_token_count: 4,
-    code_block_token: "`",
-    list_token: "*",
-    emphasis_token: "*",
+    code_block_token: '`',
+    list_token: '*',
+    emphasis_token: '*',
     strong_token: "**",
 };
 
@@ -109,9 +111,9 @@ impl<'a> Options<'a> {
             BASE.into()
         } else {
             let mut s = String::from(BASE);
-            s.push_str(self.code_block_token);
-            s.push_str(self.list_token);
-            s.push_str(self.emphasis_token);
+            s.push(self.code_block_token);
+            s.push(self.list_token);
+            s.push(self.emphasis_token);
             s.push_str(self.strong_token);
             s.into()
         }
@@ -137,7 +139,7 @@ pub fn cmark_with_options<'a, I, E, F>(
     events: I,
     mut formatter: F,
     state: Option<State<'static>>,
-    options: Options,
+    options: Options<'_>,
 ) -> Result<State<'static>, fmt::Error>
 where
     I: Iterator<Item = E>,
@@ -154,7 +156,7 @@ where
         }
         Ok(())
     }
-    fn consume_newlines<F>(f: &mut F, s: &mut State) -> fmt::Result
+    fn consume_newlines<F>(f: &mut F, s: &mut State<'_>) -> fmt::Result
     where
         F: fmt::Write,
     {
@@ -252,9 +254,9 @@ where
                     state.text_for_header = Some(code)
                 }
                 formatter
-                    .write_str(options.code_block_token)
+                    .write_char(options.code_block_token)
                     .and_then(|_| formatter.write_str(text))
-                    .and_then(|_| formatter.write_str(options.code_block_token))
+                    .and_then(|_| formatter.write_char(options.code_block_token))
             }
             Start(ref tag) => {
                 if let List(ref list_type) = *tag {
@@ -288,7 +290,7 @@ where
                     }
                     Link(..) => formatter.write_char('['),
                     Image(..) => formatter.write_str("!["),
-                    Emphasis => formatter.write_str(options.emphasis_token),
+                    Emphasis => formatter.write_char(options.emphasis_token),
                     Strong => formatter.write_str(options.strong_token),
                     FootnoteDefinition(ref name) => write!(formatter, "[^{}]: ", name),
                     Paragraph => Ok(()),
@@ -313,10 +315,10 @@ where
                     }
                     CodeBlock(CodeBlockKind::Indented) => {
                         state.is_in_code_block = true;
-                        formatter
-                            .write_str(&options.code_block_token.repeat(options.code_block_token_count))
-                            .and(formatter.write_char('\n'))
-                            .and(padding(&mut formatter, &state.padding))
+                        for _ in 0..options.code_block_token_count {
+                            formatter.write_char(options.code_block_token)?;
+                        }
+                        formatter.write_char('\n').and(padding(&mut formatter, &state.padding))
                     }
                     CodeBlock(CodeBlockKind::Fenced(ref info)) => {
                         state.is_in_code_block = true;
@@ -329,7 +331,10 @@ where
                         };
 
                         s.and_then(|_| {
-                            formatter.write_str(&options.code_block_token.repeat(options.code_block_token_count))
+                            for _ in 0..options.code_block_token_count {
+                                formatter.write_char(options.code_block_token)?;
+                            }
+                            Ok(())
                         })
                         .and_then(|_| formatter.write_str(info))
                         .and_then(|_| formatter.write_char('\n'))
@@ -351,7 +356,7 @@ where
                     }
                     formatter.write_str(")")
                 }
-                Emphasis => formatter.write_str(options.emphasis_token),
+                Emphasis => formatter.write_char(options.emphasis_token),
                 Strong => formatter.write_str(options.strong_token),
                 Heading(_) => {
                     if state.newlines_before_start < options.newlines_after_headline {
@@ -370,7 +375,10 @@ where
                         state.newlines_before_start = options.newlines_after_codeblock;
                     }
                     state.is_in_code_block = false;
-                    formatter.write_str(&options.code_block_token.repeat(options.code_block_token_count))
+                    for _ in 0..options.code_block_token_count {
+                        formatter.write_char(options.code_block_token)?;
+                    }
+                    Ok(())
                 }
                 Table(_) => {
                     if state.newlines_before_start < options.newlines_after_table {
