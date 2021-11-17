@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 7.0.0 (2021-11-17)
 
 The `Options` type was updated in a **breaking** fashion to allow configuring certain tokens, e.g. the `*` list token can now be configured as `-` if desired.
 
@@ -15,7 +15,7 @@ Thanks to the author of [this PR](https://github.com/Byron/pulldown-cmark-to-cma
 
 <csr-read-only-do-not-edit/>
 
- - 5 commits contributed to the release over the course of 53 calendar days.
+ - 6 commits contributed to the release over the course of 53 calendar days.
  - 0 commits where understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' where seen in commit messages
 
@@ -26,6 +26,7 @@ Thanks to the author of [this PR](https://github.com/Byron/pulldown-cmark-to-cma
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Update changelog prior to release ([`0b795a7`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/0b795a70379f334c0dc08a8208691ee824c2ee87))
     - refactor ([`06fe6cb`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/06fe6cb1e35e8aca0cd8a4bfe9daacbdd2771698))
     - More efficient handling of reconfigured characters ([`fa14750`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/fa147502384bf82fe192719d0c8cc81ba125cc7f))
     - cleanup typing for special characters ([`9aef43f`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/9aef43ff21d41bc66df6096d392d0e8a035d11fc))
@@ -328,9 +329,9 @@ Thanks to the author of [this PR](https://github.com/Byron/pulldown-cmark-to-cma
     - Dumber, byte oriented escape code ([`b3dce1a`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/b3dce1a9cc1650f0c354efa35d154231089cb5df))
 </details>
 
-### v2.0.0 (2020-01-31)
+## v2.0.0 (2020-01-31)
 
-#### Commit Statistics
+### Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
@@ -338,7 +339,7 @@ Thanks to the author of [this PR](https://github.com/Byron/pulldown-cmark-to-cma
  - 0 commits where understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' where seen in commit messages
 
-#### Commit Details
+### Commit Details
 
 <csr-read-only-do-not-edit/>
 
