@@ -68,41 +68,53 @@ pub struct Options<'a> {
     pub newlines_after_list: usize,
     pub newlines_after_blockquote: usize,
     pub newlines_after_rest: usize,
-    pub code_block_token_number: usize,
+    pub code_block_token_count: usize,
     pub code_block_token: &'a str,
     pub list_token: &'a str,
     pub emphasis_token: &'a str,
     pub strong_token: &'a str,
 }
 
+const DEFAULT_OPTIONS: Options = Options {
+    newlines_after_headline: 2,
+    newlines_after_paragraph: 2,
+    newlines_after_codeblock: 2,
+    newlines_after_table: 2,
+    newlines_after_rule: 2,
+    newlines_after_list: 2,
+    newlines_after_blockquote: 2,
+    newlines_after_rest: 1,
+    code_block_token_count: 4,
+    code_block_token: "`",
+    list_token: "*",
+    emphasis_token: "*",
+    strong_token: "**",
+};
+
 impl<'a> Default for Options<'a> {
     fn default() -> Self {
-        Options {
-            newlines_after_headline: 2,
-            newlines_after_paragraph: 2,
-            newlines_after_codeblock: 2,
-            newlines_after_table: 2,
-            newlines_after_rule: 2,
-            newlines_after_list: 2,
-            newlines_after_blockquote: 2,
-            newlines_after_rest: 1,
-            code_block_token_number: 4,
-            code_block_token: "`",
-            list_token: "*",
-            emphasis_token: "*",
-            strong_token: "**",
-        }
+        DEFAULT_OPTIONS
     }
 }
 
 impl<'a> Options<'a> {
-    pub fn special_characters(&self) -> String {
-        let mut special_characters = String::from("#\\_<>|[]");
-        special_characters.push_str(self.code_block_token);
-        special_characters.push_str(self.list_token);
-        special_characters.push_str(self.emphasis_token);
-        special_characters.push_str(self.strong_token);
-        special_characters
+    pub fn special_characters(&self) -> Cow<'static, str> {
+        // These always need to be escaped, even if reconfigured.
+        const BASE: &str = "#\\_*<>`|[]";
+        if DEFAULT_OPTIONS.code_block_token == self.code_block_token
+            && DEFAULT_OPTIONS.list_token == self.list_token
+            && DEFAULT_OPTIONS.emphasis_token == self.emphasis_token
+            && DEFAULT_OPTIONS.strong_token == self.strong_token
+        {
+            BASE.into()
+        } else {
+            let mut s = String::from(BASE);
+            s.push_str(self.code_block_token);
+            s.push_str(self.list_token);
+            s.push_str(self.emphasis_token);
+            s.push_str(self.strong_token);
+            s.into()
+        }
     }
 }
 
@@ -302,7 +314,7 @@ where
                     CodeBlock(CodeBlockKind::Indented) => {
                         state.is_in_code_block = true;
                         formatter
-                            .write_str(&options.code_block_token.repeat(options.code_block_token_number))
+                            .write_str(&options.code_block_token.repeat(options.code_block_token_count))
                             .and(formatter.write_char('\n'))
                             .and(padding(&mut formatter, &state.padding))
                     }
@@ -317,7 +329,7 @@ where
                         };
 
                         s.and_then(|_| {
-                            formatter.write_str(&options.code_block_token.repeat(options.code_block_token_number))
+                            formatter.write_str(&options.code_block_token.repeat(options.code_block_token_count))
                         })
                         .and_then(|_| formatter.write_str(info))
                         .and_then(|_| formatter.write_char('\n'))
@@ -358,7 +370,7 @@ where
                         state.newlines_before_start = options.newlines_after_codeblock;
                     }
                     state.is_in_code_block = false;
-                    formatter.write_str(&options.code_block_token.repeat(options.code_block_token_number))
+                    formatter.write_str(&options.code_block_token.repeat(options.code_block_token_count))
                 }
                 Table(_) => {
                     if state.newlines_before_start < options.newlines_after_table {
