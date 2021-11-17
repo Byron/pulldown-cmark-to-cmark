@@ -5,8 +5,6 @@ use std::{
 
 use pulldown_cmark::{Alignment as TableAlignment, Event};
 
-pub const SPECIAL_CHARACTERS: &[u8] = br#"#\_*<>`|[]"#;
-
 /// Similar to [Pulldown-Cmark-Alignment][Alignment], but with required
 /// traits for comparison to allow testing.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -61,7 +59,7 @@ pub struct State<'a> {
 ///
 /// It's best used with its `Options::default()` implementation.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Options {
+pub struct Options<'a> {
     pub newlines_after_headline: usize,
     pub newlines_after_paragraph: usize,
     pub newlines_after_codeblock: usize,
@@ -70,10 +68,14 @@ pub struct Options {
     pub newlines_after_list: usize,
     pub newlines_after_blockquote: usize,
     pub newlines_after_rest: usize,
-    pub code_block_backticks: usize,
+    pub code_block_token_number: usize,
+    pub code_block_token: &'a str,
+    pub list_token: &'a str,
+    pub emphasis_token: &'a str,
+    pub strong_token: &'a str,
 }
 
-impl Default for Options {
+impl<'a> Default for Options<'a> {
     fn default() -> Self {
         Options {
             newlines_after_headline: 2,
@@ -84,8 +86,24 @@ impl Default for Options {
             newlines_after_list: 2,
             newlines_after_blockquote: 2,
             newlines_after_rest: 1,
-            code_block_backticks: 4,
+            code_block_token_number: 4,
+            code_block_token: "`",
+            list_token: "*",
+            emphasis_token: "*",
+            strong_token: "**",
         }
+    }
+}
+
+impl<'a> Options<'a> {
+    pub fn special_characters(&self) -> Vec<u8> {
+        let mut special_chacacters = vec!['#', '\\', '_', '<', '>', '|', '[', ']'];
+        special_chacacters.extend(self.code_block_token.chars());
+        special_chacacters.extend(self.list_token.chars());
+        special_chacacters.extend(self.emphasis_token.chars());
+        special_chacacters.extend(self.strong_token.chars());
+
+        special_chacacters.into_iter().map(|c| c as u8).collect()
     }
 }
 
@@ -137,14 +155,18 @@ where
         Ok(())
     }
 
-    fn escape_leading_special_characters(t: &str, is_in_block_quote: bool) -> Cow<'_, str> {
+    fn escape_leading_special_characters<'a>(
+        t: &'a str,
+        is_in_block_quote: bool,
+        options: &Options<'a>,
+    ) -> Cow<'a, str> {
         if is_in_block_quote || t.is_empty() {
             return Cow::Borrowed(t);
         }
 
         use std::convert::TryFrom;
         let first = t.as_bytes()[0];
-        if SPECIAL_CHARACTERS.contains(&first) {
+        if options.special_characters().contains(&first) {
             let mut s = String::with_capacity(t.len() + 1);
             s.push('\\');
             s.push(char::try_from(first as u32).expect("we know it's valid utf8"));
@@ -216,13 +238,13 @@ where
             Code(ref text) => {
                 if state.store_next_text {
                     state.store_next_text = false;
-                    let code = format!("`{}`", text);
+                    let code = format!("{}{}{}", options.code_block_token, text, options.code_block_token);
                     state.text_for_header = Some(code)
                 }
                 formatter
-                    .write_char('`')
+                    .write_str(options.code_block_token)
                     .and_then(|_| formatter.write_str(text))
-                    .and_then(|_| formatter.write_char('`'))
+                    .and_then(|_| formatter.write_str(options.code_block_token))
             }
             Start(ref tag) => {
                 if let List(ref list_type) = *tag {
@@ -239,7 +261,7 @@ where
                             state.padding.push(padding_of(*inner));
                             match inner {
                                 Some(n) => write!(formatter, "{}. ", n),
-                                None => formatter.write_str("* "),
+                                None => write!(formatter, "{} ", options.list_token),
                             }
                         }
                         None => Ok(()),
@@ -256,8 +278,8 @@ where
                     }
                     Link(..) => formatter.write_char('['),
                     Image(..) => formatter.write_str("!["),
-                    Emphasis => formatter.write_char('*'),
-                    Strong => formatter.write_str("**"),
+                    Emphasis => formatter.write_str(options.emphasis_token),
+                    Strong => formatter.write_str(options.strong_token),
                     FootnoteDefinition(ref name) => write!(formatter, "[^{}]: ", name),
                     Paragraph => Ok(()),
                     Heading(n) => {
@@ -282,7 +304,7 @@ where
                     CodeBlock(CodeBlockKind::Indented) => {
                         state.is_in_code_block = true;
                         formatter
-                            .write_str(&"`".repeat(options.code_block_backticks))
+                            .write_str(&options.code_block_token.repeat(options.code_block_token_number))
                             .and(formatter.write_char('\n'))
                             .and(padding(&mut formatter, &state.padding))
                     }
@@ -296,10 +318,12 @@ where
                             Ok(())
                         };
 
-                        s.and_then(|_| formatter.write_str(&"`".repeat(options.code_block_backticks)))
-                            .and_then(|_| formatter.write_str(info))
-                            .and_then(|_| formatter.write_char('\n'))
-                            .and_then(|_| padding(&mut formatter, &state.padding))
+                        s.and_then(|_| {
+                            formatter.write_str(&options.code_block_token.repeat(options.code_block_token_number))
+                        })
+                        .and_then(|_| formatter.write_str(info))
+                        .and_then(|_| formatter.write_char('\n'))
+                        .and_then(|_| padding(&mut formatter, &state.padding))
                     }
                     List(_) => Ok(()),
                     Strikethrough => formatter.write_str("~~"),
@@ -317,8 +341,8 @@ where
                     }
                     formatter.write_str(")")
                 }
-                Emphasis => formatter.write_char('*'),
-                Strong => formatter.write_str("**"),
+                Emphasis => formatter.write_str(options.emphasis_token),
+                Strong => formatter.write_str(options.strong_token),
                 Heading(_) => {
                     if state.newlines_before_start < options.newlines_after_headline {
                         state.newlines_before_start = options.newlines_after_headline;
@@ -336,7 +360,7 @@ where
                         state.newlines_before_start = options.newlines_after_codeblock;
                     }
                     state.is_in_code_block = false;
-                    formatter.write_str(&"`".repeat(options.code_block_backticks))
+                    formatter.write_str(&options.code_block_token.repeat(options.code_block_token_number))
                 }
                 Table(_) => {
                     if state.newlines_before_start < options.newlines_after_table {
@@ -420,7 +444,7 @@ where
                 }
                 consume_newlines(&mut formatter, &mut state)?;
                 print_text_without_trailing_newline(
-                    &escape_leading_special_characters(text, state.is_in_code_block),
+                    &escape_leading_special_characters(text, state.is_in_code_block, &options),
                     &mut formatter,
                     &state.padding,
                 )

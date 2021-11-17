@@ -2,11 +2,17 @@
 extern crate indoc;
 
 use pulldown_cmark::{Alignment, CodeBlockKind, Event, LinkType, Options, Parser, Tag};
-use pulldown_cmark_to_cmark::{cmark, State, SPECIAL_CHARACTERS};
+use pulldown_cmark_to_cmark::{cmark, cmark_with_options, Options as CmarkToCmarkOptions, State};
 
 fn fmts(s: &str) -> (String, State<'static>) {
     let mut buf = String::new();
     let s = cmark(Parser::new_ext(s, Options::all()), &mut buf, None).unwrap();
+    (buf, s)
+}
+
+fn fmts_with_options(s: &str, options: CmarkToCmarkOptions) -> (String, State<'static>) {
+    let mut buf = String::new();
+    let s = cmark_with_options(Parser::new_ext(s, Options::all()), &mut buf, None, options).unwrap();
     (buf, s)
 }
 
@@ -159,7 +165,9 @@ mod padding {
 }
 
 mod inline_elements {
-    use super::{fmts, State};
+    use crate::fmts_with_options;
+
+    use super::{fmts, CmarkToCmarkOptions, State};
 
     #[test]
     fn image() {
@@ -217,6 +225,24 @@ mod inline_elements {
                     ..Default::default()
                 }
             )
+        )
+    }
+
+    #[test]
+    fn various_with_custom_options() {
+        let mut custom_options = CmarkToCmarkOptions::default();
+        custom_options.emphasis_token = "_";
+        custom_options.code_block_token = "~";
+
+        let (s, state) = fmts_with_options("_a_ b **c**\n<br>\nd\n\ne `c`", custom_options);
+
+        assert_eq!(s, "_a_ b **c**\n<br>\nd\n\ne ~c~".to_string());
+        assert_eq!(
+            state,
+            State {
+                newlines_before_start: 2,
+                ..Default::default()
+            }
         )
     }
 
@@ -486,7 +512,7 @@ mod blockquote {
 }
 
 mod codeblock {
-    use super::{fmte, fmts, CodeBlockKind, Event, State, Tag};
+    use super::{fmte, fmts, fmts_with_options, CmarkToCmarkOptions, CodeBlockKind, Event, State, Tag};
 
     #[test]
     fn it_keeps_track_of_the_presence_of_a_code_block() {
@@ -512,6 +538,7 @@ mod codeblock {
             )
         )
     }
+
     #[test]
     fn empty() {
         assert_eq!(
@@ -537,6 +564,30 @@ mod codeblock {
                 }
             )
         )
+    }
+
+    #[test]
+    fn simple_other_syntax() {
+        assert_eq!(
+            fmts("~~~hi\nsome\ntext\n~~~"),
+            (
+                "\n````hi\nsome\ntext\n````".into(),
+                State {
+                    newlines_before_start: 2,
+                    ..Default::default()
+                }
+            )
+        )
+    }
+
+    #[test]
+    fn simple_other_syntax_with_custom() {
+        let mut custom_options = CmarkToCmarkOptions::default();
+        custom_options.code_block_token = "~";
+        let original = "~~~hi\nsome\ntext\n~~~";
+        let (s, _) = fmts_with_options(original, custom_options);
+
+        assert_eq!(s, "\n~~~~hi\nsome\ntext\n~~~~".to_string());
     }
 }
 
@@ -624,11 +675,12 @@ mod table {
 mod escapes {
     use pulldown_cmark::CowStr;
 
-    use crate::{fmts, Event, Parser, Tag, SPECIAL_CHARACTERS};
+    use crate::{fmts, CmarkToCmarkOptions, Event, Parser, Tag};
 
     fn run_test_on_each_special_char(f: impl Fn(String, CowStr)) {
         use std::convert::TryFrom;
-        for c in SPECIAL_CHARACTERS.iter() {
+        let special_charcters = CmarkToCmarkOptions::default().special_characters();
+        for c in special_charcters.iter() {
             let c = char::try_from(*c as u32).unwrap();
             let s = format!(r#"\{special}"#, special = c);
             f(s, c.to_string().into())
@@ -752,7 +804,7 @@ mod escapes {
 }
 
 mod list {
-    use super::{fmtes, fmts, Event, State, Tag};
+    use super::{fmtes, fmts, fmts_with_options, CmarkToCmarkOptions, Event, State, Tag};
 
     #[test]
     fn it_pops_one_item_from_the_lists_stack_for_each_end_list() {
@@ -831,6 +883,17 @@ mod list {
                 }
             )
         )
+    }
+
+    #[test]
+    fn unordered_with_custom() {
+        let mut custom_options = CmarkToCmarkOptions::default();
+        custom_options.list_token = "-";
+
+        let original = "* a\n* b";
+        let (s, _) = fmts_with_options(original, custom_options);
+
+        assert_eq!(s, "- a\n- b".to_string())
     }
 
     #[test]
