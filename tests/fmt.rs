@@ -678,10 +678,7 @@ mod escapes {
     use crate::{fmts, CmarkToCmarkOptions, Event, Parser, Tag};
 
     fn run_test_on_each_special_char(f: impl Fn(String, CowStr)) {
-        use std::convert::TryFrom;
-        let special_charcters = CmarkToCmarkOptions::default().special_characters();
-        for c in special_charcters.iter() {
-            let c = char::try_from(*c as u32).unwrap();
+        for c in CmarkToCmarkOptions::default().special_characters().chars() {
             let s = format!(r#"\{special}"#, special = c);
             f(s, c.to_string().into())
         }

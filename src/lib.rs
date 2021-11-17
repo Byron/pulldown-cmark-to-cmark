@@ -96,14 +96,13 @@ impl<'a> Default for Options<'a> {
 }
 
 impl<'a> Options<'a> {
-    pub fn special_characters(&self) -> Vec<u8> {
-        let mut special_chacacters = vec!['#', '\\', '_', '<', '>', '|', '[', ']'];
-        special_chacacters.extend(self.code_block_token.chars());
-        special_chacacters.extend(self.list_token.chars());
-        special_chacacters.extend(self.emphasis_token.chars());
-        special_chacacters.extend(self.strong_token.chars());
-
-        special_chacacters.into_iter().map(|c| c as u8).collect()
+    pub fn special_characters(&self) -> String {
+        let mut special_characters = String::from("#\\_<>|[]");
+        special_characters.push_str(self.code_block_token);
+        special_characters.push_str(self.list_token);
+        special_characters.push_str(self.emphasis_token);
+        special_characters.push_str(self.strong_token);
+        special_characters
     }
 }
 
@@ -164,12 +163,11 @@ where
             return Cow::Borrowed(t);
         }
 
-        use std::convert::TryFrom;
-        let first = t.as_bytes()[0];
-        if options.special_characters().contains(&first) {
+        let first = t.chars().next().expect("at least one char");
+        if options.special_characters().contains(first) {
             let mut s = String::with_capacity(t.len() + 1);
             s.push('\\');
-            s.push(char::try_from(first as u32).expect("we know it's valid utf8"));
+            s.push(first);
             s.push_str(&t[1..]);
             Cow::Owned(s)
         } else {
