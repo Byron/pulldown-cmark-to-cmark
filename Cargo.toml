@@ -1,7 +1,10 @@
 [package]
 name = "pulldown-cmark-to-cmark"
 version = "7.0.0"
-authors = ["Sebastian Thiel <byronimo@gmail.com>", "Dylan Owen <dyltotheo@gmail.com>"]
+authors = [
+    "Sebastian Thiel <byronimo@gmail.com>",
+    "Dylan Owen <dyltotheo@gmail.com>",
+    "Alessandro Ogier <alessandro.ogier@gmail.com>"]
 
 description = "Convert pulldown-cmark Events back to the string they were parsed from"
 license = "Apache-2.0"

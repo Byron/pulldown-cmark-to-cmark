@@ -16,7 +16,7 @@ voluptua. `At vero eos et` accusam et
 
 ###### Level 6
 
-## Links
+## [Links]
 
 Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod
 tempor invidunt ut labore et dolore magna aliquyam erat
@@ -201,3 +201,5 @@ foo
 
 * | < > # 
 ````
+
+[Links]: http://www.example.com/shortcut

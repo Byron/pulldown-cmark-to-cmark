@@ -5,7 +5,7 @@ use std::{
     fmt,
 };
 
-use pulldown_cmark::{Alignment as TableAlignment, Event};
+use pulldown_cmark::{Alignment as TableAlignment, Event, LinkType};
 
 /// Similar to [Pulldown-Cmark-Alignment][Alignment], but with required
 /// traits for comparison to allow testing.
@@ -147,6 +147,9 @@ where
     F: fmt::Write,
 {
     let mut state = state.unwrap_or_default();
+    let mut current_shortcut = String::new();
+    let mut inside_shortcut = false;
+    let mut shortcuts: Vec<(String, String, String)> = Vec::new();
     fn padding<'a, F>(f: &mut F, p: &[Cow<'a, str>]) -> fmt::Result
     where
         F: fmt::Write,
@@ -213,6 +216,32 @@ where
             None => "  ".into(),
             Some(n) => format!("{}. ", n).chars().map(|_| ' ').collect::<String>().into(),
         }
+    }
+
+    fn close_link<F>(uri: &str, title: &str, f: &mut F, link_type: LinkType) -> fmt::Result
+    where
+        F: fmt::Write,
+    {
+        let separator;
+
+        match link_type {
+            LinkType::Shortcut => separator = ": ",
+            _ => separator = "(",
+        }
+
+        if uri.contains(' ') {
+            write!(f, "]{}<{uri}>", separator, uri = uri)?;
+        } else {
+            write!(f, "]{}{uri}", separator, uri = uri)?;
+        }
+        if !title.is_empty() {
+            write!(f, " \"{title}\"", title = title)?;
+        }
+        if link_type != LinkType::Shortcut {
+            f.write_char(')')?;
+        }
+
+        Ok(())
     }
 
     for event in events {
@@ -288,6 +317,10 @@ where
                         state.store_next_text = true;
                         formatter.write_char('|')
                     }
+                    Link(LinkType::Shortcut, ..) => {
+                        inside_shortcut = true;
+                        formatter.write_char('[')
+                    }
                     Link(..) => formatter.write_char('['),
                     Image(..) => formatter.write_str("!["),
                     Emphasis => formatter.write_char(options.emphasis_token),
@@ -345,16 +378,15 @@ where
                 }
             }
             End(ref tag) => match tag {
+                Link(LinkType::Shortcut, ref uri, ref title) => {
+                    if inside_shortcut {
+                        shortcuts.push((current_shortcut.clone(), uri.to_string(), title.to_string()));
+                        inside_shortcut = false;
+                    }
+                    formatter.write_char(']')
+                }
                 Image(_, ref uri, ref title) | Link(_, ref uri, ref title) => {
-                    if uri.contains(' ') {
-                        write!(formatter, "](<{uri}>", uri = uri)?;
-                    } else {
-                        write!(formatter, "]({uri}", uri = uri)?;
-                    }
-                    if !title.is_empty() {
-                        write!(formatter, " \"{title}\"", title = title)?;
-                    }
-                    formatter.write_str(")")
+                    close_link(uri, title, &mut formatter, LinkType::Inline)
                 }
                 Emphasis => formatter.write_char(options.emphasis_token),
                 Strong => formatter.write_str(options.strong_token),
@@ -456,6 +488,9 @@ where
             HardBreak => formatter.write_str("  \n").and(padding(&mut formatter, &state.padding)),
             SoftBreak => formatter.write_char('\n').and(padding(&mut formatter, &state.padding)),
             Text(ref text) => {
+                if inside_shortcut {
+                    current_shortcut.push_str(text);
+                }
                 if state.store_next_text {
                     state.store_next_text = false;
                     state.text_for_header = Some(text.to_owned().into_string())
@@ -478,6 +513,13 @@ where
                 write!(formatter, "[{}] ", check)
             }
         }?
+    }
+    if !shortcuts.is_empty() {
+        formatter.write_str("\n\n")?;
+        for shortcut in shortcuts {
+            write!(formatter, "[{}", shortcut.0)?;
+            close_link(&shortcut.1, &shortcut.2, &mut formatter, LinkType::Shortcut)?
+        }
     }
     Ok(state)
 }
