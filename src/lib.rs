@@ -216,7 +216,7 @@ where
     }
 
     for event in events {
-        use pulldown_cmark::{CodeBlockKind, Event::*, Tag::*};
+        use pulldown_cmark::{CodeBlockKind, Event::*, LinkType, Tag::*};
 
         let event = event.borrow();
 
@@ -288,6 +288,7 @@ where
                         state.store_next_text = true;
                         formatter.write_char('|')
                     }
+                    Link(LinkType::Autolink | LinkType::Email, ..) => formatter.write_char('<'),
                     Link(..) => formatter.write_char('['),
                     Image(..) => formatter.write_str("!["),
                     Emphasis => formatter.write_char(options.emphasis_token),
@@ -345,6 +346,7 @@ where
                 }
             }
             End(ref tag) => match tag {
+                Link(LinkType::Autolink | LinkType::Email, ..) => formatter.write_char('>'),
                 Image(_, ref uri, ref title) | Link(_, ref uri, ref title) => {
                     if uri.contains(' ') {
                         write!(formatter, "](<{uri}>", uri = uri)?;
