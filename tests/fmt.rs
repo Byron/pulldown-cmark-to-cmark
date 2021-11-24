@@ -198,7 +198,7 @@ mod inline_elements {
     }
     #[test]
     fn autolinks_are_fully_resolved() {
-        assert_eq!(fmts("<http://a/b>").0, "[http://a/b](http://a/b)",)
+        assert_eq!(fmts("<http://a/b>").0, "<http://a/b>",)
     }
     #[test]
     fn links() {
