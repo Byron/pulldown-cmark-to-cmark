@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 7.1.0 (2021-11-25)
 
 ### New Features
 
@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 4 commits contributed to the release.
+ - 5 commits contributed to the release.
  - 0 commits where understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' where seen in commit messages
 
@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Update changelog ([`bbc22fe`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/bbc22fee8fbde87c23647704d253656585e97eeb))
     - use match as expression ([`2d5d4e1`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/2d5d4e1e78c36a8188a79cc5aac944d4ee2f291b))
     - Merge branch 'feature/32-shortcut-links' of https://github.com/aogier/pulldown-cmark-to-cmark into aogier-feature/32-shortcut-links ([`81b1eb4`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/81b1eb46509047430dde0efa0874ec4fdecf82af))
     - retain autolink/email link format ([`e25f14d`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/e25f14df072ac4f700d097136069331e61fb781e))
