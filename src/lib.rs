@@ -222,12 +222,10 @@ where
     where
         F: fmt::Write,
     {
-        let separator;
-
-        match link_type {
-            LinkType::Shortcut => separator = ": ",
-            _ => separator = "(",
-        }
+        let separator = match link_type {
+            LinkType::Shortcut => ": ",
+            _ => "(",
+        };
 
         if uri.contains(' ') {
             write!(f, "]{}<{uri}>", separator, uri = uri)?;
