@@ -30,7 +30,7 @@ sea [takimata sanctus](./showcase.md) est Lorem ipsum dolor sit amet.
 
 Ask to <user@example.com>.
 
-## Images
+## [Images]
 
 Images as blocks:
 
@@ -204,3 +204,4 @@ foo
 ````
 
 [Links]: http://www.example.com/shortcut
+[Images]: http://www.example.com/another_shortcut
