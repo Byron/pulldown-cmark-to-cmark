@@ -32,7 +32,7 @@ Ask to <user@example.com>.
 
 [1]: http://www.example.com/reference
 
-## Images
+## [Images]
 
 Images as blocks:
 
@@ -205,3 +205,4 @@ foo
 ````
 
 [Links]: http://www.example.com/shortcut
+[Images]: http://www.example.com/another_shortcut

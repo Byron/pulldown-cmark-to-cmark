@@ -382,6 +382,7 @@ where
                     if inside_shortcut {
                         shortcuts.push((current_shortcut.clone(), uri.to_string(), title.to_string()));
                         inside_shortcut = false;
+                        current_shortcut = String::new();
                     }
                     formatter.write_char(']')
                 }
@@ -515,9 +516,9 @@ where
         }?
     }
     if !shortcuts.is_empty() {
-        formatter.write_str("\n\n")?;
+        formatter.write_str("\n")?;
         for shortcut in shortcuts {
-            write!(formatter, "[{}", shortcut.0)?;
+            write!(formatter, "\n[{}", shortcut.0)?;
             close_link(&shortcut.1, &shortcut.2, &mut formatter, LinkType::Shortcut)?
         }
     }
