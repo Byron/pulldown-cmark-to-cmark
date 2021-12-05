@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 7.1.1 (2021-12-05)
 
 ### Fixes
 
@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 1 commit contributed to the release.
+ - 2 commits contributed to the release.
  - 0 commits where understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' where seen in commit messages
 
@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Update changelog prior to patch release ([`e540024`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/e540024bec698b7ebd28e76c1673f0b90c553f36))
     - fix shortcuts rendering ([`3bbc763`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/3bbc7638fa3210efa09e78d7ac423710fe9ea68e))
 </details>
 
