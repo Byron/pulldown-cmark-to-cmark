@@ -35,6 +35,7 @@ mod start {
         Event::*,
         LinkType::*,
         Tag::*,
+        HeadingLevel
     };
 
     use super::s;
@@ -45,11 +46,11 @@ mod start {
     }
     #[test]
     fn header1() {
-        assert_eq!(s(Start(Heading(1))), "# ")
+        assert_eq!(s(Start(Heading(HeadingLevel::H1, None, vec![]))), "# ")
     }
     #[test]
     fn header2() {
-        assert_eq!(s(Start(Heading(2))), "## ")
+        assert_eq!(s(Start(Heading(HeadingLevel::H2, None, vec![]))), "## ")
     }
     #[test]
     fn blockquote() {
@@ -127,13 +128,14 @@ mod end {
         Event::*,
         LinkType::*,
         Tag::*,
+        HeadingLevel
     };
 
     use super::s;
 
     #[test]
     fn header() {
-        assert_eq!(s(End(Heading(2))), "")
+        assert_eq!(s(End(Heading(HeadingLevel::H2, None, vec![]))), "")
     }
     #[test]
     fn paragraph() {
