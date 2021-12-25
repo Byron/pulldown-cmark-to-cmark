@@ -5,7 +5,7 @@ use std::{
     fmt,
 };
 
-use pulldown_cmark::{Alignment as TableAlignment, Event, LinkType};
+use pulldown_cmark::{Alignment as TableAlignment, Event, LinkType, HeadingLevel};
 
 /// Similar to [Pulldown-Cmark-Alignment][Alignment], but with required
 /// traits for comparison to allow testing.
@@ -326,10 +326,15 @@ where
                     Strong => formatter.write_str(options.strong_token),
                     FootnoteDefinition(ref name) => write!(formatter, "[^{}]: ", name),
                     Paragraph => Ok(()),
-                    Heading(n) => {
-                        for _ in 0..*n {
-                            formatter.write_char('#')?;
-                        }
+                    Heading(level, _, _) => {
+                        match level {
+                            HeadingLevel::H1 => formatter.write_str("#"),
+                            HeadingLevel::H2 => formatter.write_str("##"),
+                            HeadingLevel::H3 => formatter.write_str("###"),
+                            HeadingLevel::H4 => formatter.write_str("####"),
+                            HeadingLevel::H5 => formatter.write_str("#####"),
+                            HeadingLevel::H6 => formatter.write_str("######"),
+                        }?;
                         formatter.write_char(' ')
                     }
                     BlockQuote => {
@@ -391,7 +396,28 @@ where
                 }
                 Emphasis => formatter.write_char(options.emphasis_token),
                 Strong => formatter.write_str(options.strong_token),
-                Heading(_) => {
+                Heading(_, id, classes) => {
+                    let emit_braces = id.is_some() || !classes.is_empty();
+                    if emit_braces {
+                        formatter.write_str(" {")?;
+                    }
+                    if let Some(id_str) = id {
+                        formatter.write_char('#')?;
+                        formatter.write_str(id_str)?;
+                        if !classes.is_empty() {
+                            formatter.write_char(' ')?;
+                        }
+                    }
+                    for (idx, class) in classes.iter().enumerate() {
+                        formatter.write_char('.')?;
+                        formatter.write_str(class)?;
+                        if idx < classes.len() - 1 {
+                            formatter.write_char(' ')?;
+                        }
+                    }
+                    if emit_braces {
+                        formatter.write_char('}')?;
+                    }
                     if state.newlines_before_start < options.newlines_after_headline {
                         state.newlines_before_start = options.newlines_after_headline;
                     }

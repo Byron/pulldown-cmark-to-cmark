@@ -55,3 +55,9 @@ title "stupicat"
     WITH_SNAPSHOT="$snapshot/stupicat-table-with-html-output" \
     expect_run_sh $SUCCESSFULLY "${exe[*]} $fixture/table-with-html.md 2>/dev/null"
 )
+
+(with "heading with identifier and classes"
+  it "succeeds" && \
+    WITH_SNAPSHOT="$snapshot/stupicat-heading-id-classes-output" \
+    expect_run_sh $SUCCESSFULLY "${exe[*]} $fixture/heading-id-classes.md 2>/dev/null"
+)
