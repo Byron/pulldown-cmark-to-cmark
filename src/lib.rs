@@ -5,7 +5,7 @@ use std::{
     fmt,
 };
 
-use pulldown_cmark::{Alignment as TableAlignment, Event, LinkType, HeadingLevel};
+use pulldown_cmark::{Alignment as TableAlignment, Event, HeadingLevel, LinkType};
 
 /// Similar to [Pulldown-Cmark-Alignment][Alignment], but with required
 /// traits for comparison to allow testing.

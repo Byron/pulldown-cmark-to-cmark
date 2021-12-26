@@ -33,9 +33,9 @@ mod start {
         Alignment::{self, Center, Left, Right},
         CodeBlockKind,
         Event::*,
+        HeadingLevel,
         LinkType::*,
         Tag::*,
-        HeadingLevel
     };
 
     use super::s;
@@ -126,9 +126,9 @@ mod end {
         Alignment::{self, Center, Left, Right},
         CodeBlockKind,
         Event::*,
+        HeadingLevel,
         LinkType::*,
         Tag::*,
-        HeadingLevel
     };
 
     use super::s;
