@@ -7,12 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 9.0.0 (2021-12-31)
 
-<csr-id-93f2d11e467221418748c672a3c493dcfbf9d6e7/.>
-
-### refactor (BREAKING)
-
- - <csr-id-93f2d11e467221418748c672a3c493dcfbf9d6e7/> Simplify `State`
-   Use an `Option` to get rid ofa  boolean and make isuse impossible.
+<csr-id-93f2d11e467221418748c672a3c493dcfbf9d6e7/> 
 
 ### Bug Fixes
 
