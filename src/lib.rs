@@ -54,7 +54,7 @@ pub struct State<'a> {
     pub last_was_html: bool,
 
     /// Keeps track of the last seen shortcut/link
-    pub current_shortcut: String,
+    pub current_shortcut_text: String,
     /// true if we are within a shortcut
     pub inside_shortcut: bool,
     /// A list of shortcuts seen so far for later emission
@@ -389,11 +389,12 @@ where
                 Link(LinkType::Autolink | LinkType::Email, ..) => formatter.write_char('>'),
                 Link(LinkType::Shortcut, ref uri, ref title) => {
                     if state.inside_shortcut {
-                        state
-                            .shortcuts
-                            .push((state.current_shortcut.clone(), uri.to_string(), title.to_string()));
+                        state.shortcuts.push((
+                            std::mem::take(&mut state.current_shortcut_text),
+                            uri.to_string(),
+                            title.to_string(),
+                        ));
                         state.inside_shortcut = false;
-                        state.current_shortcut = String::new();
                     }
                     formatter.write_char(']')
                 }
@@ -522,7 +523,7 @@ where
             SoftBreak => formatter.write_char('\n').and(padding(&mut formatter, &state.padding)),
             Text(ref text) => {
                 if state.inside_shortcut {
-                    state.current_shortcut.push_str(text);
+                    state.current_shortcut_text.push_str(text);
                 }
                 if state.store_next_text {
                     state.store_next_text = false;
