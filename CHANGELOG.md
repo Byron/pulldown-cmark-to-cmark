@@ -5,6 +5,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+<csr-id-93f2d11e467221418748c672a3c493dcfbf9d6e7/.>
+
+### Bug Fixes
+
+ - <csr-id-0a6f80d67eed9234170c95d8282cbc76ae66d47c/> Shortcut handling is now using the `State`.
+   
+   This makes resumable event processing work as expected, even though
+   the output won't be similar as it will print shortcuts right after
+   all events have been processed and it's impossible to know
+   how often it will be called.
+
+ - Simplify `State`.
+  
+   Use an `Option` to get rid ofa  boolean and make isuse impossible.
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 4 commits contributed to the release.
+ - 2 commits where understood as [conventional](https://www.conventionalcommits.org).
+ - 1 unique issue was worked on: [#39](https://github.com/Byron/pulldown-cmark-to-cmark/issues/39)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#39](https://github.com/Byron/pulldown-cmark-to-cmark/issues/39)**
+    - Shortcut handling is now using the `State` ([`0a6f80d`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/0a6f80d67eed9234170c95d8282cbc76ae66d47c))
+ * **Uncategorized**
+    - Simplify `State` ([`93f2d11`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/93f2d11e467221418748c672a3c493dcfbf9d6e7))
+    - refactor ([`c0f14c0`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/c0f14c058f3639e37ef9cd7971d9fb3965320fe7))
+    - refactor ([`9283d48`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/9283d487546bdcef57b602a782c777462d7caa19))
+</details>
+
 ## 8.0.0 (2021-12-26)
 
 This release adds support for `pulldown-cmark v0.9`, [see the tracking issue](https://github.com/Byron/pulldown-cmark-to-cmark/issues/37) for more information.
@@ -13,7 +52,7 @@ This release adds support for `pulldown-cmark v0.9`, [see the tracking issue](ht
 
 <csr-read-only-do-not-edit/>
 
- - 3 commits contributed to the release.
+ - 4 commits contributed to the release.
  - 0 commits where understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' where seen in commit messages
 
@@ -24,6 +63,7 @@ This release adds support for `pulldown-cmark v0.9`, [see the tracking issue](ht
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release pulldown-cmark-to-cmark v8.0.0 ([`cf469e2`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/cf469e28f829864350d9838424370e85ac30329c))
     - adjust changelog prior to release ([`0ed0c69`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/0ed0c6960de20934ceebc11f8d54719c90516a45))
     - cargo fmt ([`c696de3`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/c696de36d0d4a1dc6cfd0c86704844366009697a))
     - Support the new Heading tag in pulldown-cmark 0.9 ([`1c9ea44`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/1c9ea447a3a43a19a93382fc8d3304556b79641e))
