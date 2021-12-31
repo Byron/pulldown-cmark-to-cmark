@@ -33,9 +33,17 @@ title "stupicat"
 )
 
 (with "a standard common-mark example file"
-  it "succeeds" && \
-    WITH_SNAPSHOT="$snapshot/stupicat-output" \
-    expect_run_sh $SUCCESSFULLY "${exe[*]} $fixture/common-mark.md 2>/dev/null"
+  (when "processing all events in one invocation"
+    it "succeeds" && \
+      WITH_SNAPSHOT="$snapshot/stupicat-output" \
+      expect_run_sh $SUCCESSFULLY "${exe[*]} $fixture/common-mark.md 2>/dev/null"
+  )
+  (when "processing event by event"
+    it "succeeds" && \
+      STUPICAT_STATE_TEST=1 \
+      WITH_SNAPSHOT="$snapshot/stupicat-event-by-event-output" \
+      expect_run_sh $SUCCESSFULLY "${exe[*]} $fixture/common-mark.md 2>/dev/null"
+  )
 )
 
 (with "markdown and html nested"

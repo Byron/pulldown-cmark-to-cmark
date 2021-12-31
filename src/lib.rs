@@ -52,6 +52,13 @@ pub struct State<'a> {
     pub is_in_code_block: bool,
     /// True if the last event was html. Used to inject additional newlines to support markdown inside of HTML tags.
     pub last_was_html: bool,
+
+    /// Keeps track of the last seen shortcut/link
+    pub current_shortcut: String,
+    /// true if we are within a shortcut
+    pub inside_shortcut: bool,
+    /// A list of shortcuts seen so far for later emission
+    pub shortcuts: Vec<(String, String, String)>,
 }
 
 /// Configuration for the [`cmark()`] function.
@@ -147,9 +154,6 @@ where
     F: fmt::Write,
 {
     let mut state = state.unwrap_or_default();
-    let mut current_shortcut = String::new();
-    let mut inside_shortcut = false;
-    let mut shortcuts: Vec<(String, String, String)> = Vec::new();
     fn padding<'a, F>(f: &mut F, p: &[Cow<'a, str>]) -> fmt::Result
     where
         F: fmt::Write,
@@ -317,7 +321,7 @@ where
                     }
                     Link(LinkType::Autolink | LinkType::Email, ..) => formatter.write_char('<'),
                     Link(LinkType::Shortcut, ..) => {
-                        inside_shortcut = true;
+                        state.inside_shortcut = true;
                         formatter.write_char('[')
                     }
                     Link(..) => formatter.write_char('['),
@@ -384,10 +388,12 @@ where
             End(ref tag) => match tag {
                 Link(LinkType::Autolink | LinkType::Email, ..) => formatter.write_char('>'),
                 Link(LinkType::Shortcut, ref uri, ref title) => {
-                    if inside_shortcut {
-                        shortcuts.push((current_shortcut.clone(), uri.to_string(), title.to_string()));
-                        inside_shortcut = false;
-                        current_shortcut = String::new();
+                    if state.inside_shortcut {
+                        state
+                            .shortcuts
+                            .push((state.current_shortcut.clone(), uri.to_string(), title.to_string()));
+                        state.inside_shortcut = false;
+                        state.current_shortcut = String::new();
                     }
                     formatter.write_char(']')
                 }
@@ -515,8 +521,8 @@ where
             HardBreak => formatter.write_str("  \n").and(padding(&mut formatter, &state.padding)),
             SoftBreak => formatter.write_char('\n').and(padding(&mut formatter, &state.padding)),
             Text(ref text) => {
-                if inside_shortcut {
-                    current_shortcut.push_str(text);
+                if state.inside_shortcut {
+                    state.current_shortcut.push_str(text);
                 }
                 if state.store_next_text {
                     state.store_next_text = false;
@@ -541,9 +547,9 @@ where
             }
         }?
     }
-    if !shortcuts.is_empty() {
+    if !state.shortcuts.is_empty() {
         formatter.write_str("\n")?;
-        for shortcut in shortcuts {
+        for shortcut in state.shortcuts.drain(..) {
             write!(formatter, "\n[{}", shortcut.0)?;
             close_link(&shortcut.1, &shortcut.2, &mut formatter, LinkType::Shortcut)?
         }
