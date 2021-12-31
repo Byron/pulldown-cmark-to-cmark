@@ -44,8 +44,6 @@ pub struct State<'a> {
     pub table_alignments: Vec<Alignment>,
     /// Keeps the current table headers, if we are currently serializing a table.
     pub table_headers: Vec<String>,
-    /// If set, the next 'text' will be stored for later use
-    pub store_next_text: bool,
     /// The last seen text when serializing a header
     pub text_for_header: Option<String>,
     /// Is set while we are handling text in a code block
@@ -277,10 +275,9 @@ where
                 formatter.write_str("---")
             }
             Code(ref text) => {
-                if state.store_next_text {
-                    state.store_next_text = false;
+                if let Some(text_for_header) = state.text_for_header.as_mut() {
                     let code = format!("{}{}{}", options.code_block_token, text, options.code_block_token);
-                    state.text_for_header = Some(code)
+                    text_for_header.push_str(&code);
                 }
                 formatter
                     .write_char(options.code_block_token)
@@ -314,7 +311,7 @@ where
                     TableHead => Ok(()),
                     TableRow => Ok(()),
                     TableCell => {
-                        state.store_next_text = true;
+                        state.text_for_header = Some(String::new());
                         formatter.write_char('|')
                     }
                     Link(LinkType::Autolink | LinkType::Email, ..) => formatter.write_char('<'),
@@ -450,10 +447,13 @@ where
                     Ok(())
                 }
                 TableCell => {
-                    state.table_headers.push(match state.text_for_header.take() {
-                        Some(text) => text,
-                        None => "  ".into(),
-                    });
+                    state.table_headers.push(
+                        state
+                            .text_for_header
+                            .take()
+                            .filter(|s| !s.is_empty())
+                            .unwrap_or_else(|| "  ".into()),
+                    );
                     Ok(())
                 }
                 ref t @ TableRow | ref t @ TableHead => {
@@ -520,9 +520,8 @@ where
                 if let Some(shortcut_text) = state.current_shortcut_text.as_mut() {
                     shortcut_text.push_str(text);
                 }
-                if state.store_next_text {
-                    state.store_next_text = false;
-                    state.text_for_header = Some(text.to_owned().into_string())
+                if let Some(text_for_header) = state.text_for_header.as_mut() {
+                    text_for_header.push_str(text)
                 }
                 consume_newlines(&mut formatter, &mut state)?;
                 print_text_without_trailing_newline(
