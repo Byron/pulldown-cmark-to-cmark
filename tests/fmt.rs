@@ -229,6 +229,20 @@ mod inline_elements {
     }
 
     #[test]
+    fn shortcut_code_links() {
+        assert_eq!(
+            fmts("[a](b)\n[`c`]\n\n[`c`]: e"),
+            (
+                "[a](b)\n[`c`]\n\n[`c`]: e".into(),
+                State {
+                    newlines_before_start: 2,
+                    ..Default::default()
+                }
+            )
+        )
+    }
+
+    #[test]
     fn multiple_shortcut_links() {
         assert_eq!(
             fmts("[a](b)\n[c] [d]\n\n[c]: e\n[d]: f"),

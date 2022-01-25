@@ -149,7 +149,11 @@ where
     E: Borrow<Event<'a>>,
     F: fmt::Write,
 {
-    let mut state = state.unwrap_or_default();
+    let mut event_by_event = true;
+    let mut state = state.unwrap_or_else(|| {
+        event_by_event = false;
+        State::default()
+    });
     fn padding<'a, F>(f: &mut F, p: &[Cow<'a, str>]) -> fmt::Result
     where
         F: fmt::Write,
@@ -218,24 +222,31 @@ where
         }
     }
 
-    fn close_link<F>(uri: &str, title: &str, f: &mut F, link_type: LinkType) -> fmt::Result
+    fn close_link<F>(uri: &str, title: &str, f: &mut F, link_type: LinkType, event_by_event: bool) -> fmt::Result
     where
         F: fmt::Write,
     {
-        let separator = match link_type {
-            LinkType::Shortcut => ": ",
-            _ => "(",
-        };
+        let close = format!(
+            "{}{}",
+            match event_by_event {
+                true if matches!(link_type, LinkType::Shortcut) => "",
+                _ => "]",
+            },
+            match event_by_event {
+                false if matches!(link_type, LinkType::Shortcut) => ": ",
+                _ => "(",
+            }
+        );
 
         if uri.contains(' ') {
-            write!(f, "]{}<{uri}>", separator, uri = uri)?;
+            write!(f, "{}<{uri}>", close, uri = uri)?;
         } else {
-            write!(f, "]{}{uri}", separator, uri = uri)?;
+            write!(f, "{}{uri}", close, uri = uri)?;
         }
         if !title.is_empty() {
             write!(f, " \"{title}\"", title = title)?;
         }
-        if link_type != LinkType::Shortcut {
+        if link_type != LinkType::Shortcut || event_by_event {
             f.write_char(')')?;
         }
 
@@ -275,6 +286,9 @@ where
                 formatter.write_str("---")
             }
             Code(ref text) => {
+                if let Some(shortcut_text) = state.current_shortcut_text.as_mut() {
+                    shortcut_text.push_str(&format!("`{}`", text));
+                }
                 if let Some(text_for_header) = state.text_for_header.as_mut() {
                     let code = format!("{}{}{}", options.code_block_token, text, options.code_block_token);
                     text_for_header.push_str(&code);
@@ -391,7 +405,7 @@ where
                     formatter.write_char(']')
                 }
                 Image(_, ref uri, ref title) | Link(_, ref uri, ref title) => {
-                    close_link(uri, title, &mut formatter, LinkType::Inline)
+                    close_link(uri, title, &mut formatter, LinkType::Inline, event_by_event)
                 }
                 Emphasis => formatter.write_char(options.emphasis_token),
                 Strong => formatter.write_str(options.strong_token),
@@ -543,10 +557,21 @@ where
         }?
     }
     if !state.shortcuts.is_empty() {
-        formatter.write_str("\n")?;
+        if !event_by_event {
+            formatter.write_str("\n")?;
+        }
         for shortcut in state.shortcuts.drain(..) {
-            write!(formatter, "\n[{}", shortcut.0)?;
-            close_link(&shortcut.1, &shortcut.2, &mut formatter, LinkType::Shortcut)?
+            if !event_by_event {
+                write!(formatter, "\n[{}", shortcut.0)?;
+            }
+
+            close_link(
+                &shortcut.1,
+                &shortcut.2,
+                &mut formatter,
+                LinkType::Shortcut,
+                event_by_event,
+            )?
         }
     }
     Ok(state)
