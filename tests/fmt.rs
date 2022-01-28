@@ -2,29 +2,29 @@
 extern crate indoc;
 
 use pulldown_cmark::{Alignment, CodeBlockKind, Event, LinkType, Options, Parser, Tag};
-use pulldown_cmark_to_cmark::{cmark, cmark_with_options, Options as CmarkToCmarkOptions, State};
+use pulldown_cmark_to_cmark::{cmark, cmark_resume, cmark_resume_with_options, Options as CmarkToCmarkOptions, State};
 
 fn fmts(s: &str) -> (String, State<'static>) {
     let mut buf = String::new();
-    let s = cmark(Parser::new_ext(s, Options::all()), &mut buf, None).unwrap();
+    let s = cmark(Parser::new_ext(s, Options::all()), &mut buf).unwrap();
     (buf, s)
 }
 
 fn fmts_with_options(s: &str, options: CmarkToCmarkOptions) -> (String, State<'static>) {
     let mut buf = String::new();
-    let s = cmark_with_options(Parser::new_ext(s, Options::all()), &mut buf, None, options).unwrap();
+    let s = cmark_resume_with_options(Parser::new_ext(s, Options::all()), &mut buf, None, options).unwrap();
     (buf, s)
 }
 
 fn fmtes(e: &[Event], s: State<'static>) -> (String, State<'static>) {
     let mut buf = String::new();
-    let s = cmark(e.iter(), &mut buf, Some(s)).unwrap();
+    let s = cmark_resume(e.iter(), &mut buf, Some(s)).unwrap();
     (buf, s)
 }
 
 fn fmte<'a>(e: impl AsRef<[Event<'a>]>) -> (String, State<'static>) {
     let mut buf = String::new();
-    let s = cmark(e.as_ref().iter(), &mut buf, None).unwrap();
+    let s = cmark(e.as_ref().iter(), &mut buf).unwrap();
     (buf, s)
 }
 
@@ -34,7 +34,7 @@ fn assert_events_eq(s: &str) {
     let before_events = Parser::new_ext(s, Options::all());
 
     let mut buf = String::new();
-    cmark(before_events, &mut buf, None).unwrap();
+    cmark(before_events, &mut buf).unwrap();
 
     let before_events = Parser::new_ext(s, Options::all());
     let after_events = Parser::new_ext(&buf, Options::all());
@@ -220,6 +220,20 @@ mod inline_elements {
             fmts("[a](b)\n[c]\n\n[c]: e"),
             (
                 "[a](b)\n[c]\n\n[c]: e".into(),
+                State {
+                    newlines_before_start: 2,
+                    ..Default::default()
+                }
+            )
+        )
+    }
+
+    #[test]
+    fn shortcut_code_links() {
+        assert_eq!(
+            fmts("[a](b)\n[`c`]\n\n[`c`]: e"),
+            (
+                "[a](b)\n[`c`]\n\n[`c`]: e".into(),
                 State {
                     newlines_before_start: 2,
                     ..Default::default()

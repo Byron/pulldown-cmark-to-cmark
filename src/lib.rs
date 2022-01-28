@@ -138,7 +138,7 @@ impl<'a> Options<'a> {
 /// *Returns* the [`State`] of the serialization on success. You can use it as initial state in the
 /// next call if you are halting event serialization.
 /// *Errors* are only happening if the underlying buffer fails, which is unlikely.
-pub fn cmark_with_options<'a, I, E, F>(
+pub fn cmark_resume_with_options<'a, I, E, F>(
     events: I,
     mut formatter: F,
     state: Option<State<'static>>,
@@ -218,30 +218,6 @@ where
         }
     }
 
-    fn close_link<F>(uri: &str, title: &str, f: &mut F, link_type: LinkType) -> fmt::Result
-    where
-        F: fmt::Write,
-    {
-        let separator = match link_type {
-            LinkType::Shortcut => ": ",
-            _ => "(",
-        };
-
-        if uri.contains(' ') {
-            write!(f, "]{}<{uri}>", separator, uri = uri)?;
-        } else {
-            write!(f, "]{}{uri}", separator, uri = uri)?;
-        }
-        if !title.is_empty() {
-            write!(f, " \"{title}\"", title = title)?;
-        }
-        if link_type != LinkType::Shortcut {
-            f.write_char(')')?;
-        }
-
-        Ok(())
-    }
-
     for event in events {
         use pulldown_cmark::{CodeBlockKind, Event::*, Tag::*};
 
@@ -275,6 +251,9 @@ where
                 formatter.write_str("---")
             }
             Code(ref text) => {
+                if let Some(shortcut_text) = state.current_shortcut_text.as_mut() {
+                    shortcut_text.push_str(&format!("`{}`", text));
+                }
                 if let Some(text_for_header) = state.text_for_header.as_mut() {
                     let code = format!("{}{}{}", options.code_block_token, text, options.code_block_token);
                     text_for_header.push_str(&code);
@@ -542,22 +521,72 @@ where
             }
         }?
     }
-    if !state.shortcuts.is_empty() {
-        formatter.write_str("\n")?;
-        for shortcut in state.shortcuts.drain(..) {
-            write!(formatter, "\n[{}", shortcut.0)?;
-            close_link(&shortcut.1, &shortcut.2, &mut formatter, LinkType::Shortcut)?
-        }
-    }
     Ok(state)
 }
 
+fn close_link<F>(uri: &str, title: &str, f: &mut F, link_type: LinkType) -> fmt::Result
+where
+    F: fmt::Write,
+{
+    let separator = match link_type {
+        LinkType::Shortcut => ": ",
+        _ => "(",
+    };
+
+    if uri.contains(' ') {
+        write!(f, "]{}<{uri}>", separator, uri = uri)?;
+    } else {
+        write!(f, "]{}{uri}", separator, uri = uri)?;
+    }
+    if !title.is_empty() {
+        write!(f, " \"{title}\"", title = title)?;
+    }
+    if link_type != LinkType::Shortcut {
+        f.write_char(')')?;
+    }
+
+    Ok(())
+}
+
+impl<'a> State<'a> {
+    pub fn finalize<F>(mut self, mut formatter: F) -> Result<Self, fmt::Error>
+    where
+        F: fmt::Write,
+    {
+        if self.shortcuts.is_empty() {
+            return Ok(self);
+        }
+
+        formatter.write_str("\n")?;
+        for shortcut in self.shortcuts.drain(..) {
+            write!(formatter, "\n[{}", shortcut.0)?;
+            close_link(&shortcut.1, &shortcut.2, &mut formatter, LinkType::Shortcut)?
+        }
+        Ok(self)
+    }
+}
+
 /// As [`cmark_with_options()`], but with default [`Options`].
-pub fn cmark<'a, I, E, F>(events: I, formatter: F, state: Option<State<'static>>) -> Result<State<'static>, fmt::Error>
+pub fn cmark<'a, I, E, F>(events: I, mut formatter: F) -> Result<State<'static>, fmt::Error>
 where
     I: Iterator<Item = E>,
     E: Borrow<Event<'a>>,
     F: fmt::Write,
 {
-    cmark_with_options(events, formatter, state, Options::default())
+    let state = cmark_resume_with_options(events, &mut formatter, Default::default(), Options::default())?;
+    state.finalize(formatter)
+}
+
+/// As [`cmark_resume_with_options()`], but with default [`Options`].
+pub fn cmark_resume<'a, I, E, F>(
+    events: I,
+    formatter: F,
+    state: Option<State<'static>>,
+) -> Result<State<'static>, fmt::Error>
+where
+    I: Iterator<Item = E>,
+    E: Borrow<Event<'a>>,
+    F: fmt::Write,
+{
+    cmark_resume_with_options(events, formatter, state, Options::default())
 }
