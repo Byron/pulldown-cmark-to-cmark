@@ -5,9 +5,54 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+Note that the breaking change is fixable by removing the last parameter from the `cmark()` function if it was `None`, 
+or using `cmark_resume` instead.
+
+### New Features
+
+- Formatting within links is no being preserved.
+
+### New Features (BREAKING)
+
+ - <csr-id-7166abeb0f89ee1dfb7790923d0d5fc6edc394c5/> Simplify `cmark(…)` by removing `State` parameter, introduce `cmark_resume(…)`.
+   
+   The reason for doing it this way around causing a breaking change is
+   the change of behaviour for `cmark_resume`, which now returns a state
+   instance that needs a `finalize()` call to flush certain caches.
+   
+   Currently this is only used to write link blocks, after which the state
+   is still usable for future invocations if necessary.
+   
+   That way the caller has control over where to put link blocks, or other
+   items that should be placed at the end of a logical section.
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 4 commits contributed to the release over the course of 2 calendar days.
+ - 28 days passed between releases.
+ - 1 commit where understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' where seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Merge pull request #41 from aogier/bugfix/40-shortcut_code ([`7ee11da`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/7ee11da6906bbc59c2bd91413ba617bf8104685e))
+    - Simplify `cmark(…)` by removing `State` parameter, introduce `cmark_resume(…)`. ([`7166abe`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/7166abeb0f89ee1dfb7790923d0d5fc6edc394c5))
+    - Fix changelog ([`84acaf3`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/84acaf3c4f0c77f774aa38f96ccee661d6bfe5d8))
+    - properly render shortcut links w/ code formatting ([`6a42312`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/6a423123f409612ba7798f6fcbd91373562e6aa7))
+</details>
+
 ## 9.0.0 (2021-12-31)
 
-<csr-id-93f2d11e467221418748c672a3c493dcfbf9d6e7/> 
+<csr-id-93f2d11e467221418748c672a3c493dcfbf9d6e7/>
 
 ### Bug Fixes
 
@@ -25,7 +70,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 5 commits contributed to the release.
+ - 6 commits contributed to the release.
+ - 5 days passed between releases.
  - 2 commits where understood as [conventional](https://www.conventionalcommits.org).
  - 1 unique issue was worked on: [#39](https://github.com/Byron/pulldown-cmark-to-cmark/issues/39)
 
@@ -38,6 +84,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#39](https://github.com/Byron/pulldown-cmark-to-cmark/issues/39)**
     - Shortcut handling is now using the `State` ([`0a6f80d`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/0a6f80d67eed9234170c95d8282cbc76ae66d47c))
  * **Uncategorized**
+    - Release pulldown-cmark-to-cmark v9.0.0 ([`c14d084`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/c14d0840bcef5fe1e5f9bb5df96a12e29e0ca81b))
     - write changelog ([`ddff119`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/ddff11953a25c9c77bd741371328a810ca678bfb))
     - Simplify `State` ([`93f2d11`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/93f2d11e467221418748c672a3c493dcfbf9d6e7))
     - refactor ([`c0f14c0`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/c0f14c058f3639e37ef9cd7971d9fb3965320fe7))
@@ -53,6 +100,7 @@ This release adds support for `pulldown-cmark v0.9`, [see the tracking issue](ht
 <csr-read-only-do-not-edit/>
 
  - 4 commits contributed to the release.
+ - 20 days passed between releases.
  - 0 commits where understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' where seen in commit messages
 
@@ -80,6 +128,7 @@ This release adds support for `pulldown-cmark v0.9`, [see the tracking issue](ht
 <csr-read-only-do-not-edit/>
 
  - 3 commits contributed to the release.
+ - 10 days passed between releases.
  - 0 commits where understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' where seen in commit messages
 
@@ -108,6 +157,7 @@ This release adds support for `pulldown-cmark v0.9`, [see the tracking issue](ht
 <csr-read-only-do-not-edit/>
 
  - 6 commits contributed to the release.
+ - 7 days passed between releases.
  - 0 commits where understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' where seen in commit messages
 
@@ -137,6 +187,7 @@ Thanks to the author of [this PR](https://github.com/Byron/pulldown-cmark-to-cma
 <csr-read-only-do-not-edit/>
 
  - 7 commits contributed to the release over the course of 53 calendar days.
+ - 53 days passed between releases.
  - 0 commits where understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' where seen in commit messages
 
@@ -166,6 +217,7 @@ Thanks to the author of [this PR](https://github.com/Byron/pulldown-cmark-to-cma
 <csr-read-only-do-not-edit/>
 
  - 3 commits contributed to the release.
+ - 17 days passed between releases.
  - 0 commits where understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' where seen in commit messages
 
@@ -190,6 +242,7 @@ Thanks to the author of [this PR](https://github.com/Byron/pulldown-cmark-to-cma
 <csr-read-only-do-not-edit/>
 
  - 3 commits contributed to the release.
+ - 75 days passed between releases.
  - 0 commits where understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' where seen in commit messages
 
@@ -212,6 +265,7 @@ Thanks to the author of [this PR](https://github.com/Byron/pulldown-cmark-to-cma
 <csr-read-only-do-not-edit/>
 
  - 4 commits contributed to the release.
+ - 19 days passed between releases.
  - 0 commits where understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' where seen in commit messages
 
@@ -237,6 +291,7 @@ Thanks to the author of [this PR](https://github.com/Byron/pulldown-cmark-to-cma
 <csr-read-only-do-not-edit/>
 
  - 14 commits contributed to the release over the course of 133 calendar days.
+ - 233 days passed between releases.
  - 0 commits where understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' where seen in commit messages
 
@@ -280,6 +335,7 @@ Thanks to the author of [this PR](https://github.com/Byron/pulldown-cmark-to-cma
 <csr-read-only-do-not-edit/>
 
  - 2 commits contributed to the release over the course of 42 calendar days.
+ - 72 days passed between releases.
  - 0 commits where understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' where seen in commit messages
 
@@ -304,6 +360,7 @@ Thanks to the author of [this PR](https://github.com/Byron/pulldown-cmark-to-cma
 <csr-read-only-do-not-edit/>
 
  - 3 commits contributed to the release.
+ - 58 days passed between releases.
  - 0 commits where understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' where seen in commit messages
 
@@ -328,6 +385,7 @@ Thanks to the author of [this PR](https://github.com/Byron/pulldown-cmark-to-cma
 <csr-read-only-do-not-edit/>
 
  - 4 commits contributed to the release over the course of 9 calendar days.
+ - 20 days passed between releases.
  - 0 commits where understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' where seen in commit messages
 
@@ -351,6 +409,7 @@ Thanks to the author of [this PR](https://github.com/Byron/pulldown-cmark-to-cma
 <csr-read-only-do-not-edit/>
 
  - 2 commits contributed to the release.
+ - 23 days passed between releases.
  - 0 commits where understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' where seen in commit messages
 
@@ -408,6 +467,7 @@ Thanks to the author of [this PR](https://github.com/Byron/pulldown-cmark-to-cma
 <csr-read-only-do-not-edit/>
 
  - 10 commits contributed to the release over the course of 15 calendar days.
+ - 81 days passed between releases.
  - 0 commits where understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' where seen in commit messages
 
@@ -458,6 +518,7 @@ Thanks to the author of [this PR](https://github.com/Byron/pulldown-cmark-to-cma
 <csr-read-only-do-not-edit/>
 
  - 8 commits contributed to the release.
+ - 60 days passed between releases.
  - 0 commits where understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' where seen in commit messages
 
@@ -485,6 +546,7 @@ Thanks to the author of [this PR](https://github.com/Byron/pulldown-cmark-to-cma
 <csr-read-only-do-not-edit/>
 
  - 3 commits contributed to the release.
+ - 34 days passed between releases.
  - 0 commits where understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' where seen in commit messages
 
@@ -507,6 +569,7 @@ Thanks to the author of [this PR](https://github.com/Byron/pulldown-cmark-to-cma
 <csr-read-only-do-not-edit/>
 
  - 5 commits contributed to the release.
+ - 117 days passed between releases.
  - 0 commits where understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' where seen in commit messages
 
@@ -552,6 +615,7 @@ Thanks to the author of [this PR](https://github.com/Byron/pulldown-cmark-to-cma
 <csr-read-only-do-not-edit/>
 
  - 3 commits contributed to the release over the course of 45 calendar days.
+ - 194 days passed between releases.
  - 0 commits where understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' where seen in commit messages
 
@@ -574,6 +638,7 @@ Thanks to the author of [this PR](https://github.com/Byron/pulldown-cmark-to-cma
 <csr-read-only-do-not-edit/>
 
  - 7 commits contributed to the release.
+ - 309 days passed between releases.
  - 0 commits where understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' where seen in commit messages
 
@@ -600,6 +665,7 @@ Thanks to the author of [this PR](https://github.com/Byron/pulldown-cmark-to-cma
 <csr-read-only-do-not-edit/>
 
  - 5 commits contributed to the release over the course of 1 calendar day.
+ - 2 days passed between releases.
  - 0 commits where understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' where seen in commit messages
 
