@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 10.0.0 (2022-01-28)
 
 Note that the breaking change is fixable by removing the last parameter from the `cmark()` function if it was `None`, 
 or using `cmark_resume` instead.
@@ -32,7 +32,7 @@ or using `cmark_resume` instead.
 
 <csr-read-only-do-not-edit/>
 
- - 4 commits contributed to the release over the course of 2 calendar days.
+ - 5 commits contributed to the release over the course of 2 calendar days.
  - 28 days passed between releases.
  - 1 commit where understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' where seen in commit messages
@@ -44,6 +44,7 @@ or using `cmark_resume` instead.
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - write changelog prior to release ([`e9f809f`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/e9f809f45f637a385d8b4db248409195df1c9380))
     - Merge pull request #41 from aogier/bugfix/40-shortcut_code ([`7ee11da`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/7ee11da6906bbc59c2bd91413ba617bf8104685e))
     - Simplify `cmark(…)` by removing `State` parameter, introduce `cmark_resume(…)`. ([`7166abe`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/7166abeb0f89ee1dfb7790923d0d5fc6edc394c5))
     - Fix changelog ([`84acaf3`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/84acaf3c4f0c77f774aa38f96ccee661d6bfe5d8))
