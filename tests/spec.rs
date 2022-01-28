@@ -39,7 +39,7 @@ fn test_roundtrip(original: &str, expected: &str) -> bool {
     let opts = Options::empty();
     let event_list = Parser::new_ext(original, opts).collect::<Vec<_>>();
     let mut regen_str = String::new();
-    cmark(event_list.iter().cloned(), &mut regen_str, None).expect("Regeneration failure");
+    cmark(event_list.iter().cloned(), &mut regen_str).expect("Regeneration failure");
     let event_list_2 = Parser::new_ext(&regen_str, opts).collect::<Vec<_>>();
     let event_count = event_list.len();
     let event_count_2 = event_list_2.len();

@@ -3,7 +3,7 @@ use pulldown_cmark_to_cmark::*;
 
 fn s(e: Event) -> String {
     let mut buf = String::new();
-    cmark([e].iter(), &mut buf, None).unwrap();
+    cmark([e].iter(), &mut buf).unwrap();
     buf
 }
 mod code {

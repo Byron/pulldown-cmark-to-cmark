@@ -6,7 +6,7 @@ use std::{
 };
 
 use pulldown_cmark::{Options, Parser};
-use pulldown_cmark_to_cmark::cmark;
+use pulldown_cmark_to_cmark::{cmark, cmark_resume};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let path = env::args_os()
@@ -23,10 +23,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if event_by_event {
         let mut state = None;
         for event in Parser::new_ext(&md, options) {
-            state = Some(cmark(std::iter::once(event), &mut buf, state.take())?);
+            state = cmark_resume(std::iter::once(event), &mut buf, state.take())?.into();
+        }
+        if let Some(state) = state {
+            state.finalize(&mut buf)?;
         }
     } else {
-        cmark(Parser::new_ext(&md, options), &mut buf, None)?;
+        cmark(Parser::new_ext(&md, options), &mut buf)?;
     }
 
     stdout().write_all(buf.as_bytes())?;

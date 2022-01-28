@@ -138,7 +138,7 @@ impl<'a> Options<'a> {
 /// *Returns* the [`State`] of the serialization on success. You can use it as initial state in the
 /// next call if you are halting event serialization.
 /// *Errors* are only happening if the underlying buffer fails, which is unlikely.
-pub fn cmark_with_options<'a, I, E, F>(
+pub fn cmark_resume_with_options<'a, I, E, F>(
     events: I,
     mut formatter: F,
     state: Option<State<'static>>,
@@ -149,11 +149,7 @@ where
     E: Borrow<Event<'a>>,
     F: fmt::Write,
 {
-    let mut event_by_event = true;
-    let mut state = state.unwrap_or_else(|| {
-        event_by_event = false;
-        State::default()
-    });
+    let mut state = state.unwrap_or_default();
     fn padding<'a, F>(f: &mut F, p: &[Cow<'a, str>]) -> fmt::Result
     where
         F: fmt::Write,
@@ -220,37 +216,6 @@ where
             None => "  ".into(),
             Some(n) => format!("{}. ", n).chars().map(|_| ' ').collect::<String>().into(),
         }
-    }
-
-    fn close_link<F>(uri: &str, title: &str, f: &mut F, link_type: LinkType, event_by_event: bool) -> fmt::Result
-    where
-        F: fmt::Write,
-    {
-        let close = format!(
-            "{}{}",
-            match event_by_event {
-                true if matches!(link_type, LinkType::Shortcut) => "",
-                _ => "]",
-            },
-            match event_by_event {
-                false if matches!(link_type, LinkType::Shortcut) => ": ",
-                _ => "(",
-            }
-        );
-
-        if uri.contains(' ') {
-            write!(f, "{}<{uri}>", close, uri = uri)?;
-        } else {
-            write!(f, "{}{uri}", close, uri = uri)?;
-        }
-        if !title.is_empty() {
-            write!(f, " \"{title}\"", title = title)?;
-        }
-        if link_type != LinkType::Shortcut || event_by_event {
-            f.write_char(')')?;
-        }
-
-        Ok(())
     }
 
     for event in events {
@@ -405,7 +370,7 @@ where
                     formatter.write_char(']')
                 }
                 Image(_, ref uri, ref title) | Link(_, ref uri, ref title) => {
-                    close_link(uri, title, &mut formatter, LinkType::Inline, event_by_event)
+                    close_link(uri, title, &mut formatter, LinkType::Inline)
                 }
                 Emphasis => formatter.write_char(options.emphasis_token),
                 Strong => formatter.write_str(options.strong_token),
@@ -556,33 +521,72 @@ where
             }
         }?
     }
-    if !state.shortcuts.is_empty() {
-        if !event_by_event {
-            formatter.write_str("\n")?;
-        }
-        for shortcut in state.shortcuts.drain(..) {
-            if !event_by_event {
-                write!(formatter, "\n[{}", shortcut.0)?;
-            }
-
-            close_link(
-                &shortcut.1,
-                &shortcut.2,
-                &mut formatter,
-                LinkType::Shortcut,
-                event_by_event,
-            )?
-        }
-    }
     Ok(state)
 }
 
+fn close_link<F>(uri: &str, title: &str, f: &mut F, link_type: LinkType) -> fmt::Result
+where
+    F: fmt::Write,
+{
+    let separator = match link_type {
+        LinkType::Shortcut => ": ",
+        _ => "(",
+    };
+
+    if uri.contains(' ') {
+        write!(f, "]{}<{uri}>", separator, uri = uri)?;
+    } else {
+        write!(f, "]{}{uri}", separator, uri = uri)?;
+    }
+    if !title.is_empty() {
+        write!(f, " \"{title}\"", title = title)?;
+    }
+    if link_type != LinkType::Shortcut {
+        f.write_char(')')?;
+    }
+
+    Ok(())
+}
+
+impl<'a> State<'a> {
+    pub fn finalize<F>(mut self, mut formatter: F) -> Result<Self, fmt::Error>
+    where
+        F: fmt::Write,
+    {
+        if self.shortcuts.is_empty() {
+            return Ok(self);
+        }
+
+        formatter.write_str("\n")?;
+        for shortcut in self.shortcuts.drain(..) {
+            write!(formatter, "\n[{}", shortcut.0)?;
+            close_link(&shortcut.1, &shortcut.2, &mut formatter, LinkType::Shortcut)?
+        }
+        Ok(self)
+    }
+}
+
 /// As [`cmark_with_options()`], but with default [`Options`].
-pub fn cmark<'a, I, E, F>(events: I, formatter: F, state: Option<State<'static>>) -> Result<State<'static>, fmt::Error>
+pub fn cmark<'a, I, E, F>(events: I, mut formatter: F) -> Result<State<'static>, fmt::Error>
 where
     I: Iterator<Item = E>,
     E: Borrow<Event<'a>>,
     F: fmt::Write,
 {
-    cmark_with_options(events, formatter, state, Options::default())
+    let state = cmark_resume_with_options(events, &mut formatter, Default::default(), Options::default())?;
+    state.finalize(formatter)
+}
+
+/// As [`cmark_resume_with_options()`], but with default [`Options`].
+pub fn cmark_resume<'a, I, E, F>(
+    events: I,
+    formatter: F,
+    state: Option<State<'static>>,
+) -> Result<State<'static>, fmt::Error>
+where
+    I: Iterator<Item = E>,
+    E: Borrow<Event<'a>>,
+    F: fmt::Write,
+{
+    cmark_resume_with_options(events, formatter, state, Options::default())
 }
