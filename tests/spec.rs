@@ -1,7 +1,7 @@
 use pulldown_cmark::{CodeBlockKind, Event, Options, Parser, Tag};
 use pulldown_cmark_to_cmark::cmark;
 
-const COMMONMARK_SPEC_TEXT: &'static str = include_str!("./spec/CommonMark/spec.txt");
+const COMMONMARK_SPEC_TEXT: &str = include_str!("./spec/CommonMark/spec.txt");
 
 const COMMONMARK_SPEC_EXAMPLE_COUNT: usize = 649;
 
@@ -49,17 +49,18 @@ fn test_roundtrip(original: &str, expected: &str) -> bool {
         .take_while(|(e1, e2)| e1 == e2)
         .count();
     if event_count == same_event_count && event_count_2 == same_event_count {
-        return true;
+        true
+    } else {
+        eprintln!(
+            "Test fail: event [{}/{}] is {:?} vs {:?}\nExpected full output:\n{}",
+            same_event_count,
+            event_count,
+            event_list.get(same_event_count),
+            event_list_2.get(same_event_count),
+            expected
+        );
+        false
     }
-    eprintln!(
-        "Test fail: event [{}/{}] is {:?} vs {:?}\nExpected full output:\n{}",
-        same_event_count,
-        event_count,
-        event_list.get(same_event_count),
-        event_list_2.get(same_event_count),
-        expected
-    );
-    return false;
 }
 
 #[test]

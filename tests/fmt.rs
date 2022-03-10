@@ -272,9 +272,11 @@ mod inline_elements {
 
     #[test]
     fn various_with_custom_options() {
-        let mut custom_options = CmarkToCmarkOptions::default();
-        custom_options.emphasis_token = '_';
-        custom_options.code_block_token = '~';
+        let custom_options = CmarkToCmarkOptions {
+            emphasis_token: '_',
+            code_block_token: '~',
+            ..Default::default()
+        };
 
         let (s, state) = fmts_with_options("_a_ b **c**\n<br>\nd\n\ne `c`", custom_options);
 
@@ -624,8 +626,11 @@ mod codeblock {
 
     #[test]
     fn simple_other_syntax_with_custom() {
-        let mut custom_options = CmarkToCmarkOptions::default();
-        custom_options.code_block_token = '~';
+        let custom_options = CmarkToCmarkOptions {
+            code_block_token: '~',
+            ..Default::default()
+        };
+
         let original = "~~~hi\nsome\ntext\n~~~";
         let (s, _) = fmts_with_options(original, custom_options);
 
@@ -926,8 +931,10 @@ mod list {
 
     #[test]
     fn unordered_with_custom() {
-        let mut custom_options = CmarkToCmarkOptions::default();
-        custom_options.list_token = '-';
+        let custom_options = CmarkToCmarkOptions {
+            list_token: '-',
+            ..Default::default()
+        };
 
         let original = "* a\n* b";
         let (s, _) = fmts_with_options(original, custom_options);
