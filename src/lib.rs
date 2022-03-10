@@ -524,6 +524,20 @@ where
     Ok(state)
 }
 
+/// As [`cmark_resume_with_options()`], but with default [`Options`].
+pub fn cmark_resume<'a, I, E, F>(
+    events: I,
+    formatter: F,
+    state: Option<State<'static>>,
+) -> Result<State<'static>, fmt::Error>
+where
+    I: Iterator<Item = E>,
+    E: Borrow<Event<'a>>,
+    F: fmt::Write,
+{
+    cmark_resume_with_options(events, formatter, state, Options::default())
+}
+
 fn close_link<F>(uri: &str, title: &str, f: &mut F, link_type: LinkType) -> fmt::Result
 where
     F: fmt::Write,
@@ -585,18 +599,4 @@ where
     F: fmt::Write,
 {
     cmark_with_options(events, &mut formatter, Default::default())
-}
-
-/// As [`cmark_resume_with_options()`], but with default [`Options`].
-pub fn cmark_resume<'a, I, E, F>(
-    events: I,
-    formatter: F,
-    state: Option<State<'static>>,
-) -> Result<State<'static>, fmt::Error>
-where
-    I: Iterator<Item = E>,
-    E: Borrow<Event<'a>>,
-    F: fmt::Write,
-{
-    cmark_resume_with_options(events, formatter, state, Options::default())
 }
