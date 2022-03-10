@@ -9,9 +9,7 @@ use pulldown_cmark::{Options, Parser};
 use pulldown_cmark_to_cmark::{cmark, cmark_resume};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let path = env::args_os()
-        .skip(1)
-        .next()
+    let path = env::args_os().nth(1)
         .expect("First argument is markdown file to display");
     let event_by_event = env::var_os("STUPICAT_STATE_TEST").is_some();
 
