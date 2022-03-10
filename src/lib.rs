@@ -28,7 +28,7 @@ impl<'a> From<&'a TableAlignment> for Alignment {
     }
 }
 
-/// The state of the [`cmark()`] function.
+/// The state of the [`cmark_resume()`] and [`cmark_resume_with_options()`] functions.
 /// This does not only allow introspection, but enables the user
 /// to halt the serialization at any time, and resume it later.
 #[derive(Clone, Default, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -57,7 +57,7 @@ pub struct State<'a> {
     pub shortcuts: Vec<(String, String, String)>,
 }
 
-/// Configuration for the [`cmark()`] function.
+/// Configuration for the [`cmark_with_options()`] and [`cmark_resume_with_options()`] functions.
 /// The defaults should provide decent spacing and most importantly, will
 /// provide a faithful rendering of your markdown document particularly when
 /// rendering it to HTML.
@@ -566,6 +566,17 @@ impl<'a> State<'a> {
     }
 }
 
+/// As [`cmark_resume_with_options()`], but with the [`State`] finalized.
+pub fn cmark_with_options<'a, I, E, F>(events: I, mut formatter: F, options: Options<'_>) -> Result<State<'static>, fmt::Error>
+where
+    I: Iterator<Item = E>,
+    E: Borrow<Event<'a>>,
+    F: fmt::Write,
+{
+    let state = cmark_resume_with_options(events, &mut formatter, Default::default(), options)?;
+    state.finalize(formatter)
+}
+
 /// As [`cmark_with_options()`], but with default [`Options`].
 pub fn cmark<'a, I, E, F>(events: I, mut formatter: F) -> Result<State<'static>, fmt::Error>
 where
@@ -573,8 +584,7 @@ where
     E: Borrow<Event<'a>>,
     F: fmt::Write,
 {
-    let state = cmark_resume_with_options(events, &mut formatter, Default::default(), Options::default())?;
-    state.finalize(formatter)
+    cmark_with_options(events, &mut formatter, Default::default())
 }
 
 /// As [`cmark_resume_with_options()`], but with default [`Options`].
