@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 10.0.1 (2022-03-12)
 
 ### Fixes
 
@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 4 commits contributed to the release.
+ - 5 commits contributed to the release.
  - 42 days passed between releases.
  - 0 commits where understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' where seen in commit messages
@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - update changelog ([`eb88b2e`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/eb88b2e2f3c4de46bff0c55418f3359eb62bf747))
     - Add clippy to Makefile/CI ([`7bb9a68`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/7bb9a68a98bcec55879379dcda669593129a006a))
     - Fix misc Clippy lints ([`118df17`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/118df1747be21cd4b323bf76d22c6736117af0f9))
     - Re-order to logically group cmark* functions ([`16f06eb`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/16f06eb10bfc084c7e79e6d6e76703452517ae0f))
