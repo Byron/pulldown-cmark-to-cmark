@@ -12,8 +12,11 @@ docs: ## Builds docs
 unittests: ## run unit tests
 	cargo test --all
 
+clippy: ## run clippy
+	cargo clippy
+
 journeytests: ## run journey tests
 	./tests/cat.sh
 
 
-tests: docs unittests journeytests  ## run all tests
+tests: docs clippy unittests journeytests  ## run all tests
