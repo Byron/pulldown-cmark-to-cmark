@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Fixes
+
+- add `cmark_resume()`, completing the API transition started with the major version change.
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 4 commits contributed to the release.
+ - 42 days passed between releases.
+ - 0 commits where understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' where seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Add clippy to Makefile/CI ([`7bb9a68`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/7bb9a68a98bcec55879379dcda669593129a006a))
+    - Fix misc Clippy lints ([`118df17`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/118df1747be21cd4b323bf76d22c6736117af0f9))
+    - Re-order to logically group cmark* functions ([`16f06eb`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/16f06eb10bfc084c7e79e6d6e76703452517ae0f))
+    - Add cmark_with_options() and fix comments ([`53efeb8`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/53efeb83c158978331303d6889a24f6192e40dea))
+</details>
+
 ## 10.0.0 (2022-01-28)
 
 Note that the breaking change is fixable by removing the last parameter from the `cmark()` function if it was `None`, 
@@ -32,7 +60,7 @@ or using `cmark_resume` instead.
 
 <csr-read-only-do-not-edit/>
 
- - 5 commits contributed to the release over the course of 2 calendar days.
+ - 6 commits contributed to the release over the course of 2 calendar days.
  - 28 days passed between releases.
  - 1 commit where understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' where seen in commit messages
@@ -44,6 +72,7 @@ or using `cmark_resume` instead.
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release pulldown-cmark-to-cmark v10.0.0 ([`44c5286`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/44c52860ab7300f47b60ae72f9760f302c9d5758))
     - write changelog prior to release ([`e9f809f`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/e9f809f45f637a385d8b4db248409195df1c9380))
     - Merge pull request #41 from aogier/bugfix/40-shortcut_code ([`7ee11da`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/7ee11da6906bbc59c2bd91413ba617bf8104685e))
     - Simplify `cmark(…)` by removing `State` parameter, introduce `cmark_resume(…)`. ([`7166abe`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/7166abeb0f89ee1dfb7790923d0d5fc6edc394c5))
