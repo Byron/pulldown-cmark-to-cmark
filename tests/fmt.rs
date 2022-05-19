@@ -969,4 +969,36 @@ mod list {
             "* [ ] foo\n* [x] bar",
         );
     }
+
+    fn no_op(text: &str) -> String {
+        use crate::cmark;
+        use crate::Parser;
+
+        dbg!(&text.chars());
+        let parser = Parser::new(text);
+        let mut cmark_acc = vec![];
+
+        for event in parser {
+            dbg!(&event);
+            cmark_acc.push(event.to_owned());
+        }
+        let mut buf = String::new();
+        cmark(cmark_acc.iter(), &mut buf).unwrap();
+
+        buf
+    }
+
+    #[test]
+    fn test_table() {
+        let table = r###"
+# Syntax
+
+| a |
+|---|
+| c |
+
+"###;
+
+        assert_eq!(no_op(table), table);
+    }
 }
