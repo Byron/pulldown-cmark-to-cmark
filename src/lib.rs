@@ -259,15 +259,21 @@ where
                     let code = format!("{}{}{}", options.code_block_token, text, options.code_block_token);
                     text_for_header.push_str(&code);
                 }
-                let delimiter = if text.contains(options.code_block_token) {
-                    String::from_iter([options.code_block_token, options.code_block_token])
+                let (start, end) = if text.contains(options.code_block_token) {
+                    (
+                        String::from_iter([options.code_block_token, options.code_block_token, ' ']),
+                        String::from_iter([' ', options.code_block_token, options.code_block_token]),
+                    )
                 } else {
-                    String::from(options.code_block_token)
+                    (
+                        String::from(options.code_block_token),
+                        String::from(options.code_block_token),
+                    )
                 };
                 formatter
-                    .write_str(&delimiter)
+                    .write_str(&start)
                     .and_then(|_| formatter.write_str(text))
-                    .and_then(|_| formatter.write_str(&delimiter))
+                    .and_then(|_| formatter.write_str(&end))
             }
             Start(ref tag) => {
                 if let List(ref list_type) = *tag {

@@ -298,9 +298,9 @@ mod inline_elements {
     #[test]
     fn code_double_backtick() {
         assert_eq!(
-            fmts("``hello `world`!``"),
+            fmts("lorem ``ipsum `dolor` sit`` amet"),
             (
-                "``hello `world`!``".into(),
+                "lorem `` ipsum `dolor` sit `` amet".into(),
                 State {
                     newlines_before_start: 2,
                     ..Default::default()
