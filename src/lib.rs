@@ -3,6 +3,7 @@
 use std::{
     borrow::{Borrow, Cow},
     fmt,
+    iter::FromIterator,
 };
 
 use pulldown_cmark::{Alignment as TableAlignment, Event, HeadingLevel, LinkType};
@@ -258,10 +259,15 @@ where
                     let code = format!("{}{}{}", options.code_block_token, text, options.code_block_token);
                     text_for_header.push_str(&code);
                 }
+                let delimiter = if text.contains(options.code_block_token) {
+                    String::from_iter([options.code_block_token, options.code_block_token])
+                } else {
+                    String::from(options.code_block_token)
+                };
                 formatter
-                    .write_char(options.code_block_token)
+                    .write_str(&delimiter)
                     .and_then(|_| formatter.write_str(text))
-                    .and_then(|_| formatter.write_char(options.code_block_token))
+                    .and_then(|_| formatter.write_str(&delimiter))
             }
             Start(ref tag) => {
                 if let List(ref list_type) = *tag {
@@ -581,7 +587,11 @@ impl<'a> State<'a> {
 }
 
 /// As [`cmark_resume_with_options()`], but with the [`State`] finalized.
-pub fn cmark_with_options<'a, I, E, F>(events: I, mut formatter: F, options: Options<'_>) -> Result<State<'static>, fmt::Error>
+pub fn cmark_with_options<'a, I, E, F>(
+    events: I,
+    mut formatter: F,
+    options: Options<'_>,
+) -> Result<State<'static>, fmt::Error>
 where
     I: Iterator<Item = E>,
     E: Borrow<Event<'a>>,

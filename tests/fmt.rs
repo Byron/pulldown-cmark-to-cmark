@@ -294,6 +294,20 @@ mod inline_elements {
     fn strikethrough() {
         assert_eq!(fmts("~~strikethrough~~").0, "~~strikethrough~~",);
     }
+
+    #[test]
+    fn code_double_backtick() {
+        assert_eq!(
+            fmts("``hello `world`!``"),
+            (
+                "``hello `world`!``".into(),
+                State {
+                    newlines_before_start: 2,
+                    ..Default::default()
+                }
+            )
+        )
+    }
 }
 
 mod blockquote {
