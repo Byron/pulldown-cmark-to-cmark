@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 10.0.2 (2022-06-28)
 
 ### Fixes
 
@@ -17,8 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 2 commits contributed to the release.
- - 105 days passed between releases.
+ - 3 commits contributed to the release over the course of 2 calendar days.
+ - 108 days passed between releases.
  - 0 commits where understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' where seen in commit messages
 
@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - update changelog ([`0fa8688`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/0fa8688e422cd18839d06d400660df9a457ed34c))
     - Add space aroudn backticks ([`6f68331`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/6f683310f2e6965c6d1d3ee09c3b36eefff5c1a3))
     - Fix double-backtick issue ([`09a35a9`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/09a35a96002cb2ca00e0769c0ae4cc8927698ccd))
 </details>
