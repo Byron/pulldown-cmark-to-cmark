@@ -69,3 +69,9 @@ title "stupicat"
     WITH_SNAPSHOT="$snapshot/stupicat-heading-id-classes-output" \
     expect_run_sh $SUCCESSFULLY "${exe[*]} $fixture/heading-id-classes.md 2>/dev/null"
 )
+
+(with "repeated shortcut links"
+  it "succeeds" && \
+    WITH_SNAPSHOT="$snapshot/stupicat-repeated-shortcut-links-output" \
+    expect_run_sh $SUCCESSFULLY "${exe[*]} $fixture/repeated-shortcut-links.md 2>/dev/null"
+)
