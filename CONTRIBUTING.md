@@ -1,7 +1,7 @@
 ### How to contribute
 
 * [fork this project][fork] on github
-* For setting up the environment to run the self tests, look at `.travis.yml`.
+* For setting up the environment to run the self tests, look at `.github/workflows/rust.yml`.
 * **Write a test that fails unless your patch is present.**
   * There are fixture-based tests run by [`cat.sh`][sh-tests].
   * There are [unit-level tests][unit-tests] run by `cargo test`.
