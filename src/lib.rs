@@ -2,6 +2,7 @@
 
 use std::{
     borrow::{Borrow, Cow},
+    collections::HashSet,
     fmt,
     iter::FromIterator,
 };
@@ -584,9 +585,14 @@ impl<'a> State<'a> {
         }
 
         formatter.write_str("\n")?;
+        let mut written_shortcuts = HashSet::new();
         for shortcut in self.shortcuts.drain(..) {
+            if written_shortcuts.contains(&shortcut) {
+                continue;
+            }
             write!(formatter, "\n[{}", shortcut.0)?;
-            close_link(&shortcut.1, &shortcut.2, &mut formatter, LinkType::Shortcut)?
+            close_link(&shortcut.1, &shortcut.2, &mut formatter, LinkType::Shortcut)?;
+            written_shortcuts.insert(shortcut);
         }
         Ok(self)
     }
