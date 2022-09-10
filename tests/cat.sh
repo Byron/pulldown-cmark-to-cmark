@@ -75,3 +75,9 @@ title "stupicat"
     WITH_SNAPSHOT="$snapshot/stupicat-repeated-shortcut-links-output" \
     expect_run_sh $SUCCESSFULLY "${exe[*]} $fixture/repeated-shortcut-links.md 2>/dev/null"
 )
+
+(with "indented code block"
+  it "succeeds" && \
+    WITH_SNAPSHOT="$snapshot/stupicat-indented-code-block" \
+    expect_run_sh $SUCCESSFULLY "${exe[*]} $fixture/indented-code-block.md 2>/dev/null"
+)
