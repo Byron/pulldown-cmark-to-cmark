@@ -105,6 +105,7 @@ fn it_applies_newlines_before_start_before_text() {
             &[Event::Text("t".into())],
             State {
                 newlines_before_start: 2,
+                last_was_text_without_trailing_newline: true,
                 ..Default::default()
             }
         ),
@@ -112,6 +113,7 @@ fn it_applies_newlines_before_start_before_text() {
             "\n\nt".into(),
             State {
                 newlines_before_start: 0,
+                last_was_text_without_trailing_newline: true,
                 ..Default::default()
             }
         )
@@ -125,6 +127,7 @@ fn it_applies_newlines_before_start_before_any_start_tag() {
             &[Event::Start(Tag::Paragraph), Event::Text("h".into())],
             State {
                 newlines_before_start: 2,
+                last_was_text_without_trailing_newline: true,
                 ..Default::default()
             }
         ),
@@ -132,6 +135,7 @@ fn it_applies_newlines_before_start_before_any_start_tag() {
             "\n\nh".into(),
             State {
                 newlines_before_start: 0,
+                last_was_text_without_trailing_newline: true,
                 ..Default::default()
             }
         )
@@ -149,6 +153,7 @@ mod padding {
                 State {
                     newlines_before_start: 2,
                     padding: vec!["  ".into()],
+                    last_was_text_without_trailing_newline: true,
                     ..Default::default()
                 }
             ),
@@ -157,6 +162,7 @@ mod padding {
                 State {
                     newlines_before_start: 0,
                     padding: vec!["  ".into()],
+                    last_was_text_without_trailing_newline: true,
                     ..Default::default()
                 }
             )
