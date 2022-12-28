@@ -130,14 +130,14 @@ impl<'a> Options<'a> {
 /// Serialize a stream of [pulldown-cmark-Events][Event] into a string-backed buffer.
 ///
 /// 1. **events**
-///   * An iterator over [`Events`][Event], for example as returned by the [`Parser`][pulldown_cmark::Parser]
+///    * An iterator over [`Events`][Event], for example as returned by the [`Parser`][pulldown_cmark::Parser]
 /// 1. **formatter**
-///   * A format writer, can be a `String`.
+///    * A format writer, can be a `String`.
 /// 1. **state**
-///   * The optional initial state of the serialization.
+///    * The optional initial state of the serialization.
 /// 1. **options**
-///   * Customize the appearance of the serialization. All otherwise magic values are contained
-///     here.
+///    * Customize the appearance of the serialization. All otherwise magic values are contained
+///      here.
 ///
 /// *Returns* the [`State`] of the serialization on success. You can use it as initial state in the
 /// next call if you are halting event serialization.
