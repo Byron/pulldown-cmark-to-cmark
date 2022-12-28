@@ -81,6 +81,7 @@ pub struct Options<'a> {
     pub code_block_token: char,
     pub list_token: char,
     pub ordered_list_token: char,
+    pub increment_ordered_list_bullets: bool,
     pub emphasis_token: char,
     pub strong_token: &'a str,
 }
@@ -98,6 +99,7 @@ const DEFAULT_OPTIONS: Options<'_> = Options {
     code_block_token: '`',
     list_token: '*',
     ordered_list_token: '.',
+    increment_ordered_list_bullets: false,
     emphasis_token: '*',
     strong_token: "**",
 };
@@ -292,11 +294,17 @@ where
                 let consumed_newlines = state.newlines_before_start != 0;
                 consume_newlines(&mut formatter, &mut state)?;
                 match tag {
-                    Item => match state.list_stack.last() {
+                    Item => match state.list_stack.last_mut() {
                         Some(inner) => {
                             state.padding.push(padding_of(*inner));
                             match inner {
-                                Some(n) => write!(formatter, "{}{} ", n, options.ordered_list_token),
+                                Some(n) => {
+                                    let bullet_number = n.clone();
+                                    if options.increment_ordered_list_bullets {
+                                        *n += 1;
+                                    }
+                                    write!(formatter, "{}{} ", bullet_number, options.ordered_list_token)
+                                }
                                 None => write!(formatter, "{} ", options.list_token),
                             }
                         }

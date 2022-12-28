@@ -995,6 +995,111 @@ mod list {
     }
 
     #[test]
+    fn increment_ordered_list_bullets() {
+        let custom_options = CmarkToCmarkOptions {
+            increment_ordered_list_bullets: true,
+            ..Default::default()
+        };
+        assert_eq!(
+            fmts_with_options("2. a\n2. b\n2. c", custom_options),
+            (
+                "2. a\n3. b\n4. c".into(),
+                State {
+                    newlines_before_start: 2,
+                    ..Default::default()
+                }
+            )
+        )
+    }
+
+    #[test]
+    fn nested_increment_ordered_list_bullets() {
+        let custom_options = CmarkToCmarkOptions {
+            increment_ordered_list_bullets: true,
+            ..Default::default()
+        };
+        let input = indoc!(
+            "
+        1. level 1
+           1. level 2
+              1. level 3
+              1. level 3
+           1. level 2
+        1. level 1"
+        );
+
+        let expected = indoc!(
+            "
+        1. level 1
+           1. level 2
+              1. level 3
+              2. level 3
+           2. level 2
+        2. level 1"
+        );
+        assert_eq!(
+            fmts_with_options(input, custom_options),
+            (
+                expected.into(),
+                State {
+                    newlines_before_start: 2,
+                    ..Default::default()
+                }
+            )
+        )
+    }
+
+    #[test]
+    fn nested_increment_ordered_list_bullets_change_ordered_list_token() {
+        let custom_options = CmarkToCmarkOptions {
+            increment_ordered_list_bullets: true,
+            ordered_list_token: ')',
+            ..Default::default()
+        };
+        let input = indoc!(
+            "
+        1. level 1
+           1. level 2
+              1. level 3
+              1. level 3
+           1. level 2
+        1. level 1
+        1. level 1
+           1. level 2
+              1. level 3
+              1. level 3
+           1. level 2
+        1. level 1"
+        );
+
+        let expected = indoc!(
+            "
+        1) level 1
+           1) level 2
+              1) level 3
+              2) level 3
+           2) level 2
+        2) level 1
+        3) level 1
+           1) level 2
+              1) level 3
+              2) level 3
+           2) level 2
+        4) level 1"
+        );
+        assert_eq!(
+            fmts_with_options(input, custom_options),
+            (
+                expected.into(),
+                State {
+                    newlines_before_start: 2,
+                    ..Default::default()
+                }
+            )
+        )
+    }
+
+    #[test]
     fn checkboxes() {
         assert_eq!(
             fmts(indoc!(
