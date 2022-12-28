@@ -977,6 +977,24 @@ mod list {
     }
 
     #[test]
+    fn change_ordered_list_token() {
+        let custom_options = CmarkToCmarkOptions {
+            ordered_list_token: ')',
+            ..Default::default()
+        };
+        assert_eq!(
+            fmts_with_options("2. a\n2. b", custom_options),
+            (
+                "2) a\n2) b".into(),
+                State {
+                    newlines_before_start: 2,
+                    ..Default::default()
+                }
+            )
+        )
+    }
+
+    #[test]
     fn checkboxes() {
         assert_eq!(
             fmts(indoc!(

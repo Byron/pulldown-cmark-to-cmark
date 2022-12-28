@@ -80,6 +80,7 @@ pub struct Options<'a> {
     pub code_block_token_count: usize,
     pub code_block_token: char,
     pub list_token: char,
+    pub ordered_list_token: char,
     pub emphasis_token: char,
     pub strong_token: &'a str,
 }
@@ -96,6 +97,7 @@ const DEFAULT_OPTIONS: Options<'_> = Options {
     code_block_token_count: 4,
     code_block_token: '`',
     list_token: '*',
+    ordered_list_token: '.',
     emphasis_token: '*',
     strong_token: "**",
 };
@@ -294,7 +296,7 @@ where
                         Some(inner) => {
                             state.padding.push(padding_of(*inner));
                             match inner {
-                                Some(n) => write!(formatter, "{}. ", n),
+                                Some(n) => write!(formatter, "{}{} ", n, options.ordered_list_token),
                                 None => write!(formatter, "{} ", options.list_token),
                             }
                         }
