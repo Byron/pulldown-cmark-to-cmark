@@ -299,7 +299,7 @@ where
                             state.padding.push(padding_of(*inner));
                             match inner {
                                 Some(n) => {
-                                    let bullet_number = n.clone();
+                                    let bullet_number = *n;
                                     if options.increment_ordered_list_bullets {
                                         *n += 1;
                                     }
