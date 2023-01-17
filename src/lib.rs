@@ -7,7 +7,7 @@ use std::{
     iter::FromIterator,
 };
 
-use pulldown_cmark::{Alignment as TableAlignment, Event, HeadingLevel, LinkType};
+use pulldown_cmark::{Alignment as TableAlignment, Event, HeadingLevel, LinkType, MathDisplay};
 
 /// Similar to [Pulldown-Cmark-Alignment][Alignment], but with required
 /// traits for comparison to allow testing.
@@ -259,6 +259,16 @@ where
                     state.newlines_before_start = options.newlines_after_rule;
                 }
                 formatter.write_str("---")
+            }
+            Math(ref math_display, ref math) => {
+                let delimiter = match math_display {
+                    MathDisplay::Inline => "$",
+                    MathDisplay::Block => "$$\n",
+                };
+                formatter.write_str(delimiter)?;
+                formatter.write_str(math.as_ref())?;
+                formatter.write_str(delimiter)?;
+                Ok(())
             }
             Code(ref text) => {
                 if let Some(shortcut_text) = state.current_shortcut_text.as_mut() {
