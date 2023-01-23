@@ -263,7 +263,7 @@ where
             Math(ref math_display, ref math) => {
                 let delimiter = match math_display {
                     MathDisplay::Inline => "$",
-                    MathDisplay::Block => "$$\n",
+                    MathDisplay::Block => "\n$$",
                 };
                 formatter.write_str(delimiter)?;
                 formatter.write_str(math.as_ref())?;
