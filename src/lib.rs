@@ -187,17 +187,19 @@ where
         if is_in_block_quote || t.is_empty() {
             return Cow::Borrowed(t);
         }
+        
+        return t.into();
 
-        let first = t.chars().next().expect("at least one char");
-        if options.special_characters().contains(first) {
-            let mut s = String::with_capacity(t.len() + 1);
-            s.push('\\');
-            s.push(first);
-            s.push_str(&t[1..]);
-            Cow::Owned(s)
-        } else {
-            Cow::Borrowed(t)
-        }
+        // let first = t.chars().next().expect("at least one char");
+        // if options.special_characters().contains(first) {
+        //     let mut s = String::with_capacity(t.len() + 1);
+        //     // s.push('\\');
+        //     s.push(first);
+        //     s.push_str(&t[1..]);
+        //     Cow::Owned(s)
+        // } else {
+        //     Cow::Borrowed(t)
+        // }
     }
 
     fn print_text_without_trailing_newline<'a, F>(t: &str, f: &mut F, p: &[Cow<'a, str>]) -> fmt::Result
@@ -265,6 +267,7 @@ where
                     MathDisplay::Inline => "$",
                     MathDisplay::Block => "\n$$",
                 };
+                
                 formatter.write_str(delimiter)?;
                 formatter.write_str(math.as_ref())?;
                 formatter.write_str(delimiter)?;
