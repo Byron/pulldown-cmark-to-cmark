@@ -306,7 +306,67 @@ mod inline_elements {
         assert_eq!(
             fmts("lorem ``ipsum `dolor` sit`` amet"),
             (
-                "lorem `` ipsum `dolor` sit `` amet".into(),
+                "lorem ``ipsum `dolor` sit`` amet".into(),
+                State {
+                    newlines_before_start: 2,
+                    ..Default::default()
+                }
+            )
+        )
+    }
+
+    #[test]
+    fn code_triple_backtick() {
+        assert_eq!(
+            fmts("lorem ```ipsum ``dolor`` sit``` amet"),
+            (
+                "lorem ```ipsum ``dolor`` sit``` amet".into(),
+                State {
+                    newlines_before_start: 2,
+                    ..Default::default()
+                }
+            )
+        )
+    }
+
+    #[test]
+    fn code_backtick_normalization() {
+        // The minimum amount of backticks are inserted.
+        assert_eq!(
+            fmts("lorem ```ipsum ` dolor``` amet"),
+            (
+                "lorem ``ipsum ` dolor`` amet".into(),
+                State {
+                    newlines_before_start: 2,
+                    ..Default::default()
+                }
+            )
+        )
+    }
+
+    #[test]
+    fn code_leading_trailing_backtick() {
+        // Spaces are inserted if the inline code starts or ends with
+        // a backtick.
+        assert_eq!(
+            fmts("`` `lorem ``   `` ipsum` ``"),
+            (
+                "`` `lorem ``   `` ipsum` ``".into(),
+                State {
+                    newlines_before_start: 2,
+                    ..Default::default()
+                }
+            )
+        )
+    }
+
+    #[test]
+    fn code_spaces_before_backtick() {
+        //  No space is inserted if it is not needed.
+        assert_eq!(
+            fmts("` lorem `   ` `"),
+            (
+                "`lorem`   ` `".into(),
                 State {
                     newlines_before_start: 2,
                     ..Default::default()

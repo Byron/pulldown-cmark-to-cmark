@@ -225,6 +225,24 @@ where
         }
     }
 
+    fn count_consecutive_backticks(text: &str) -> usize {
+        let mut in_backticks = false;
+        let mut max_backticks = 0;
+        let mut cur_backticks = 0;
+
+        for ch in text.chars() {
+            if ch == '`' {
+                cur_backticks += 1;
+                in_backticks = true;
+            } else if in_backticks {
+                max_backticks = max_backticks.max(cur_backticks);
+                cur_backticks = 0;
+                in_backticks = false;
+            }
+        }
+        max_backticks.max(cur_backticks)
+    }
+
     for event in events {
         use pulldown_cmark::{CodeBlockKind, Event::*, Tag::*};
 
@@ -267,11 +285,17 @@ where
                     let code = format!("`{}`", text);
                     text_for_header.push_str(&code);
                 }
-                let (start, end) = if text.contains('`') { ("`` ", " ``") } else { ("`", "`") };
-                formatter
-                    .write_str(&start)
-                    .and_then(|_| formatter.write_str(text))
-                    .and_then(|_| formatter.write_str(&end))
+                if text.chars().all(|ch| ch == ' ') {
+                    write!(formatter, "`{text}`")
+                } else {
+                    let backticks = "`".repeat(count_consecutive_backticks(text) + 1);
+                    let space = match text.as_bytes() {
+                        &[b'`', ..] | &[.., b'`'] => " ", // Space needed to separate backtick.
+                        &[b' ', .., b' '] => " ",         // Space needed to escape inner space.
+                        _ => "",                          // No space needed.
+                    };
+                    write!(formatter, "{backticks}{space}{text}{space}{backticks}")
+                }
             }
             Start(ref tag) => {
                 if let List(ref list_type) = *tag {
