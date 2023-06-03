@@ -4,7 +4,6 @@ use std::{
     borrow::{Borrow, Cow},
     collections::HashSet,
     fmt,
-    iter::FromIterator,
 };
 
 use pulldown_cmark::{Alignment as TableAlignment, Event, HeadingLevel, LinkType};
@@ -265,20 +264,10 @@ where
                     shortcut_text.push_str(&format!("`{}`", text));
                 }
                 if let Some(text_for_header) = state.text_for_header.as_mut() {
-                    let code = format!("{}{}{}", options.code_block_token, text, options.code_block_token);
+                    let code = format!("`{}`", text);
                     text_for_header.push_str(&code);
                 }
-                let (start, end) = if text.contains(options.code_block_token) {
-                    (
-                        String::from_iter([options.code_block_token, options.code_block_token, ' ']),
-                        String::from_iter([' ', options.code_block_token, options.code_block_token]),
-                    )
-                } else {
-                    (
-                        String::from(options.code_block_token),
-                        String::from(options.code_block_token),
-                    )
-                };
+                let (start, end) = if text.contains('`') { ("`` ", " ``") } else { ("`", "`") };
                 formatter
                     .write_str(&start)
                     .and_then(|_| formatter.write_str(text))

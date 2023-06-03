@@ -286,7 +286,7 @@ mod inline_elements {
 
         let (s, state) = fmts_with_options("_a_ b **c**\n<br>\nd\n\ne `c`", custom_options);
 
-        assert_eq!(s, "_a_ b **c**\n<br>\nd\n\ne ~c~".to_string());
+        assert_eq!(s, "_a_ b **c**\n<br>\nd\n\ne `c`".to_string());
         assert_eq!(
             state,
             State {
