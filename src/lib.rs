@@ -225,24 +225,6 @@ where
         }
     }
 
-    fn count_consecutive_backticks(text: &str) -> usize {
-        let mut in_backticks = false;
-        let mut max_backticks = 0;
-        let mut cur_backticks = 0;
-
-        for ch in text.chars() {
-            if ch == '`' {
-                cur_backticks += 1;
-                in_backticks = true;
-            } else if in_backticks {
-                max_backticks = max_backticks.max(cur_backticks);
-                cur_backticks = 0;
-                in_backticks = false;
-            }
-        }
-        max_backticks.max(cur_backticks)
-    }
-
     for event in events {
         use pulldown_cmark::{CodeBlockKind, Event::*, Tag::*};
 
@@ -279,11 +261,14 @@ where
             }
             Code(ref text) => {
                 if let Some(shortcut_text) = state.current_shortcut_text.as_mut() {
-                    shortcut_text.push_str(&format!("`{}`", text));
+                    shortcut_text.push('`');
+                    shortcut_text.push_str(text);
+                    shortcut_text.push('`');
                 }
                 if let Some(text_for_header) = state.text_for_header.as_mut() {
-                    let code = format!("`{}`", text);
-                    text_for_header.push_str(&code);
+                    text_for_header.push('`');
+                    text_for_header.push_str(text);
+                    text_for_header.push('`');
                 }
                 if text.chars().all(|ch| ch == ' ') {
                     write!(formatter, "`{text}`")
@@ -652,4 +637,41 @@ where
     F: fmt::Write,
 {
     cmark_with_options(events, &mut formatter, Default::default())
+}
+
+fn count_consecutive_backticks(text: &str) -> usize {
+    let mut in_backticks = false;
+    let mut max_backticks = 0;
+    let mut cur_backticks = 0;
+
+    for ch in text.chars() {
+        if ch == '`' {
+            cur_backticks += 1;
+            in_backticks = true;
+        } else if in_backticks {
+            max_backticks = max_backticks.max(cur_backticks);
+            cur_backticks = 0;
+            in_backticks = false;
+        }
+    }
+    max_backticks.max(cur_backticks)
+}
+
+#[cfg(test)]
+mod count_consecutive_backticks {
+    use super::count_consecutive_backticks;
+
+    #[test]
+    fn happens_in_the_entire_string() {
+        assert_eq!(
+            count_consecutive_backticks("``a```b``"),
+            3,
+            "the highest seen consecutive segment of backticks counts"
+        );
+        assert_eq!(
+            count_consecutive_backticks("```a``b`"),
+            3,
+            "it can't be downgraded later"
+        );
+    }
 }
