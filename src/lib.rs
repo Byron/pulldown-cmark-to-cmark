@@ -157,7 +157,7 @@ where
     F: fmt::Write,
 {
     let mut state = state.unwrap_or_default();
-    fn padding<'a, F>(f: &mut F, p: &[Cow<'a, str>]) -> fmt::Result
+    fn padding<F>(f: &mut F, p: &[Cow<'_, str>]) -> fmt::Result
     where
         F: fmt::Write,
     {
@@ -199,7 +199,7 @@ where
         }
     }
 
-    fn print_text_without_trailing_newline<'a, F>(t: &str, f: &mut F, p: &[Cow<'a, str>]) -> fmt::Result
+    fn print_text_without_trailing_newline<F>(t: &str, f: &mut F, p: &[Cow<'_, str>]) -> fmt::Result
     where
         F: fmt::Write,
     {
