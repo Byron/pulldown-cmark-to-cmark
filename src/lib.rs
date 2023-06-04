@@ -4,7 +4,6 @@ use std::{
     borrow::{Borrow, Cow},
     collections::HashSet,
     fmt,
-    iter::FromIterator,
 };
 
 use pulldown_cmark::{Alignment as TableAlignment, Event, HeadingLevel, LinkType};
@@ -158,7 +157,7 @@ where
     F: fmt::Write,
 {
     let mut state = state.unwrap_or_default();
-    fn padding<'a, F>(f: &mut F, p: &[Cow<'a, str>]) -> fmt::Result
+    fn padding<F>(f: &mut F, p: &[Cow<'_, str>]) -> fmt::Result
     where
         F: fmt::Write,
     {
@@ -200,7 +199,7 @@ where
         }
     }
 
-    fn print_text_without_trailing_newline<'a, F>(t: &str, f: &mut F, p: &[Cow<'a, str>]) -> fmt::Result
+    fn print_text_without_trailing_newline<F>(t: &str, f: &mut F, p: &[Cow<'_, str>]) -> fmt::Result
     where
         F: fmt::Write,
     {
@@ -262,27 +261,26 @@ where
             }
             Code(ref text) => {
                 if let Some(shortcut_text) = state.current_shortcut_text.as_mut() {
-                    shortcut_text.push_str(&format!("`{}`", text));
+                    shortcut_text.push('`');
+                    shortcut_text.push_str(text);
+                    shortcut_text.push('`');
                 }
                 if let Some(text_for_header) = state.text_for_header.as_mut() {
-                    let code = format!("{}{}{}", options.code_block_token, text, options.code_block_token);
-                    text_for_header.push_str(&code);
+                    text_for_header.push('`');
+                    text_for_header.push_str(text);
+                    text_for_header.push('`');
                 }
-                let (start, end) = if text.contains(options.code_block_token) {
-                    (
-                        String::from_iter([options.code_block_token, options.code_block_token, ' ']),
-                        String::from_iter([' ', options.code_block_token, options.code_block_token]),
-                    )
+                if text.chars().all(|ch| ch == ' ') {
+                    write!(formatter, "`{text}`")
                 } else {
-                    (
-                        String::from(options.code_block_token),
-                        String::from(options.code_block_token),
-                    )
-                };
-                formatter
-                    .write_str(&start)
-                    .and_then(|_| formatter.write_str(text))
-                    .and_then(|_| formatter.write_str(&end))
+                    let backticks = "`".repeat(count_consecutive_backticks(text) + 1);
+                    let space = match text.as_bytes() {
+                        &[b'`', ..] | &[.., b'`'] => " ", // Space needed to separate backtick.
+                        &[b' ', .., b' '] => " ",         // Space needed to escape inner space.
+                        _ => "",                          // No space needed.
+                    };
+                    write!(formatter, "{backticks}{space}{text}{space}{backticks}")
+                }
             }
             Start(ref tag) => {
                 if let List(ref list_type) = *tag {
@@ -639,4 +637,41 @@ where
     F: fmt::Write,
 {
     cmark_with_options(events, &mut formatter, Default::default())
+}
+
+fn count_consecutive_backticks(text: &str) -> usize {
+    let mut in_backticks = false;
+    let mut max_backticks = 0;
+    let mut cur_backticks = 0;
+
+    for ch in text.chars() {
+        if ch == '`' {
+            cur_backticks += 1;
+            in_backticks = true;
+        } else if in_backticks {
+            max_backticks = max_backticks.max(cur_backticks);
+            cur_backticks = 0;
+            in_backticks = false;
+        }
+    }
+    max_backticks.max(cur_backticks)
+}
+
+#[cfg(test)]
+mod count_consecutive_backticks {
+    use super::count_consecutive_backticks;
+
+    #[test]
+    fn happens_in_the_entire_string() {
+        assert_eq!(
+            count_consecutive_backticks("``a```b``"),
+            3,
+            "the highest seen consecutive segment of backticks counts"
+        );
+        assert_eq!(
+            count_consecutive_backticks("```a``b`"),
+            3,
+            "it can't be downgraded later"
+        );
+    }
 }
