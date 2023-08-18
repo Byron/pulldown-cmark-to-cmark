@@ -1,6 +1,6 @@
 [package]
 name = "pulldown-cmark-to-cmark"
-version = "10.0.4"
+version = "11.0.0"
 authors = [
     "Sebastian Thiel <byronimo@gmail.com>",
     "Dylan Owen <dyltotheo@gmail.com>",
