@@ -6,7 +6,7 @@ use std::{
     fmt,
 };
 
-use pulldown_cmark::{Alignment as TableAlignment, Event, HeadingLevel, LinkType};
+use pulldown_cmark::{Alignment as TableAlignment, Event, HeadingLevel, LinkType, MathDisplay};
 
 /// Similar to [Pulldown-Cmark-Alignment][Alignment], but with required
 /// traits for comparison to allow testing.
@@ -186,17 +186,19 @@ where
         if is_in_block_quote || t.is_empty() {
             return Cow::Borrowed(t);
         }
+        
+        return t.into();
 
-        let first = t.chars().next().expect("at least one char");
-        if options.special_characters().contains(first) {
-            let mut s = String::with_capacity(t.len() + 1);
-            s.push('\\');
-            s.push(first);
-            s.push_str(&t[1..]);
-            Cow::Owned(s)
-        } else {
-            Cow::Borrowed(t)
-        }
+        // let first = t.chars().next().expect("at least one char");
+        // if options.special_characters().contains(first) {
+        //     let mut s = String::with_capacity(t.len() + 1);
+        //     // s.push('\\');
+        //     s.push(first);
+        //     s.push_str(&t[1..]);
+        //     Cow::Owned(s)
+        // } else {
+        //     Cow::Borrowed(t)
+        // }
     }
 
     fn print_text_without_trailing_newline<F>(t: &str, f: &mut F, p: &[Cow<'_, str>]) -> fmt::Result
@@ -258,6 +260,17 @@ where
                     state.newlines_before_start = options.newlines_after_rule;
                 }
                 formatter.write_str("---")
+            }
+            Math(ref math_display, ref math) => {
+                let delimiter = match math_display {
+                    MathDisplay::Inline => "$",
+                    MathDisplay::Block => "\n$$",
+                };
+                
+                formatter.write_str(delimiter)?;
+                formatter.write_str(math.as_ref())?;
+                formatter.write_str(delimiter)?;
+                Ok(())
             }
             Code(ref text) => {
                 if let Some(shortcut_text) = state.current_shortcut_text.as_mut() {
