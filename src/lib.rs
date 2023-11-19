@@ -327,7 +327,10 @@ where
                     Image(..) => formatter.write_str("!["),
                     Emphasis => formatter.write_char(options.emphasis_token),
                     Strong => formatter.write_str(options.strong_token),
-                    FootnoteDefinition(ref name) => write!(formatter, "[^{}]: ", name),
+                    FootnoteDefinition(ref name) => {
+                        state.padding.push("    ".into());
+                        write!(formatter, "[^{}]: ", name)
+                    }
                     Paragraph => Ok(()),
                     Heading(level, _, _) => {
                         match level {
@@ -518,7 +521,10 @@ where
 
                     Ok(())
                 }
-                FootnoteDefinition(_) => Ok(()),
+                FootnoteDefinition(_) => {
+                    state.padding.pop();
+                    Ok(())
+                }
                 Strikethrough => formatter.write_str("~~"),
             },
             HardBreak => formatter.write_str("  \n").and(padding(&mut formatter, &state.padding)),
