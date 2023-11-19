@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Fix 
+
+ - properly format multi-line footnotes. Merge branch 'multiline-footnotes' ([`f6b5348`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/f6b53488417f65a30bf833c165c9112a37b393b7))
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 3 commits contributed to the release.
+ - 92 days passed between releases.
+ - 0 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 1 unique issue was worked on: [#61](https://github.com/Byron/pulldown-cmark-to-cmark/issues/61)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#61](https://github.com/Byron/pulldown-cmark-to-cmark/issues/61)**
+    - Fix: properly format multi-line footnotes. Merge branch 'multiline-footnotes' ([`f6b5348`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/f6b53488417f65a30bf833c165c9112a37b393b7))
+ * **Uncategorized**
+    - Multiline footnote fix ([`4768ad5`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/4768ad54fee48046974dc7b76d3768b62161e959))
+    - Failing multiline footnote test ([`e187313`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/e18731327065297e4d2ac9d8e24bb6b6db5bbaf0))
+</details>
+
 ## 11.0.0 (2023-08-18)
 
 ### New Features
@@ -20,9 +48,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
  - <csr-id-2263c2f33d9fb546881c0837f391bf266528f8d2/> Options to choose the ordered list marker and to auto-increment the ordered list numbers.
    - Based on the commonmark list spec an ordered list can use `.` or `)`
-     as the ordered list marker. Now users can configure the marker they want
-     to use with the `ordered_list_token` option.
-   - Previously we'd always output the same number for each bullet, based on
+   as the ordered list marker. Now users can configure the marker they want
+   to use with the `ordered_list_token` option.
+- Previously we'd always output the same number for each bullet, based on
      the first bullet in the list.
      Now when setting `increment_ordered_list_bullets=true` in th options we'll
      output auto-incremented numbers with proper support for nesting.
@@ -31,7 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 13 commits contributed to the release over the course of 232 calendar days.
+ - 14 commits contributed to the release over the course of 232 calendar days.
  - 342 days passed between releases.
  - 3 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
@@ -49,6 +77,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release pulldown-cmark-to-cmark v11.0.0 ([`6f23621`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/6f23621a4f9ab79c7eeb10f7f2c201dccef8dffd))
     - Merge branch 'lic' ([`b889953`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/b889953135053db9763458cb471d5b7bd55c3272))
     - Add apache-2 license text to crate as well ([`d9eb454`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/d9eb45477fc23da0960cdb24f9f20d67bfac0784))
     - Add license text ([`9ea32f4`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/9ea32f403d250ee5f3dc68373b3e37c8f690436b))
