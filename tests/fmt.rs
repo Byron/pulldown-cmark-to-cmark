@@ -192,9 +192,9 @@ mod inline_elements {
     #[test]
     fn footnote() {
         assert_eq!(
-            fmts("a [^b]\n[^b]: c"),
+            fmts("a [^b]\n\n[^b]: c"),
             (
-                "a [^b]\n[^b]: c".into(),
+                "a [^b]\n\n[^b]: c".into(),
                 State {
                     newlines_before_start: 2,
                     ..Default::default()
@@ -202,6 +202,15 @@ mod inline_elements {
             )
         )
     }
+
+    #[test]
+    fn multiline_footnote() {
+        assert_eq!(
+            fmts("a [^b]\n\n[^b]: this is\n    one footnote").0,
+            "a [^b]\n\n[^b]: this is\n    one footnote",
+        )
+    }
+
     #[test]
     fn autolinks_are_fully_resolved() {
         assert_eq!(fmts("<http://a/b>").0, "<http://a/b>",)
