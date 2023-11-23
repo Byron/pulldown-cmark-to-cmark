@@ -873,6 +873,32 @@ mod escapes {
     }
 
     #[test]
+    fn link_titles() {
+        // See https://spec.commonmark.org/0.30/#link-title for the rules around
+        // link titles and the characters they may contain
+        assert_eq!(
+            fmts(r#"[link](http://example.com "'link title'")"#).0,
+            r#"[link](http://example.com "'link title'")"#
+        );
+        assert_eq!(
+            fmts(r#"[link](http://example.com "\"link title\"")"#).0,
+            r#"[link](http://example.com "\"link title\"")"#
+        );
+        assert_eq!(
+            fmts(r#"[link](http://example.com '"link title"')"#).0,
+            r#"[link](http://example.com "\"link title\"")"#
+        );
+        assert_eq!(
+            fmts(r#"[link](http://example.com '\'link title\'')"#).0,
+            r#"[link](http://example.com "'link title'")"#
+        );
+        assert_eq!(
+            fmts(r#"[link](http://example.com (\(link title\)))"#).0,
+            r#"[link](http://example.com "(link title)")"#
+        );
+    }
+
+    #[test]
     fn it_does_esscape_lone_square_brackets_in_text() {
         assert_eq!(
             fmts("] a closing bracket does nothing").0,
