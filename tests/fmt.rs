@@ -881,6 +881,10 @@ mod escapes {
             r#"[link](http://example.com "'link title'")"#
         );
         assert_eq!(
+            fmts(r#"[link](http://example.com "\\\"link \\ title\"")"#).0,
+            r#"[link](http://example.com "\\\"link \\ title\"")"#
+        );
+        assert_eq!(
             fmts(r#"[link](http://example.com "\"link title\"")"#).0,
             r#"[link](http://example.com "\"link title\"")"#
         );

@@ -588,13 +588,28 @@ where
         write!(f, "]{}{uri}", separator, uri = uri)?;
     }
     if !title.is_empty() {
-        write!(f, " \"{title}\"", title = title)?;
+        write!(f, " \"{title}\"", title = EscapeLinkTitle(title))?;
     }
     if link_type != LinkType::Shortcut {
         f.write_char(')')?;
     }
 
     Ok(())
+}
+
+struct EscapeLinkTitle<'a>(&'a str);
+
+impl fmt::Display for EscapeLinkTitle<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for c in self.0.bytes() {
+            match c {
+                b'"' => write!(f, r#"\""#)?,
+                b'\\' => write!(f, r"\\")?,
+                c => write!(f, "{}", c as char)?,
+            }
+        }
+        Ok(())
+    }
 }
 
 impl<'a> State<'a> {
