@@ -3,7 +3,7 @@
 use std::{
     borrow::{Borrow, Cow},
     collections::HashSet,
-    fmt,
+    fmt::{self, Write},
 };
 
 use pulldown_cmark::{Alignment as TableAlignment, Event, HeadingLevel, LinkType};
@@ -588,13 +588,31 @@ where
         write!(f, "]{}{uri}", separator, uri = uri)?;
     }
     if !title.is_empty() {
-        write!(f, " \"{title}\"", title = title)?;
+        write!(f, " \"{title}\"", title = EscapeLinkTitle(title))?;
     }
     if link_type != LinkType::Shortcut {
         f.write_char(')')?;
     }
 
     Ok(())
+}
+
+struct EscapeLinkTitle<'a>(&'a str);
+
+/// Writes a link title with double quotes escaped.
+/// See https://spec.commonmark.org/0.30/#link-title for the rules around
+/// link titles and the characters they may contain.
+impl fmt::Display for EscapeLinkTitle<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for c in self.0.chars() {
+            match c {
+                '"' => f.write_str(r#"\""#)?,
+                '\\' => f.write_str(r"\\")?,
+                c => f.write_char(c)?,
+            }
+        }
+        Ok(())
+    }
 }
 
 impl<'a> State<'a> {
