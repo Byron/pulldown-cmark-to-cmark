@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 11.0.2 (2023-11-24)
+
+### Bug Fixes
+
+ - <csr-id-9a64f6bc8fafe22bfd4d3fc6704a097719a10566/> Escape double quotes in link titles.
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 4 commits contributed to the release.
+ - 4 days passed between releases.
+ - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
+ - 1 unique issue was worked on: [#62](https://github.com/Byron/pulldown-cmark-to-cmark/issues/62)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#62](https://github.com/Byron/pulldown-cmark-to-cmark/issues/62)**
+    - Escape double quotes in link titles. ([`9a64f6b`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/9a64f6bc8fafe22bfd4d3fc6704a097719a10566))
+ * **Uncategorized**
+    - Address code review comments ([`4767b2f`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/4767b2fe2dea1c4f0a563d3e71cdb54bd8efc8bc))
+    - Escape double quotes in link titles ([`74f0abe`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/74f0abee0dcfde1148af57e2acc0451b12ce1308))
+    - Failing test for link titles with interior punctuation ([`e891ea4`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/e891ea423ee7e1425dd4866e0d6e0fd74554a9e6))
+</details>
+
 ## 11.0.1 (2023-11-19)
 
 ### Fix 
@@ -15,7 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 4 commits contributed to the release.
+ - 5 commits contributed to the release.
  - 92 days passed between releases.
  - 0 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 1 unique issue was worked on: [#61](https://github.com/Byron/pulldown-cmark-to-cmark/issues/61)
@@ -29,6 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#61](https://github.com/Byron/pulldown-cmark-to-cmark/issues/61)**
     - Fix: properly format multi-line footnotes. Merge branch 'multiline-footnotes' ([`f6b5348`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/f6b53488417f65a30bf833c165c9112a37b393b7))
  * **Uncategorized**
+    - Release pulldown-cmark-to-cmark v11.0.1 ([`b1f77e0`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/b1f77e0526b59a04234c0874cf00493720da550a))
     - Prepare changelog ([`323cbc0`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/323cbc077267bb7ef370687d5c9d589758853e32))
     - Multiline footnote fix ([`4768ad5`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/4768ad54fee48046974dc7b76d3768b62161e959))
     - Failing multiline footnote test ([`e187313`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/e18731327065297e4d2ac9d8e24bb6b6db5bbaf0))
@@ -89,9 +119,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Add option to increment ordered list number ([`f2fae4b`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/f2fae4b5c64d44d624cb2dff16a70b31306e60ce))
     - Allow users to specify a custom ordered list marker ([`981c86a`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/981c86adc847eb8df0c1616b0e7377536f7f59e2))
 </details>
-
-<csr-unknown>
-Previously we’d always output the same number for each bullet, based onthe first bullet in the list.Now when setting increment_ordered_list_bullets=true in th options we’lloutput auto-incremented numbers with proper support for nesting.<csr-unknown/>
 
 ## 10.0.4 (2022-09-10)
 
