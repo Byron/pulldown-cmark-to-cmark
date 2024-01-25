@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 11.1.0 (2024-01-25)
+
+### New Features
+
+ - <csr-id-10b855fc6433ba1aa70add57be261d8be3fc2249/> add `count_code_block_tokens()` function.
+   It allows to calculate the amount of backticks around a code block for given events
+   to assure code-blocks are reproduced correctly when rendering the same events.
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 5 commits contributed to the release over the course of 59 calendar days.
+ - 61 days passed between releases.
+ - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Add `count_code_block_tokens()` function. ([`10b855f`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/10b855fc6433ba1aa70add57be261d8be3fc2249))
+    - Refactor ([`c0f631d`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/c0f631d68a9373bf662302296044d90eaac4c8b6))
+    - Add check_code_block_token_count function ([`f119d77`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/f119d7735fa1ed762fedf4a614a76bd0c7fbb33f))
+    - Merge pull request #64 from max-heller/readme-links ([`b926264`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/b9262648473b2ec8c0aaf5fc2f23c41ccdfcc58a))
+    - Update pulldown-cmark and mdbook links in README ([`31e8bb5`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/31e8bb56781633b25dbe685d622f209afaa097ec))
+</details>
+
 ## 11.0.2 (2023-11-24)
 
 ### Bug Fixes
@@ -15,7 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 4 commits contributed to the release.
+ - 5 commits contributed to the release.
  - 4 days passed between releases.
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 1 unique issue was worked on: [#62](https://github.com/Byron/pulldown-cmark-to-cmark/issues/62)
@@ -29,6 +60,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#62](https://github.com/Byron/pulldown-cmark-to-cmark/issues/62)**
     - Escape double quotes in link titles. ([`9a64f6b`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/9a64f6bc8fafe22bfd4d3fc6704a097719a10566))
  * **Uncategorized**
+    - Release pulldown-cmark-to-cmark v11.0.2 ([`befdaab`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/befdaabc5c024d6d22332cf6e6e65baaa3b92a72))
     - Address code review comments ([`4767b2f`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/4767b2fe2dea1c4f0a563d3e71cdb54bd8efc8bc))
     - Escape double quotes in link titles ([`74f0abe`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/74f0abee0dcfde1148af57e2acc0451b12ce1308))
     - Failing test for link titles with interior punctuation ([`e891ea4`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/e891ea423ee7e1425dd4866e0d6e0fd74554a9e6))
