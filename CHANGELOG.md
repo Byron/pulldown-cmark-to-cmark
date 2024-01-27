@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 11.2.0 (2024-01-27)
+
+### New Features
+
+ - <csr-id-e33936543e4db169fb7734cc0ce83127a0c04e8b/> introduce `calculate_code_block_token_count()`, along with `DEFAULT_CODE_BLOCK_TOKEN_COUNT`.
+   That way it's possible to correctly determine the amount of fenced code-block tokens
+   needed to render all given events such that code-blocks are retained.
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 3 commits contributed to the release.
+ - 1 day passed between releases.
+ - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Merge branch 'fix_count_code_block_tokens' ([`ee42335`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/ee4233527dd46b963d5a553c18bcc7b876f75fa1))
+    - Introduce `calculate_code_block_token_count()`, along with `DEFAULT_CODE_BLOCK_TOKEN_COUNT`. ([`e339365`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/e33936543e4db169fb7734cc0ce83127a0c04e8b))
+    - Change the return type of count_code_block_tokens ([`ef1c276`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/ef1c2766c1f91ba226063e4f914646f0d32172da))
+</details>
+
 ## 11.1.0 (2024-01-25)
 
 ### New Features
@@ -17,7 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 5 commits contributed to the release over the course of 59 calendar days.
+ - 6 commits contributed to the release over the course of 59 calendar days.
  - 61 days passed between releases.
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
@@ -29,6 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release pulldown-cmark-to-cmark v11.1.0 ([`d236e29`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/d236e29395304f40c988813b4bf7b76e8dd2bfbe))
     - Add `count_code_block_tokens()` function. ([`10b855f`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/10b855fc6433ba1aa70add57be261d8be3fc2249))
     - Refactor ([`c0f631d`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/c0f631d68a9373bf662302296044d90eaac4c8b6))
     - Add check_code_block_token_count function ([`f119d77`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/f119d7735fa1ed762fedf4a614a76bd0c7fbb33f))
