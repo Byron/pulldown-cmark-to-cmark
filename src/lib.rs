@@ -87,8 +87,6 @@ pub struct Options<'a> {
     pub strong_token: &'a str,
 }
 
-const DEFAULT_CODE_BLOCK_TOKEN_COUNT: usize = 4;
-
 const DEFAULT_OPTIONS: Options<'_> = Options {
     newlines_after_headline: 2,
     newlines_after_paragraph: 2,
@@ -98,7 +96,7 @@ const DEFAULT_OPTIONS: Options<'_> = Options {
     newlines_after_list: 2,
     newlines_after_blockquote: 2,
     newlines_after_rest: 1,
-    code_block_token_count: DEFAULT_CODE_BLOCK_TOKEN_COUNT,
+    code_block_token_count: 4,
     code_block_token: '`',
     list_token: '*',
     ordered_list_token: '.',
@@ -670,13 +668,14 @@ where
 /// Obtain the appropriate token count for fenced code blocks.
 ///
 /// Use this function to obtain the correct value for `code_block_token_count` field of [`Options`].
+/// If the return value is `None`, an arbitrary value can be used.
 ///
 /// ```rust
 /// use pulldown_cmark::Event;
 /// use pulldown_cmark_to_cmark::*;
 ///
 /// let events = &[Event::Text("text".into())];
-/// let code_block_token_count = count_code_block_tokens(events);
+/// let code_block_token_count = count_code_block_tokens(events).unwrap_or(4);
 /// let options = Options {
 ///     code_block_token_count,
 ///     ..Default::default()
@@ -684,7 +683,7 @@ where
 /// let mut buf = String::new();
 /// cmark_with_options(events.iter(), &mut buf, options);
 /// ```
-pub fn count_code_block_tokens<'a, I, E>(events: I) -> usize
+pub fn count_code_block_tokens<'a, I, E>(events: I) -> Option<usize>
 where
     I: IntoIterator<Item = E>,
     E: Borrow<Event<'a>>,
@@ -735,11 +734,11 @@ where
         }
     }
     max_token_count = max_token_count.max(token_count);
-    if max_token_count < DEFAULT_CODE_BLOCK_TOKEN_COUNT {
-        DEFAULT_CODE_BLOCK_TOKEN_COUNT
+    if max_token_count < 3 {
+        None
     } else {
         // If there are consecutive tokens in codeblock, codeblock token should be extended.
-        max_token_count + 1
+        Some(max_token_count + 1)
     }
 }
 
@@ -772,47 +771,47 @@ mod count_code_block_tokens {
     #[test]
     fn no_token() {
         let events = &[CODE_BLOCK_START, Event::Text("text".into()), CODE_BLOCK_END];
-        assert_eq!(count_code_block_tokens(events.iter()), 4);
+        assert_eq!(count_code_block_tokens(events.iter()), None);
     }
 
     #[test]
     fn backtick() {
         let events = &[CODE_BLOCK_START, Event::Text("```".into()), CODE_BLOCK_END];
-        assert_eq!(count_code_block_tokens(events.iter()), 4);
+        assert_eq!(count_code_block_tokens(events.iter()), Some(4));
 
         let events = &[CODE_BLOCK_START, Event::Text("````".into()), CODE_BLOCK_END];
-        assert_eq!(count_code_block_tokens(events.iter()), 5);
+        assert_eq!(count_code_block_tokens(events.iter()), Some(5));
 
         let events = &[CODE_BLOCK_START, Event::Text("``````````".into()), CODE_BLOCK_END];
-        assert_eq!(count_code_block_tokens(events.iter()), 11);
+        assert_eq!(count_code_block_tokens(events.iter()), Some(11));
     }
 
     #[test]
     fn tilde() {
         let events = &[CODE_BLOCK_START, Event::Text("~~~".into()), CODE_BLOCK_END];
-        assert_eq!(count_code_block_tokens(events.iter()), 4);
+        assert_eq!(count_code_block_tokens(events.iter()), Some(4));
 
         let events = &[CODE_BLOCK_START, Event::Text("~~~~".into()), CODE_BLOCK_END];
-        assert_eq!(count_code_block_tokens(events.iter()), 5);
+        assert_eq!(count_code_block_tokens(events.iter()), Some(5));
 
         let events = &[CODE_BLOCK_START, Event::Text("~~~~~~~~~~".into()), CODE_BLOCK_END];
-        assert_eq!(count_code_block_tokens(events.iter()), 11);
+        assert_eq!(count_code_block_tokens(events.iter()), Some(11));
     }
 
     #[test]
     fn mix() {
         let events = &[CODE_BLOCK_START, Event::Text("```~~~~".into()), CODE_BLOCK_END];
-        assert_eq!(count_code_block_tokens(events.iter()), 5);
+        assert_eq!(count_code_block_tokens(events.iter()), Some(5));
 
         let events = &[CODE_BLOCK_START, Event::Text("~~~~`````~~".into()), CODE_BLOCK_END];
-        assert_eq!(count_code_block_tokens(events.iter()), 6);
+        assert_eq!(count_code_block_tokens(events.iter()), Some(6));
 
         let events = &[
             CODE_BLOCK_START,
             Event::Text("~~~```````~~~```~~".into()),
             CODE_BLOCK_END,
         ];
-        assert_eq!(count_code_block_tokens(events.iter()), 8);
+        assert_eq!(count_code_block_tokens(events.iter()), Some(8));
     }
 
     #[test]
@@ -823,7 +822,7 @@ mod count_code_block_tokens {
             Event::Text("~~~".into()),
             CODE_BLOCK_END,
         ];
-        assert_eq!(count_code_block_tokens(events.iter()), 7);
+        assert_eq!(count_code_block_tokens(events.iter()), Some(7));
 
         let events = &[
             CODE_BLOCK_START,
@@ -831,7 +830,7 @@ mod count_code_block_tokens {
             Event::Text("````".into()),
             CODE_BLOCK_END,
         ];
-        assert_eq!(count_code_block_tokens(events.iter()), 9);
+        assert_eq!(count_code_block_tokens(events.iter()), Some(9));
     }
 }
 
