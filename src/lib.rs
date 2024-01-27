@@ -60,6 +60,9 @@ pub struct State<'a> {
     pub shortcuts: Vec<(String, String, String)>,
 }
 
+/// Thea mount of code-block tokens one needs to produce a valid fenced code-block.
+pub const DEFAULT_CODE_BLOCK_TOKEN_COUNT: usize = 3;
+
 /// Configuration for the [`cmark_with_options()`] and [`cmark_resume_with_options()`] functions.
 /// The defaults should provide decent spacing and most importantly, will
 /// provide a faithful rendering of your markdown document particularly when
@@ -77,7 +80,9 @@ pub struct Options<'a> {
     pub newlines_after_blockquote: usize,
     pub newlines_after_rest: usize,
     /// Token count for fenced code block. An appropriate value of this field can be decided by
-    /// [`count_code_block_tokens()`].
+    /// [`calculate_code_block_token_count()`].
+    /// Note that the default value is `4` which allows for one level of nested code-blocks,
+    /// which is typically a safe value for common kinds of markdown documents.
     pub code_block_token_count: usize,
     pub code_block_token: char,
     pub list_token: char,
@@ -275,7 +280,7 @@ where
                 if text.chars().all(|ch| ch == ' ') {
                     write!(formatter, "`{text}`")
                 } else {
-                    let backticks = "`".repeat(count_consecutive_backticks(text) + 1);
+                    let backticks = "`".repeat(count_consecutive(text, '`') + 1);
                     let space = match text.as_bytes() {
                         &[b'`', ..] | &[.., b'`'] => " ", // Space needed to separate backtick.
                         &[b' ', .., b' '] => " ",         // Space needed to escape inner space.
@@ -665,17 +670,22 @@ where
     cmark_with_options(events, &mut formatter, Default::default())
 }
 
-/// Obtain the appropriate token count for fenced code blocks.
+/// Return the `<seen amount of consecutive fenced code-block tokens> + 1` that occur *within* a
+/// fenced code-block `events`.
 ///
-/// Use this function to obtain the correct value for `code_block_token_count` field of [`Options`].
-/// If the return value is `None`, an arbitrary value can be used.
+/// Use this function to obtain the correct value for `code_block_token_count` field of [`Options`]
+/// to assure that the enclosing code-blocks remain functional as such.
+///
+/// Returns `None` if `events` didn't include any code-block, or the code-block didn't contain
+/// a nested block. In that case, the correct amount of fenced code-block tokens is
+/// [`DEFAULT_CODE_BLOCK_TOKEN_COUNT`].
 ///
 /// ```rust
 /// use pulldown_cmark::Event;
 /// use pulldown_cmark_to_cmark::*;
 ///
 /// let events = &[Event::Text("text".into())];
-/// let code_block_token_count = count_code_block_tokens(events).unwrap_or(4);
+/// let code_block_token_count = calculate_code_block_token_count(events).unwrap_or(DEFAULT_CODE_BLOCK_TOKEN_COUNT);
 /// let options = Options {
 ///     code_block_token_count,
 ///     ..Default::default()
@@ -683,7 +693,7 @@ where
 /// let mut buf = String::new();
 /// cmark_with_options(events.iter(), &mut buf, options);
 /// ```
-pub fn count_code_block_tokens<'a, I, E>(events: I) -> Option<usize>
+pub fn calculate_code_block_token_count<'a, I, E>(events: I) -> Option<usize>
 where
     I: IntoIterator<Item = E>,
     E: Borrow<Event<'a>>,
@@ -694,161 +704,67 @@ where
     // token_count should be taken over Text events
     // because a continuous text may be splitted to some Text events.
     let mut token_count = 0;
-    let mut last_token_char = ' ';
+    let mut prev_token_char = None;
     for event in events {
         match event.borrow() {
             Event::Start(Tag::CodeBlock(_)) => {
                 in_codeblock = true;
-                last_token_char = ' ';
             }
             Event::End(Tag::CodeBlock(_)) => {
                 in_codeblock = false;
-                last_token_char = ' ';
+                prev_token_char = None;
             }
             Event::Text(x) if in_codeblock => {
                 for c in x.chars() {
-                    if c == '`' {
-                        if last_token_char == '`' {
+                    let prev_token = prev_token_char.take();
+                    if c == '`' || c == '~' {
+                        prev_token_char = Some(c);
+                        if Some(c) == prev_token {
                             token_count += 1;
                         } else {
                             max_token_count = max_token_count.max(token_count);
                             token_count = 1;
                         }
-                        last_token_char = '`';
-                    } else if c == '~' {
-                        if last_token_char == '~' {
-                            token_count += 1;
-                        } else {
-                            max_token_count = max_token_count.max(token_count);
-                            token_count = 1;
-                        }
-                        last_token_char = '~';
-                    } else {
-                        last_token_char = ' ';
                     }
                 }
             }
-            _ => {
-                last_token_char = ' ';
-            }
+            _ => prev_token_char = None,
         }
     }
+
     max_token_count = max_token_count.max(token_count);
-    if max_token_count < 3 {
-        None
-    } else {
-        // If there are consecutive tokens in codeblock, codeblock token should be extended.
-        Some(max_token_count + 1)
-    }
+    (max_token_count >= 3).then_some(max_token_count + 1)
 }
 
-fn count_consecutive_backticks(text: &str) -> usize {
-    let mut in_backticks = false;
+fn count_consecutive(text: &str, search: char) -> usize {
+    let mut in_tokens = false;
     let mut max_backticks = 0;
-    let mut cur_backticks = 0;
+    let mut cur_tokens = 0;
 
     for ch in text.chars() {
-        if ch == '`' {
-            cur_backticks += 1;
-            in_backticks = true;
-        } else if in_backticks {
-            max_backticks = max_backticks.max(cur_backticks);
-            cur_backticks = 0;
-            in_backticks = false;
+        if ch == search {
+            cur_tokens += 1;
+            in_tokens = true;
+        } else if in_tokens {
+            max_backticks = max_backticks.max(cur_tokens);
+            cur_tokens = 0;
+            in_tokens = false;
         }
     }
-    max_backticks.max(cur_backticks)
+    max_backticks.max(cur_tokens)
 }
 
 #[cfg(test)]
-mod count_code_block_tokens {
-    use super::count_code_block_tokens;
-    use pulldown_cmark::{CodeBlockKind, CowStr, Event, Tag};
-
-    const CODE_BLOCK_START: Event<'_> = Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(CowStr::Borrowed(""))));
-    const CODE_BLOCK_END: Event<'_> = Event::End(Tag::CodeBlock(CodeBlockKind::Fenced(CowStr::Borrowed(""))));
-
-    #[test]
-    fn no_token() {
-        let events = &[CODE_BLOCK_START, Event::Text("text".into()), CODE_BLOCK_END];
-        assert_eq!(count_code_block_tokens(events.iter()), None);
-    }
-
-    #[test]
-    fn backtick() {
-        let events = &[CODE_BLOCK_START, Event::Text("```".into()), CODE_BLOCK_END];
-        assert_eq!(count_code_block_tokens(events.iter()), Some(4));
-
-        let events = &[CODE_BLOCK_START, Event::Text("````".into()), CODE_BLOCK_END];
-        assert_eq!(count_code_block_tokens(events.iter()), Some(5));
-
-        let events = &[CODE_BLOCK_START, Event::Text("``````````".into()), CODE_BLOCK_END];
-        assert_eq!(count_code_block_tokens(events.iter()), Some(11));
-    }
-
-    #[test]
-    fn tilde() {
-        let events = &[CODE_BLOCK_START, Event::Text("~~~".into()), CODE_BLOCK_END];
-        assert_eq!(count_code_block_tokens(events.iter()), Some(4));
-
-        let events = &[CODE_BLOCK_START, Event::Text("~~~~".into()), CODE_BLOCK_END];
-        assert_eq!(count_code_block_tokens(events.iter()), Some(5));
-
-        let events = &[CODE_BLOCK_START, Event::Text("~~~~~~~~~~".into()), CODE_BLOCK_END];
-        assert_eq!(count_code_block_tokens(events.iter()), Some(11));
-    }
-
-    #[test]
-    fn mix() {
-        let events = &[CODE_BLOCK_START, Event::Text("```~~~~".into()), CODE_BLOCK_END];
-        assert_eq!(count_code_block_tokens(events.iter()), Some(5));
-
-        let events = &[CODE_BLOCK_START, Event::Text("~~~~`````~~".into()), CODE_BLOCK_END];
-        assert_eq!(count_code_block_tokens(events.iter()), Some(6));
-
-        let events = &[
-            CODE_BLOCK_START,
-            Event::Text("~~~```````~~~```~~".into()),
-            CODE_BLOCK_END,
-        ];
-        assert_eq!(count_code_block_tokens(events.iter()), Some(8));
-    }
-
-    #[test]
-    fn splitted_text() {
-        let events = &[
-            CODE_BLOCK_START,
-            Event::Text("~~~".into()),
-            Event::Text("~~~".into()),
-            CODE_BLOCK_END,
-        ];
-        assert_eq!(count_code_block_tokens(events.iter()), Some(7));
-
-        let events = &[
-            CODE_BLOCK_START,
-            Event::Text("````".into()),
-            Event::Text("````".into()),
-            CODE_BLOCK_END,
-        ];
-        assert_eq!(count_code_block_tokens(events.iter()), Some(9));
-    }
-}
-
-#[cfg(test)]
-mod count_consecutive_backticks {
-    use super::count_consecutive_backticks;
+mod count_consecutive {
+    use super::count_consecutive;
 
     #[test]
     fn happens_in_the_entire_string() {
         assert_eq!(
-            count_consecutive_backticks("``a```b``"),
+            count_consecutive("``a```b``", '`'),
             3,
             "the highest seen consecutive segment of backticks counts"
         );
-        assert_eq!(
-            count_consecutive_backticks("```a``b`"),
-            3,
-            "it can't be downgraded later"
-        );
+        assert_eq!(count_consecutive("```a``b`", '`'), 3, "it can't be downgraded later");
     }
 }
