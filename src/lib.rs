@@ -6,7 +6,7 @@ use std::{
     fmt::{self, Write},
 };
 
-use pulldown_cmark::{Alignment as TableAlignment, Event, HeadingLevel, LinkType, Tag};
+use pulldown_cmark::{Alignment as TableAlignment, Event, HeadingLevel, LinkType, Tag, TagEnd};
 
 /// Similar to [Pulldown-Cmark-Alignment][Alignment], but with required
 /// traits for comparison to allow testing.
@@ -325,13 +325,19 @@ where
                         state.text_for_header = Some(String::new());
                         formatter.write_char('|')
                     }
-                    Link(LinkType::Autolink | LinkType::Email, ..) => formatter.write_char('<'),
-                    Link(LinkType::Shortcut, ..) => {
+                    Link {
+                        link_type: LinkType::Autolink | LinkType::Email,
+                        ..
+                    } => formatter.write_char('<'),
+                    Link {
+                        link_type: LinkType::Shortcut,
+                        ..
+                    } => {
                         state.current_shortcut_text = Some(String::new());
                         formatter.write_char('[')
                     }
-                    Link(..) => formatter.write_char('['),
-                    Image(..) => formatter.write_str("!["),
+                    Link { .. } => formatter.write_char('['),
+                    Image { .. } => formatter.write_str("!["),
                     Emphasis => formatter.write_char(options.emphasis_token),
                     Strong => formatter.write_str(options.strong_token),
                     FootnoteDefinition(ref name) => {
@@ -339,7 +345,7 @@ where
                         write!(formatter, "[^{}]: ", name)
                     }
                     Paragraph => Ok(()),
-                    Heading(level, _, _) => {
+                    Heading { level, .. } => {
                         match level {
                             HeadingLevel::H1 => formatter.write_str("#"),
                             HeadingLevel::H2 => formatter.write_str("##"),
@@ -390,13 +396,14 @@ where
                         .and_then(|_| formatter.write_char('\n'))
                         .and_then(|_| padding(&mut formatter, &state.padding))
                     }
+                    HtmlBlock => Ok(()),
                     List(_) => Ok(()),
                     Strikethrough => formatter.write_str("~~"),
                 }
             }
             End(ref tag) => match tag {
-                Link(LinkType::Autolink | LinkType::Email, ..) => formatter.write_char('>'),
-                Link(LinkType::Shortcut, ref uri, ref title) => {
+                TagEnd::Link(LinkType::Autolink | LinkType::Email, ..) => formatter.write_char('>'),
+                TagEnd::Link(LinkType::Shortcut, ref uri, ref title) => {
                     if let Some(shortcut_text) = state.current_shortcut_text.take() {
                         state
                             .shortcuts
@@ -404,12 +411,12 @@ where
                     }
                     formatter.write_char(']')
                 }
-                Image(_, ref uri, ref title) | Link(_, ref uri, ref title) => {
+                TagEnd::Image(_, ref uri, ref title) | Link(_, ref uri, ref title) => {
                     close_link(uri, title, &mut formatter, LinkType::Inline)
                 }
-                Emphasis => formatter.write_char(options.emphasis_token),
-                Strong => formatter.write_str(options.strong_token),
-                Heading(_, id, classes) => {
+                TagEnd::Emphasis => formatter.write_char(options.emphasis_token),
+                TagEnd::Strong => formatter.write_str(options.strong_token),
+                TagEnd::Heading(_, id, classes) => {
                     let emit_braces = id.is_some() || !classes.is_empty();
                     if emit_braces {
                         formatter.write_str(" {")?;
@@ -436,13 +443,13 @@ where
                     }
                     Ok(())
                 }
-                Paragraph => {
+                TagEnd::Paragraph => {
                     if state.newlines_before_start < options.newlines_after_paragraph {
                         state.newlines_before_start = options.newlines_after_paragraph;
                     }
                     Ok(())
                 }
-                CodeBlock(_) => {
+                TagEnd::CodeBlock => {
                     if state.newlines_before_start < options.newlines_after_codeblock {
                         state.newlines_before_start = options.newlines_after_codeblock;
                     }
@@ -455,7 +462,7 @@ where
                     }
                     Ok(())
                 }
-                Table(_) => {
+                TagEnd::Table => {
                     if state.newlines_before_start < options.newlines_after_table {
                         state.newlines_before_start = options.newlines_after_table;
                     }
@@ -463,7 +470,7 @@ where
                     state.table_headers.clear();
                     Ok(())
                 }
-                TableCell => {
+                TagEnd::TableCell => {
                     state.table_headers.push(
                         state
                             .text_for_header
@@ -473,13 +480,13 @@ where
                     );
                     Ok(())
                 }
-                ref t @ TableRow | ref t @ TableHead => {
+                ref t @ TagEnd::TableRow | ref t @ TagEnd::TableHead => {
                     if state.newlines_before_start < options.newlines_after_rest {
                         state.newlines_before_start = options.newlines_after_rest;
                     }
                     formatter.write_char('|')?;
 
-                    if let TableHead = t {
+                    if let TagEnd::TableHead = t {
                         formatter
                             .write_char('\n')
                             .and(padding(&mut formatter, &state.padding))?;
@@ -505,21 +512,21 @@ where
                     }
                     Ok(())
                 }
-                Item => {
+                TagEnd::Item => {
                     state.padding.pop();
                     if state.newlines_before_start < options.newlines_after_rest {
                         state.newlines_before_start = options.newlines_after_rest;
                     }
                     Ok(())
                 }
-                List(_) => {
+                TagEnd::List(_) => {
                     state.list_stack.pop();
                     if state.list_stack.is_empty() && state.newlines_before_start < options.newlines_after_list {
                         state.newlines_before_start = options.newlines_after_list;
                     }
                     Ok(())
                 }
-                BlockQuote => {
+                TagEnd::BlockQuote => {
                     state.padding.pop();
 
                     if state.newlines_before_start < options.newlines_after_blockquote {
@@ -528,11 +535,11 @@ where
 
                     Ok(())
                 }
-                FootnoteDefinition(_) => {
+                TagEnd::FootnoteDefinition => {
                     state.padding.pop();
                     Ok(())
                 }
-                Strikethrough => formatter.write_str("~~"),
+                TagEnd::Strikethrough => formatter.write_str("~~"),
             },
             HardBreak => formatter.write_str("  \n").and(padding(&mut formatter, &state.padding)),
             SoftBreak => formatter.write_char('\n').and(padding(&mut formatter, &state.padding)),
@@ -551,7 +558,7 @@ where
                     &state.padding,
                 )
             }
-            Html(ref text) => {
+            Html(ref text) | InlineHtml(ref text) => {
                 state.last_was_html = true;
                 consume_newlines(&mut formatter, &mut state)?;
                 print_text_without_trailing_newline(text, &mut formatter, &state.padding)
@@ -710,7 +717,7 @@ where
             Event::Start(Tag::CodeBlock(_)) => {
                 in_codeblock = true;
             }
-            Event::End(Tag::CodeBlock(_)) => {
+            Event::End(TagEnd::CodeBlock) => {
                 in_codeblock = false;
                 prev_token_char = None;
             }
