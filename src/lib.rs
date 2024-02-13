@@ -6,7 +6,7 @@ use std::{
     fmt::{self, Write},
 };
 
-use pulldown_cmark::{Alignment as TableAlignment, Event, HeadingLevel, LinkType, Tag, TagEnd};
+use pulldown_cmark::{Alignment as TableAlignment, Event, HeadingLevel, LinkType, MetadataBlockKind, Tag, TagEnd};
 
 /// Similar to [Pulldown-Cmark-Alignment][Alignment], but with required
 /// traits for comparison to allow testing.
@@ -397,6 +397,8 @@ where
                         .and_then(|_| padding(&mut formatter, &state.padding))
                     }
                     HtmlBlock => Ok(()),
+                    MetadataBlock(MetadataBlockKind::YamlStyle) => formatter.write_str("---\n"),
+                    MetadataBlock(MetadataBlockKind::PlusesStyle) => formatter.write_str("+++\n"),
                     List(_) => Ok(()),
                     Strikethrough => formatter.write_str("~~"),
                 }
@@ -462,6 +464,8 @@ where
                     }
                     Ok(())
                 }
+                TagEnd::MetadataBlock(MetadataBlockKind::PlusesStyle) => formatter.write_str("+++"),
+                TagEnd::MetadataBlock(MetadataBlockKind::YamlStyle) => formatter.write_str("..."),
                 TagEnd::Table => {
                     if state.newlines_before_start < options.newlines_after_table {
                         state.newlines_before_start = options.newlines_after_table;
