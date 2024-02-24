@@ -348,7 +348,7 @@ where
                         link_type,
                         dest_url,
                         title,
-                        id,
+                        id: _,
                     } => {
                         state.link_stack.push(match link_type {
                             LinkType::Autolink | LinkType::Email => {
@@ -374,10 +374,10 @@ where
                         Ok(())
                     }
                     Image {
-                        link_type,
+                        link_type: _,
                         dest_url,
                         title,
-                        id,
+                        id: _,
                     } => {
                         state.image_stack.push(ImageLink {
                             uri: dest_url.to_string(),
@@ -396,7 +396,7 @@ where
                         level,
                         id,
                         classes,
-                        attrs,
+                        attrs: _,
                     } => {
                         assert_eq!(state.current_heading, None);
                         state.current_heading = Some((

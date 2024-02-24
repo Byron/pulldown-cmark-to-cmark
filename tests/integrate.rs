@@ -1,10 +1,10 @@
 #[cfg(test)]
 mod calculate_code_block_token_count {
-    use pulldown_cmark::{CodeBlockKind, CowStr, Event, Tag};
+    use pulldown_cmark::{CodeBlockKind, CowStr, Event, Tag, TagEnd};
     use pulldown_cmark_to_cmark::calculate_code_block_token_count;
 
     const CODE_BLOCK_START: Event<'_> = Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(CowStr::Borrowed(""))));
-    const CODE_BLOCK_END: Event<'_> = Event::End(Tag::CodeBlock(CodeBlockKind::Fenced(CowStr::Borrowed(""))));
+    const CODE_BLOCK_END: Event<'_> = Event::End(TagEnd::CodeBlock);
 
     #[test]
     fn no_token() {
