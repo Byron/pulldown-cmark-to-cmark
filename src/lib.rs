@@ -53,11 +53,30 @@ pub struct State<'a> {
     pub last_was_html: bool,
     /// True if the last event was text and the text does not have trailing newline. Used to inject additional newlines before code block end fence.
     pub last_was_text_without_trailing_newline: bool,
+    /// Currently open links
+    pub link_stack: Vec<LinkCategory>,
+    /// Currently open images
+    pub image_stack: Vec<ImageLink>,
+    /// Keeps track of the last seen heading's id and classes
+    pub current_heading: Option<(Option<String>, Vec<String>)>,
 
     /// Keeps track of the last seen shortcut/link
     pub current_shortcut_text: Option<String>,
     /// A list of shortcuts seen so far for later emission
     pub shortcuts: Vec<(String, String, String)>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum LinkCategory {
+    AngleBracketed,
+    Shortcut { uri: String, title: String },
+    Other { uri: String, title: String },
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ImageLink {
+    uri: String,
+    title: String,
 }
 
 /// Thea mount of code-block tokens one needs to produce a valid fenced code-block.
@@ -326,18 +345,46 @@ where
                         formatter.write_char('|')
                     }
                     Link {
-                        link_type: LinkType::Autolink | LinkType::Email,
-                        ..
-                    } => formatter.write_char('<'),
-                    Link {
-                        link_type: LinkType::Shortcut,
-                        ..
+                        link_type,
+                        dest_url,
+                        title,
+                        id,
                     } => {
-                        state.current_shortcut_text = Some(String::new());
-                        formatter.write_char('[')
+                        state.link_stack.push(match link_type {
+                            LinkType::Autolink | LinkType::Email => {
+                                formatter.write_char('<')?;
+                                LinkCategory::AngleBracketed
+                            }
+                            LinkType::Shortcut => {
+                                state.current_shortcut_text = Some(String::new());
+                                formatter.write_char('[')?;
+                                LinkCategory::Shortcut {
+                                    uri: dest_url.to_string(),
+                                    title: title.to_string(),
+                                }
+                            }
+                            _ => {
+                                formatter.write_char('[')?;
+                                LinkCategory::Other {
+                                    uri: dest_url.to_string(),
+                                    title: title.to_string(),
+                                }
+                            }
+                        });
+                        Ok(())
                     }
-                    Link { .. } => formatter.write_char('['),
-                    Image { .. } => formatter.write_str("!["),
+                    Image {
+                        link_type,
+                        dest_url,
+                        title,
+                        id,
+                    } => {
+                        state.image_stack.push(ImageLink {
+                            uri: dest_url.to_string(),
+                            title: title.to_string(),
+                        });
+                        formatter.write_str("![")
+                    }
                     Emphasis => formatter.write_char(options.emphasis_token),
                     Strong => formatter.write_str(options.strong_token),
                     FootnoteDefinition(ref name) => {
@@ -345,7 +392,17 @@ where
                         write!(formatter, "[^{}]: ", name)
                     }
                     Paragraph => Ok(()),
-                    Heading { level, .. } => {
+                    Heading {
+                        level,
+                        id,
+                        classes,
+                        attrs,
+                    } => {
+                        assert_eq!(state.current_heading, None);
+                        state.current_heading = Some((
+                            id.as_ref().map(|id| id.to_string()),
+                            classes.iter().map(|class| class.to_string()).collect(),
+                        ));
                         match level {
                             HeadingLevel::H1 => formatter.write_str("#"),
                             HeadingLevel::H2 => formatter.write_str("##"),
@@ -404,28 +461,33 @@ where
                 }
             }
             End(ref tag) => match tag {
-                TagEnd::Link(LinkType::Autolink | LinkType::Email, ..) => formatter.write_char('>'),
-                TagEnd::Link(LinkType::Shortcut, ref uri, ref title) => {
-                    if let Some(shortcut_text) = state.current_shortcut_text.take() {
-                        state
-                            .shortcuts
-                            .push((shortcut_text, uri.to_string(), title.to_string()));
+                TagEnd::Link => match state.link_stack.pop().unwrap() {
+                    LinkCategory::AngleBracketed => formatter.write_char('>'),
+                    LinkCategory::Shortcut { uri, title } => {
+                        if let Some(shortcut_text) = state.current_shortcut_text.take() {
+                            state
+                                .shortcuts
+                                .push((shortcut_text, uri.to_string(), title.to_string()));
+                        }
+                        formatter.write_char(']')
                     }
-                    formatter.write_char(']')
-                }
-                TagEnd::Image(_, ref uri, ref title) | Link(_, ref uri, ref title) => {
-                    close_link(uri, title, &mut formatter, LinkType::Inline)
+                    LinkCategory::Other { uri, title } => close_link(&uri, &title, &mut formatter, LinkType::Inline),
+                },
+                TagEnd::Image => {
+                    let ImageLink { uri, title } = state.image_stack.pop().unwrap();
+                    close_link(uri.as_ref(), title.as_ref(), &mut formatter, LinkType::Inline)
                 }
                 TagEnd::Emphasis => formatter.write_char(options.emphasis_token),
                 TagEnd::Strong => formatter.write_str(options.strong_token),
-                TagEnd::Heading(_, id, classes) => {
+                TagEnd::Heading(_) => {
+                    let (id, classes) = state.current_heading.take().unwrap();
                     let emit_braces = id.is_some() || !classes.is_empty();
                     if emit_braces {
                         formatter.write_str(" {")?;
                     }
                     if let Some(id_str) = id {
                         formatter.write_char('#')?;
-                        formatter.write_str(id_str)?;
+                        formatter.write_str(&id_str)?;
                         if !classes.is_empty() {
                             formatter.write_char(' ')?;
                         }
@@ -464,6 +526,7 @@ where
                     }
                     Ok(())
                 }
+                TagEnd::HtmlBlock => Ok(()),
                 TagEnd::MetadataBlock(MetadataBlockKind::PlusesStyle) => formatter.write_str("+++"),
                 TagEnd::MetadataBlock(MetadataBlockKind::YamlStyle) => formatter.write_str("..."),
                 TagEnd::Table => {
