@@ -1227,3 +1227,13 @@ mod list {
         );
     }
 }
+
+mod heading {
+    use super::assert_events_eq;
+
+    #[test]
+    fn heading_with_classes_and_attrs() {
+        assert_events_eq("# Heading { #id .class1 key1=val1 .class2 }");
+        assert_events_eq("# Heading { #id .class1 .class2 key1=val1 key2 }");
+    }
+}

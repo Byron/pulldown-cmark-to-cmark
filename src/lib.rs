@@ -57,8 +57,8 @@ pub struct State<'a> {
     pub link_stack: Vec<LinkCategory>,
     /// Currently open images
     pub image_stack: Vec<ImageLink>,
-    /// Keeps track of the last seen heading's id and classes
-    pub current_heading: Option<(Option<String>, Vec<String>)>,
+    /// Keeps track of the last seen heading's id, classes, and attributes
+    pub current_heading: Option<(Option<String>, Vec<String>, Vec<(String, Option<String>)>)>,
 
     /// Keeps track of the last seen shortcut/link
     pub current_shortcut_text: Option<String>,
@@ -396,12 +396,16 @@ where
                         level,
                         id,
                         classes,
-                        attrs: _,
+                        attrs,
                     } => {
                         assert_eq!(state.current_heading, None);
                         state.current_heading = Some((
                             id.as_ref().map(|id| id.to_string()),
                             classes.iter().map(|class| class.to_string()).collect(),
+                            attrs
+                                .iter()
+                                .map(|(k, v)| (k.to_string(), v.as_ref().map(|val| val.to_string())))
+                                .collect(),
                         ));
                         match level {
                             HeadingLevel::H1 => formatter.write_str("#"),
@@ -480,26 +484,31 @@ where
                 TagEnd::Emphasis => formatter.write_char(options.emphasis_token),
                 TagEnd::Strong => formatter.write_str(options.strong_token),
                 TagEnd::Heading(_) => {
-                    let (id, classes) = state.current_heading.take().unwrap();
-                    let emit_braces = id.is_some() || !classes.is_empty();
+                    let (id, classes, attrs) = state.current_heading.take().unwrap();
+                    let emit_braces = id.is_some() || !classes.is_empty() || !attrs.is_empty();
                     if emit_braces {
                         formatter.write_str(" {")?;
                     }
                     if let Some(id_str) = id {
+                        formatter.write_char(' ')?;
                         formatter.write_char('#')?;
                         formatter.write_str(&id_str)?;
-                        if !classes.is_empty() {
-                            formatter.write_char(' ')?;
-                        }
                     }
-                    for (idx, class) in classes.iter().enumerate() {
+                    for class in classes.iter() {
+                        formatter.write_char(' ')?;
                         formatter.write_char('.')?;
                         formatter.write_str(class)?;
-                        if idx < classes.len() - 1 {
-                            formatter.write_char(' ')?;
+                    }
+                    for (key, val) in attrs.iter() {
+                        formatter.write_char(' ')?;
+                        formatter.write_str(key)?;
+                        if let Some(val) = val {
+                            formatter.write_char('=')?;
+                            formatter.write_str(val)?;
                         }
                     }
                     if emit_braces {
+                        formatter.write_char(' ')?;
                         formatter.write_char('}')?;
                     }
                     if state.newlines_before_start < options.newlines_after_headline {
