@@ -47,7 +47,7 @@ mod lazy_newlines {
 
     #[test]
     fn after_emphasis_there_is_no_newline() {
-        for t in &[
+        for t in [
             Tag::Emphasis,
             Tag::Strong,
             Tag::Link {
@@ -64,8 +64,9 @@ mod lazy_newlines {
             },
             Tag::FootnoteDefinition("".into()),
         ] {
+            let end = t.to_end();
             assert_eq!(
-                fmte(&[Event::End(t.to_end())]).1,
+                fmte(&[Event::Start(t), Event::End(end)]).1,
                 State {
                     newlines_before_start: 0,
                     ..Default::default()
