@@ -58,7 +58,7 @@ pub struct State<'a> {
     /// Currently open images
     pub image_stack: Vec<ImageLink>,
     /// Keeps track of the last seen heading's id, classes, and attributes
-    pub current_heading: Option<(Option<String>, Vec<String>, Vec<(String, Option<String>)>)>,
+    pub current_heading: Option<Heading>,
 
     /// Keeps track of the last seen shortcut/link
     pub current_shortcut_text: Option<String>,
@@ -77,6 +77,13 @@ pub enum LinkCategory {
 pub struct ImageLink {
     uri: String,
     title: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Heading {
+    id: Option<String>,
+    classes: Vec<String>,
+    attributes: Vec<(String, Option<String>)>,
 }
 
 /// Thea mount of code-block tokens one needs to produce a valid fenced code-block.
@@ -399,14 +406,14 @@ where
                         attrs,
                     } => {
                         assert_eq!(state.current_heading, None);
-                        state.current_heading = Some((
-                            id.as_ref().map(|id| id.to_string()),
-                            classes.iter().map(|class| class.to_string()).collect(),
-                            attrs
+                        state.current_heading = Some(self::Heading {
+                            id: id.as_ref().map(|id| id.to_string()),
+                            classes: classes.iter().map(|class| class.to_string()).collect(),
+                            attributes: attrs
                                 .iter()
                                 .map(|(k, v)| (k.to_string(), v.as_ref().map(|val| val.to_string())))
                                 .collect(),
-                        ));
+                        });
                         match level {
                             HeadingLevel::H1 => formatter.write_str("#"),
                             HeadingLevel::H2 => formatter.write_str("##"),
@@ -484,8 +491,12 @@ where
                 TagEnd::Emphasis => formatter.write_char(options.emphasis_token),
                 TagEnd::Strong => formatter.write_str(options.strong_token),
                 TagEnd::Heading(_) => {
-                    let (id, classes, attrs) = state.current_heading.take().unwrap();
-                    let emit_braces = id.is_some() || !classes.is_empty() || !attrs.is_empty();
+                    let self::Heading {
+                        id,
+                        classes,
+                        attributes,
+                    } = state.current_heading.take().unwrap();
+                    let emit_braces = id.is_some() || !classes.is_empty() || !attributes.is_empty();
                     if emit_braces {
                         formatter.write_str(" {")?;
                     }
@@ -499,7 +510,7 @@ where
                         formatter.write_char('.')?;
                         formatter.write_str(class)?;
                     }
-                    for (key, val) in attrs.iter() {
+                    for (key, val) in attributes.iter() {
                         formatter.write_char(' ')?;
                         formatter.write_str(key)?;
                         if let Some(val) = val {
