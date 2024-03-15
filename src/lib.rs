@@ -100,6 +100,7 @@ pub struct Options<'a> {
     pub newlines_after_headline: usize,
     pub newlines_after_paragraph: usize,
     pub newlines_after_codeblock: usize,
+    pub newlines_after_htmlblock: usize,
     pub newlines_after_table: usize,
     pub newlines_after_rule: usize,
     pub newlines_after_list: usize,
@@ -122,6 +123,7 @@ const DEFAULT_OPTIONS: Options<'_> = Options {
     newlines_after_headline: 2,
     newlines_after_paragraph: 2,
     newlines_after_codeblock: 2,
+    newlines_after_htmlblock: 1,
     newlines_after_table: 2,
     newlines_after_rule: 2,
     newlines_after_list: 2,
@@ -263,25 +265,6 @@ where
 
         let event = event.borrow();
 
-        // Markdown allows for HTML elements, into which further markdown formatting is nested.
-        // However only if the HTML element is spaced by an additional newline.
-        //
-        // Relevant spec: https://spec.commonmark.org/0.28/#html-blocks
-        if state.last_was_html {
-            match event {
-                Html(_) => { /* no newlines if HTML continues */ }
-                Text(_) => { /* no newlines for inline HTML */ }
-                End(_) => { /* no newlines if ending a previous opened tag */ }
-                SoftBreak => { /* SoftBreak will result in a newline later */ }
-                _ => {
-                    // Ensure next Markdown block is rendered properly
-                    // by adding a newline after an HTML element.
-                    formatter.write_char('\n')?;
-                }
-            }
-        }
-
-        state.last_was_html = false;
         let last_was_text_without_trailing_newline = state.last_was_text_without_trailing_newline;
         state.last_was_text_without_trailing_newline = false;
         match *event {
@@ -546,7 +529,12 @@ where
                     }
                     Ok(())
                 }
-                TagEnd::HtmlBlock => Ok(()),
+                TagEnd::HtmlBlock => {
+                    if state.newlines_before_start < options.newlines_after_htmlblock {
+                        state.newlines_before_start = options.newlines_after_htmlblock;
+                    }
+                    Ok(())
+                }
                 TagEnd::MetadataBlock(MetadataBlockKind::PlusesStyle) => formatter.write_str("+++"),
                 TagEnd::MetadataBlock(MetadataBlockKind::YamlStyle) => formatter.write_str("..."),
                 TagEnd::Table => {
@@ -645,10 +633,21 @@ where
                     &state.padding,
                 )
             }
-            Html(ref text) | InlineHtml(ref text) => {
-                state.last_was_html = true;
+            InlineHtml(ref text) => {
                 consume_newlines(&mut formatter, &mut state)?;
                 print_text_without_trailing_newline(text, &mut formatter, &state.padding)
+            }
+            Html(ref text) => {
+                let mut lines = text.split('\n');
+                if let Some(line) = lines.next() {
+                    formatter.write_str(line)?;
+                }
+                for line in lines {
+                    formatter.write_char('\n')?;
+                    padding(&mut formatter, &state.padding)?;
+                    formatter.write_str(line)?;
+                }
+                Ok(())
             }
             FootnoteReference(ref name) => write!(formatter, "[^{}]", name),
             TaskListMarker(checked) => {
