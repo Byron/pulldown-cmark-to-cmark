@@ -2,8 +2,11 @@ use pulldown_cmark::Event;
 use pulldown_cmark_to_cmark::*;
 
 fn s(e: Event) -> String {
+    es([e])
+}
+fn es<'a>(es: impl IntoIterator<Item = Event<'a>>) -> String {
     let mut buf = String::new();
-    cmark([e].iter(), &mut buf).unwrap();
+    cmark(es.into_iter(), &mut buf).unwrap();
     buf
 }
 mod code {
@@ -170,13 +173,19 @@ mod start {
 }
 
 mod end {
-    use pulldown_cmark::{Event::*, HeadingLevel, TagEnd};
+    use pulldown_cmark::{Event::*, HeadingLevel, LinkType::*, Tag, TagEnd};
 
-    use super::s;
+    use super::{es, s};
 
     #[test]
     fn header() {
-        assert_eq!(s(End(TagEnd::Heading(HeadingLevel::H2))), "")
+        let tag = Tag::Heading {
+            level: HeadingLevel::H2,
+            id: None,
+            classes: Default::default(),
+            attrs: Default::default(),
+        };
+        assert_eq!(es([Start(tag.clone()), End(tag.to_end())]), "## ")
     }
     #[test]
     fn paragraph() {
@@ -214,41 +223,46 @@ mod end {
     fn item() {
         assert_eq!(s(End(TagEnd::Item)), "")
     }
-    // #[test]
-    // fn link() {
-    //     assert_eq!(
-    //         s(End(TagEnd::Link {
-    //             link_type: Inline,
-    //             dest_url: "/uri".into(),
-    //             title: "title".into(),
-    //             id: "".into()
-    //         })),
-    //         "](/uri \"title\")"
-    //     )
-    // }
-    // #[test]
-    // fn link_without_title() {
-    //     assert_eq!(
-    //         s(End(TagEnd::Link {
-    //             link_type: Inline,
-    //             dest_url: "/uri".into(),
-    //             title: "".into(),
-    //             id: "".into()
-    //         })),
-    //         "](/uri)"
-    //     )
-    // }
-    // #[test]
-    // fn image() {
-    //     assert_eq!(
-    //         s(End(TagEnd::Image(Inline, "/uri".into(), "title".into()))),
-    //         "](/uri \"title\")"
-    //     )
-    // }
-    // #[test]
-    // fn image_without_title() {
-    //     assert_eq!(s(End(TagEnd::Image(Inline, "/uri".into(), "".into()))), "](/uri)")
-    // }
+    #[test]
+    fn link() {
+        let tag = Tag::Link {
+            link_type: Inline,
+            dest_url: "/uri".into(),
+            title: "title".into(),
+            id: "".into(),
+        };
+        assert_eq!(es([Start(tag.clone()), End(tag.to_end())]), "[](/uri \"title\")")
+    }
+    #[test]
+    fn link_without_title() {
+        let tag = Tag::Link {
+            link_type: Inline,
+            dest_url: "/uri".into(),
+            title: "".into(),
+            id: "".into(),
+        };
+        assert_eq!(es([Start(tag.clone()), End(tag.to_end())]), "[](/uri)")
+    }
+    #[test]
+    fn image() {
+        let tag = Tag::Image {
+            link_type: Inline,
+            dest_url: "/uri".into(),
+            title: "title".into(),
+            id: "".into(),
+        };
+        assert_eq!(es([Start(tag.clone()), End(tag.to_end())]), "![](/uri \"title\")")
+    }
+    #[test]
+    fn image_without_title() {
+        let tag = Tag::Image {
+            link_type: Inline,
+            dest_url: "/uri".into(),
+            title: "".into(),
+            id: "".into(),
+        };
+        assert_eq!(es([Start(tag.clone()), End(tag.to_end())]), "![](/uri)")
+    }
     #[test]
     fn table() {
         assert_eq!(s(End(TagEnd::Table)), "")
