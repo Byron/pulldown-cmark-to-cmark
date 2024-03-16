@@ -5,6 +5,56 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 12.0.0 (2024-03-16)
+
+### Other
+
+ - <csr-id-b90defbf6ade8b3c1c0585f7933421f086eeb123/> update pulldown-cmark dependency
+
+### New Features (BREAKING)
+
+ - <csr-id-640148b354eb7325e1fbeec2acbd4867d3c536fc/> upgrade to pulldown-cmark v0.10
+   This comes with a variety of changes to the `State` type, which is the reason
+   this is a breaking release.
+   
+   The overall correctness is improved though, bringing the amount of successful
+   tests of the spec to 435/649 (up by 4).
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 17 commits contributed to the release over the course of 34 calendar days.
+ - 48 days passed between releases.
+ - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Upgrade to pulldown-cmark v0.10 ([`640148b`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/640148b354eb7325e1fbeec2acbd4867d3c536fc))
+    - Avoid allocations ([`366f304`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/366f304104ec27e96f185ead57658532ecaecaa7))
+    - Allow State to borrow from events ([`b3bfd40`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/b3bfd404951c19314e110ee2764ea69b8cd4a9e2))
+    - Remove State::last_was_html ([`42739b5`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/42739b5996a2490c61b792cfc32b980614892ae0))
+    - Test custom attributes ([`8152f81`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/8152f815f8692feec1a5b194feb77028a39bc5dd))
+    - Adjust snapshots ([`1c21b70`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/1c21b70685bd1e85a9c0ed2862d6f6fb2f97f142))
+    - Remove trailing whitespace in snapshots (seems to be a pulldown-cmark parsing change) ([`b09ce73`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/b09ce73a997f4bbb0abe237bfc603980f532753d))
+    - Fix handling of HTML blocks ([`6afb4cd`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/6afb4cdf66344b3701cdc30d393aec7d0356480a))
+    - Clippy ([`4a66292`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/4a6629280441b14f85222f133efda26ae8ec46b0))
+    - Fix EndTag tests ([`38bb5dd`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/38bb5dddc8b5603849c6ce006f96d4f93f83784c))
+    - Comment out end tag tests that aren't triviably updateable ([`82110a4`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/82110a4cc62d2fac7fa5d12842807b9264e45deb))
+    - Support heading attributes ([`fc30c6d`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/fc30c6dbc2457bf2c68ea70b66be80fd64016d5a))
+    - Fix test ([`ea2608e`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/ea2608e88cabcbc9962b08360e624e176b780c19))
+    - Fix easily-updateable tests ([`ebf9b69`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/ebf9b6914c9eccbc0efc9bfed3d26ccfb64ff3c5))
+    - Add link/image stacks and track current header ([`3090b8a`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/3090b8a7c3026e2a5fa3b2fbaf4fe9753ec662a9))
+    - Metadata blocks ([`a26731c`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/a26731caaaa89960528b8c72d6c051c7c30d4660))
+    - Update pulldown-cmark dependency ([`b90defb`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/b90defbf6ade8b3c1c0585f7933421f086eeb123))
+</details>
+
 ## 11.2.0 (2024-01-27)
 
 ### New Features
@@ -17,7 +67,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 3 commits contributed to the release.
+ - 4 commits contributed to the release.
  - 1 day passed between releases.
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
@@ -29,6 +79,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release pulldown-cmark-to-cmark v11.2.0 ([`11344a7`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/11344a70243c5affbc0861669db9575209a6f612))
     - Merge branch 'fix_count_code_block_tokens' ([`ee42335`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/ee4233527dd46b963d5a553c18bcc7b876f75fa1))
     - Introduce `calculate_code_block_token_count()`, along with `DEFAULT_CODE_BLOCK_TOKEN_COUNT`. ([`e339365`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/e33936543e4db169fb7734cc0ce83127a0c04e8b))
     - Change the return type of count_code_block_tokens ([`ef1c276`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/ef1c2766c1f91ba226063e4f914646f0d32172da))
