@@ -1,4 +1,4 @@
-use pulldown_cmark::{CodeBlockKind, Event, Options, Parser, Tag};
+use pulldown_cmark::{CodeBlockKind, Event, Options, Parser, Tag, TagEnd};
 use pulldown_cmark_to_cmark::cmark;
 
 const COMMONMARK_SPEC_TEXT: &str = include_str!("./spec/CommonMark/spec.txt");
@@ -23,7 +23,7 @@ fn collect_test_case<'a>(events: &mut impl Iterator<Item = Event<'a>>) -> Option
     let end_tag = events
         .next()
         .and_then(|e| if let Event::End(tag) = e { Some(tag) } else { None })?;
-    if !(is_example_fence(&begin_tag) && is_example_fence(&end_tag)) {
+    if !(is_example_fence(&begin_tag) && end_tag == TagEnd::CodeBlock) {
         return None;
     }
     let splitted_text = text.split("\n.\n").collect::<Vec<_>>();

@@ -6,7 +6,7 @@ use std::{
     fmt::{self, Write},
 };
 
-use pulldown_cmark::{Alignment as TableAlignment, Event, HeadingLevel, LinkType, Tag};
+use pulldown_cmark::{Alignment as TableAlignment, Event, HeadingLevel, LinkType, MetadataBlockKind, Tag, TagEnd};
 
 /// Similar to [Pulldown-Cmark-Alignment][Alignment], but with required
 /// traits for comparison to allow testing.
@@ -49,15 +49,39 @@ pub struct State<'a> {
     pub text_for_header: Option<String>,
     /// Is set while we are handling text in a code block
     pub is_in_code_block: bool,
-    /// True if the last event was html. Used to inject additional newlines to support markdown inside of HTML tags.
-    pub last_was_html: bool,
     /// True if the last event was text and the text does not have trailing newline. Used to inject additional newlines before code block end fence.
     pub last_was_text_without_trailing_newline: bool,
+    /// Currently open links
+    pub link_stack: Vec<LinkCategory<'a>>,
+    /// Currently open images
+    pub image_stack: Vec<ImageLink<'a>>,
+    /// Keeps track of the last seen heading's id, classes, and attributes
+    pub current_heading: Option<Heading<'a>>,
 
     /// Keeps track of the last seen shortcut/link
     pub current_shortcut_text: Option<String>,
     /// A list of shortcuts seen so far for later emission
     pub shortcuts: Vec<(String, String, String)>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum LinkCategory<'a> {
+    AngleBracketed,
+    Shortcut { uri: Cow<'a, str>, title: Cow<'a, str> },
+    Other { uri: Cow<'a, str>, title: Cow<'a, str> },
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ImageLink<'a> {
+    uri: Cow<'a, str>,
+    title: Cow<'a, str>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Heading<'a> {
+    id: Option<Cow<'a, str>>,
+    classes: Vec<Cow<'a, str>>,
+    attributes: Vec<(Cow<'a, str>, Option<Cow<'a, str>>)>,
 }
 
 /// Thea mount of code-block tokens one needs to produce a valid fenced code-block.
@@ -74,6 +98,7 @@ pub struct Options<'a> {
     pub newlines_after_headline: usize,
     pub newlines_after_paragraph: usize,
     pub newlines_after_codeblock: usize,
+    pub newlines_after_htmlblock: usize,
     pub newlines_after_table: usize,
     pub newlines_after_rule: usize,
     pub newlines_after_list: usize,
@@ -96,6 +121,7 @@ const DEFAULT_OPTIONS: Options<'_> = Options {
     newlines_after_headline: 2,
     newlines_after_paragraph: 2,
     newlines_after_codeblock: 2,
+    newlines_after_htmlblock: 1,
     newlines_after_table: 2,
     newlines_after_rule: 2,
     newlines_after_list: 2,
@@ -155,9 +181,9 @@ impl<'a> Options<'a> {
 pub fn cmark_resume_with_options<'a, I, E, F>(
     events: I,
     mut formatter: F,
-    state: Option<State<'static>>,
+    state: Option<State<'a>>,
     options: Options<'_>,
-) -> Result<State<'static>, fmt::Error>
+) -> Result<State<'a>, fmt::Error>
 where
     I: Iterator<Item = E>,
     E: Borrow<Event<'a>>,
@@ -237,25 +263,6 @@ where
 
         let event = event.borrow();
 
-        // Markdown allows for HTML elements, into which further markdown formatting is nested.
-        // However only if the HTML element is spaced by an additional newline.
-        //
-        // Relevant spec: https://spec.commonmark.org/0.28/#html-blocks
-        if state.last_was_html {
-            match event {
-                Html(_) => { /* no newlines if HTML continues */ }
-                Text(_) => { /* no newlines for inline HTML */ }
-                End(_) => { /* no newlines if ending a previous opened tag */ }
-                SoftBreak => { /* SoftBreak will result in a newline later */ }
-                _ => {
-                    // Ensure next Markdown block is rendered properly
-                    // by adding a newline after an HTML element.
-                    formatter.write_char('\n')?;
-                }
-            }
-        }
-
-        state.last_was_html = false;
         let last_was_text_without_trailing_newline = state.last_was_text_without_trailing_newline;
         state.last_was_text_without_trailing_newline = false;
         match *event {
@@ -325,13 +332,47 @@ where
                         state.text_for_header = Some(String::new());
                         formatter.write_char('|')
                     }
-                    Link(LinkType::Autolink | LinkType::Email, ..) => formatter.write_char('<'),
-                    Link(LinkType::Shortcut, ..) => {
-                        state.current_shortcut_text = Some(String::new());
-                        formatter.write_char('[')
+                    Link {
+                        link_type,
+                        dest_url,
+                        title,
+                        id: _,
+                    } => {
+                        state.link_stack.push(match link_type {
+                            LinkType::Autolink | LinkType::Email => {
+                                formatter.write_char('<')?;
+                                LinkCategory::AngleBracketed
+                            }
+                            LinkType::Shortcut => {
+                                state.current_shortcut_text = Some(String::new());
+                                formatter.write_char('[')?;
+                                LinkCategory::Shortcut {
+                                    uri: dest_url.clone().into(),
+                                    title: title.clone().into(),
+                                }
+                            }
+                            _ => {
+                                formatter.write_char('[')?;
+                                LinkCategory::Other {
+                                    uri: dest_url.clone().into(),
+                                    title: title.clone().into(),
+                                }
+                            }
+                        });
+                        Ok(())
                     }
-                    Link(..) => formatter.write_char('['),
-                    Image(..) => formatter.write_str("!["),
+                    Image {
+                        link_type: _,
+                        dest_url,
+                        title,
+                        id: _,
+                    } => {
+                        state.image_stack.push(ImageLink {
+                            uri: dest_url.clone().into(),
+                            title: title.clone().into(),
+                        });
+                        formatter.write_str("![")
+                    }
                     Emphasis => formatter.write_char(options.emphasis_token),
                     Strong => formatter.write_str(options.strong_token),
                     FootnoteDefinition(ref name) => {
@@ -339,7 +380,21 @@ where
                         write!(formatter, "[^{}]: ", name)
                     }
                     Paragraph => Ok(()),
-                    Heading(level, _, _) => {
+                    Heading {
+                        level,
+                        id,
+                        classes,
+                        attrs,
+                    } => {
+                        assert_eq!(state.current_heading, None);
+                        state.current_heading = Some(self::Heading {
+                            id: id.as_ref().map(|id| id.clone().into()),
+                            classes: classes.iter().map(|class| class.clone().into()).collect(),
+                            attributes: attrs
+                                .iter()
+                                .map(|(k, v)| (k.clone().into(), v.as_ref().map(|val| val.clone().into())))
+                                .collect(),
+                        });
                         match level {
                             HeadingLevel::H1 => formatter.write_str("#"),
                             HeadingLevel::H2 => formatter.write_str("##"),
@@ -390,45 +445,62 @@ where
                         .and_then(|_| formatter.write_char('\n'))
                         .and_then(|_| padding(&mut formatter, &state.padding))
                     }
+                    HtmlBlock => Ok(()),
+                    MetadataBlock(MetadataBlockKind::YamlStyle) => formatter.write_str("---\n"),
+                    MetadataBlock(MetadataBlockKind::PlusesStyle) => formatter.write_str("+++\n"),
                     List(_) => Ok(()),
                     Strikethrough => formatter.write_str("~~"),
                 }
             }
             End(ref tag) => match tag {
-                Link(LinkType::Autolink | LinkType::Email, ..) => formatter.write_char('>'),
-                Link(LinkType::Shortcut, ref uri, ref title) => {
-                    if let Some(shortcut_text) = state.current_shortcut_text.take() {
-                        state
-                            .shortcuts
-                            .push((shortcut_text, uri.to_string(), title.to_string()));
+                TagEnd::Link => match state.link_stack.pop().unwrap() {
+                    LinkCategory::AngleBracketed => formatter.write_char('>'),
+                    LinkCategory::Shortcut { uri, title } => {
+                        if let Some(shortcut_text) = state.current_shortcut_text.take() {
+                            state
+                                .shortcuts
+                                .push((shortcut_text, uri.to_string(), title.to_string()));
+                        }
+                        formatter.write_char(']')
                     }
-                    formatter.write_char(']')
+                    LinkCategory::Other { uri, title } => close_link(&uri, &title, &mut formatter, LinkType::Inline),
+                },
+                TagEnd::Image => {
+                    let ImageLink { uri, title } = state.image_stack.pop().unwrap();
+                    close_link(uri.as_ref(), title.as_ref(), &mut formatter, LinkType::Inline)
                 }
-                Image(_, ref uri, ref title) | Link(_, ref uri, ref title) => {
-                    close_link(uri, title, &mut formatter, LinkType::Inline)
-                }
-                Emphasis => formatter.write_char(options.emphasis_token),
-                Strong => formatter.write_str(options.strong_token),
-                Heading(_, id, classes) => {
-                    let emit_braces = id.is_some() || !classes.is_empty();
+                TagEnd::Emphasis => formatter.write_char(options.emphasis_token),
+                TagEnd::Strong => formatter.write_str(options.strong_token),
+                TagEnd::Heading(_) => {
+                    let self::Heading {
+                        id,
+                        classes,
+                        attributes,
+                    } = state.current_heading.take().unwrap();
+                    let emit_braces = id.is_some() || !classes.is_empty() || !attributes.is_empty();
                     if emit_braces {
                         formatter.write_str(" {")?;
                     }
                     if let Some(id_str) = id {
+                        formatter.write_char(' ')?;
                         formatter.write_char('#')?;
-                        formatter.write_str(id_str)?;
-                        if !classes.is_empty() {
-                            formatter.write_char(' ')?;
-                        }
+                        formatter.write_str(&id_str)?;
                     }
-                    for (idx, class) in classes.iter().enumerate() {
+                    for class in classes.iter() {
+                        formatter.write_char(' ')?;
                         formatter.write_char('.')?;
                         formatter.write_str(class)?;
-                        if idx < classes.len() - 1 {
-                            formatter.write_char(' ')?;
+                    }
+                    for (key, val) in attributes.iter() {
+                        formatter.write_char(' ')?;
+                        formatter.write_str(key)?;
+                        if let Some(val) = val {
+                            formatter.write_char('=')?;
+                            formatter.write_str(val)?;
                         }
                     }
                     if emit_braces {
+                        formatter.write_char(' ')?;
                         formatter.write_char('}')?;
                     }
                     if state.newlines_before_start < options.newlines_after_headline {
@@ -436,13 +508,13 @@ where
                     }
                     Ok(())
                 }
-                Paragraph => {
+                TagEnd::Paragraph => {
                     if state.newlines_before_start < options.newlines_after_paragraph {
                         state.newlines_before_start = options.newlines_after_paragraph;
                     }
                     Ok(())
                 }
-                CodeBlock(_) => {
+                TagEnd::CodeBlock => {
                     if state.newlines_before_start < options.newlines_after_codeblock {
                         state.newlines_before_start = options.newlines_after_codeblock;
                     }
@@ -455,7 +527,15 @@ where
                     }
                     Ok(())
                 }
-                Table(_) => {
+                TagEnd::HtmlBlock => {
+                    if state.newlines_before_start < options.newlines_after_htmlblock {
+                        state.newlines_before_start = options.newlines_after_htmlblock;
+                    }
+                    Ok(())
+                }
+                TagEnd::MetadataBlock(MetadataBlockKind::PlusesStyle) => formatter.write_str("+++"),
+                TagEnd::MetadataBlock(MetadataBlockKind::YamlStyle) => formatter.write_str("..."),
+                TagEnd::Table => {
                     if state.newlines_before_start < options.newlines_after_table {
                         state.newlines_before_start = options.newlines_after_table;
                     }
@@ -463,7 +543,7 @@ where
                     state.table_headers.clear();
                     Ok(())
                 }
-                TableCell => {
+                TagEnd::TableCell => {
                     state.table_headers.push(
                         state
                             .text_for_header
@@ -473,13 +553,13 @@ where
                     );
                     Ok(())
                 }
-                ref t @ TableRow | ref t @ TableHead => {
+                ref t @ TagEnd::TableRow | ref t @ TagEnd::TableHead => {
                     if state.newlines_before_start < options.newlines_after_rest {
                         state.newlines_before_start = options.newlines_after_rest;
                     }
                     formatter.write_char('|')?;
 
-                    if let TableHead = t {
+                    if let TagEnd::TableHead = t {
                         formatter
                             .write_char('\n')
                             .and(padding(&mut formatter, &state.padding))?;
@@ -505,21 +585,21 @@ where
                     }
                     Ok(())
                 }
-                Item => {
+                TagEnd::Item => {
                     state.padding.pop();
                     if state.newlines_before_start < options.newlines_after_rest {
                         state.newlines_before_start = options.newlines_after_rest;
                     }
                     Ok(())
                 }
-                List(_) => {
+                TagEnd::List(_) => {
                     state.list_stack.pop();
                     if state.list_stack.is_empty() && state.newlines_before_start < options.newlines_after_list {
                         state.newlines_before_start = options.newlines_after_list;
                     }
                     Ok(())
                 }
-                BlockQuote => {
+                TagEnd::BlockQuote => {
                     state.padding.pop();
 
                     if state.newlines_before_start < options.newlines_after_blockquote {
@@ -528,11 +608,11 @@ where
 
                     Ok(())
                 }
-                FootnoteDefinition(_) => {
+                TagEnd::FootnoteDefinition => {
                     state.padding.pop();
                     Ok(())
                 }
-                Strikethrough => formatter.write_str("~~"),
+                TagEnd::Strikethrough => formatter.write_str("~~"),
             },
             HardBreak => formatter.write_str("  \n").and(padding(&mut formatter, &state.padding)),
             SoftBreak => formatter.write_char('\n').and(padding(&mut formatter, &state.padding)),
@@ -551,10 +631,21 @@ where
                     &state.padding,
                 )
             }
-            Html(ref text) => {
-                state.last_was_html = true;
+            InlineHtml(ref text) => {
                 consume_newlines(&mut formatter, &mut state)?;
                 print_text_without_trailing_newline(text, &mut formatter, &state.padding)
+            }
+            Html(ref text) => {
+                let mut lines = text.split('\n');
+                if let Some(line) = lines.next() {
+                    formatter.write_str(line)?;
+                }
+                for line in lines {
+                    formatter.write_char('\n')?;
+                    padding(&mut formatter, &state.padding)?;
+                    formatter.write_str(line)?;
+                }
+                Ok(())
             }
             FootnoteReference(ref name) => write!(formatter, "[^{}]", name),
             TaskListMarker(checked) => {
@@ -567,11 +658,7 @@ where
 }
 
 /// As [`cmark_resume_with_options()`], but with default [`Options`].
-pub fn cmark_resume<'a, I, E, F>(
-    events: I,
-    formatter: F,
-    state: Option<State<'static>>,
-) -> Result<State<'static>, fmt::Error>
+pub fn cmark_resume<'a, I, E, F>(events: I, formatter: F, state: Option<State<'a>>) -> Result<State<'a>, fmt::Error>
 where
     I: Iterator<Item = E>,
     E: Borrow<Event<'a>>,
@@ -650,7 +737,7 @@ pub fn cmark_with_options<'a, I, E, F>(
     events: I,
     mut formatter: F,
     options: Options<'_>,
-) -> Result<State<'static>, fmt::Error>
+) -> Result<State<'a>, fmt::Error>
 where
     I: Iterator<Item = E>,
     E: Borrow<Event<'a>>,
@@ -661,7 +748,7 @@ where
 }
 
 /// As [`cmark_with_options()`], but with default [`Options`].
-pub fn cmark<'a, I, E, F>(events: I, mut formatter: F) -> Result<State<'static>, fmt::Error>
+pub fn cmark<'a, I, E, F>(events: I, mut formatter: F) -> Result<State<'a>, fmt::Error>
 where
     I: Iterator<Item = E>,
     E: Borrow<Event<'a>>,
@@ -710,7 +797,7 @@ where
             Event::Start(Tag::CodeBlock(_)) => {
                 in_codeblock = true;
             }
-            Event::End(Tag::CodeBlock(_)) => {
+            Event::End(TagEnd::CodeBlock) => {
                 in_codeblock = false;
                 prev_token_char = None;
             }

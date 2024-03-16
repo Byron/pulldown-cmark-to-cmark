@@ -2,8 +2,11 @@ use pulldown_cmark::Event;
 use pulldown_cmark_to_cmark::*;
 
 fn s(e: Event) -> String {
+    es([e])
+}
+fn es<'a>(es: impl IntoIterator<Item = Event<'a>>) -> String {
     let mut buf = String::new();
-    cmark([e].iter(), &mut buf).unwrap();
+    cmark(es.into_iter(), &mut buf).unwrap();
     buf
 }
 mod code {
@@ -46,11 +49,27 @@ mod start {
     }
     #[test]
     fn header1() {
-        assert_eq!(s(Start(Heading(HeadingLevel::H1, None, vec![]))), "# ")
+        assert_eq!(
+            s(Start(Heading {
+                level: HeadingLevel::H1,
+                id: None,
+                classes: vec![],
+                attrs: vec![]
+            })),
+            "# "
+        )
     }
     #[test]
     fn header2() {
-        assert_eq!(s(Start(Heading(HeadingLevel::H2, None, vec![]))), "## ")
+        assert_eq!(
+            s(Start(Heading {
+                level: HeadingLevel::H2,
+                id: None,
+                classes: vec![],
+                attrs: vec![]
+            })),
+            "## "
+        )
     }
     #[test]
     fn blockquote() {
@@ -89,19 +108,51 @@ mod start {
     }
     #[test]
     fn link() {
-        assert_eq!(s(Start(Link(Inline, "uri".into(), "title".into()))), "[")
+        assert_eq!(
+            s(Start(Link {
+                link_type: Inline,
+                dest_url: "uri".into(),
+                title: "title".into(),
+                id: "".into(),
+            })),
+            "["
+        )
     }
     #[test]
     fn link_without_title() {
-        assert_eq!(s(Start(Link(Inline, "uri".into(), "".into()))), "[")
+        assert_eq!(
+            s(Start(Link {
+                link_type: Inline,
+                dest_url: "uri".into(),
+                title: "".into(),
+                id: "".into()
+            })),
+            "["
+        )
     }
     #[test]
     fn image() {
-        assert_eq!(s(Start(Image(Inline, "uri".into(), "title".into()))), "![")
+        assert_eq!(
+            s(Start(Image {
+                link_type: Inline,
+                dest_url: "uri".into(),
+                title: "title".into(),
+                id: "".into()
+            })),
+            "!["
+        )
     }
     #[test]
     fn image_without_title() {
-        assert_eq!(s(Start(Image(Inline, "uri".into(), "".into()))), "![")
+        assert_eq!(
+            s(Start(Image {
+                link_type: Inline,
+                dest_url: "uri".into(),
+                title: "".into(),
+                id: "".into()
+            })),
+            "!["
+        )
     }
     #[test]
     fn table() {
@@ -122,87 +173,107 @@ mod start {
 }
 
 mod end {
-    use pulldown_cmark::{
-        Alignment::{self, Center, Left, Right},
-        CodeBlockKind,
-        Event::*,
-        HeadingLevel,
-        LinkType::*,
-        Tag::*,
-    };
+    use pulldown_cmark::{Event::*, HeadingLevel, LinkType::*, Tag, TagEnd};
 
-    use super::s;
+    use super::{es, s};
 
     #[test]
     fn header() {
-        assert_eq!(s(End(Heading(HeadingLevel::H2, None, vec![]))), "")
+        let tag = Tag::Heading {
+            level: HeadingLevel::H2,
+            id: None,
+            classes: Default::default(),
+            attrs: Default::default(),
+        };
+        assert_eq!(es([Start(tag.clone()), End(tag.to_end())]), "## ")
     }
     #[test]
     fn paragraph() {
-        assert_eq!(s(End(Paragraph)), "")
+        assert_eq!(s(End(TagEnd::Paragraph)), "")
     }
     #[test]
     fn blockquote() {
-        assert_eq!(s(End(BlockQuote)), "")
+        assert_eq!(s(End(TagEnd::BlockQuote)), "")
     }
     #[test]
     fn codeblock() {
-        assert_eq!(s(End(CodeBlock(CodeBlockKind::Fenced("asdf".into())))), "````")
+        assert_eq!(s(End(TagEnd::CodeBlock)), "````")
     }
     #[test]
     fn footnote_definition() {
-        assert_eq!(s(End(FootnoteDefinition("asdf".into()))), "")
+        assert_eq!(s(End(TagEnd::FootnoteDefinition)), "")
     }
     #[test]
     fn emphasis() {
-        assert_eq!(s(End(Emphasis)), "*")
+        assert_eq!(s(End(TagEnd::Emphasis)), "*")
     }
     #[test]
     fn strong() {
-        assert_eq!(s(End(Strong)), "**")
+        assert_eq!(s(End(TagEnd::Strong)), "**")
     }
     #[test]
     fn list_unordered() {
-        assert_eq!(s(End(List(None))), "")
+        assert_eq!(s(End(TagEnd::List(false))), "")
     }
     #[test]
     fn list_ordered() {
-        assert_eq!(s(End(List(Some(1)))), "")
+        assert_eq!(s(End(TagEnd::List(true))), "")
     }
     #[test]
     fn item() {
-        assert_eq!(s(End(Item)), "")
+        assert_eq!(s(End(TagEnd::Item)), "")
     }
     #[test]
     fn link() {
-        assert_eq!(s(End(Link(Inline, "/uri".into(), "title".into()))), "](/uri \"title\")")
+        let tag = Tag::Link {
+            link_type: Inline,
+            dest_url: "/uri".into(),
+            title: "title".into(),
+            id: "".into(),
+        };
+        assert_eq!(es([Start(tag.clone()), End(tag.to_end())]), "[](/uri \"title\")")
     }
     #[test]
     fn link_without_title() {
-        assert_eq!(s(End(Link(Inline, "/uri".into(), "".into()))), "](/uri)")
+        let tag = Tag::Link {
+            link_type: Inline,
+            dest_url: "/uri".into(),
+            title: "".into(),
+            id: "".into(),
+        };
+        assert_eq!(es([Start(tag.clone()), End(tag.to_end())]), "[](/uri)")
     }
     #[test]
     fn image() {
-        assert_eq!(
-            s(End(Image(Inline, "/uri".into(), "title".into()))),
-            "](/uri \"title\")"
-        )
+        let tag = Tag::Image {
+            link_type: Inline,
+            dest_url: "/uri".into(),
+            title: "title".into(),
+            id: "".into(),
+        };
+        assert_eq!(es([Start(tag.clone()), End(tag.to_end())]), "![](/uri \"title\")")
     }
     #[test]
     fn image_without_title() {
-        assert_eq!(s(End(Image(Inline, "/uri".into(), "".into()))), "](/uri)")
+        let tag = Tag::Image {
+            link_type: Inline,
+            dest_url: "/uri".into(),
+            title: "".into(),
+            id: "".into(),
+        };
+        assert_eq!(es([Start(tag.clone()), End(tag.to_end())]), "![](/uri)")
     }
     #[test]
     fn table() {
-        assert_eq!(s(End(Table(vec![Left, Center, Right, Alignment::None]))), "")
+        assert_eq!(s(End(TagEnd::Table)), "")
     }
     #[test]
     fn table_row() {
-        assert_eq!(s(End(TableRow)), "|")
+        assert_eq!(s(End(TagEnd::TableRow)), "|")
     }
     #[test]
     fn table_cell() {
-        assert_eq!(s(End(TableCell)), "")
+        assert_eq!(s(End(TagEnd::TableCell)), "")
     }
 }
 

@@ -1,28 +1,28 @@
 #[macro_use]
 extern crate indoc;
 
-use pulldown_cmark::{Alignment, CodeBlockKind, Event, LinkType, Options, Parser, Tag};
+use pulldown_cmark::{Alignment, CodeBlockKind, Event, LinkType, Options, Parser, Tag, TagEnd};
 use pulldown_cmark_to_cmark::{cmark, cmark_resume, cmark_resume_with_options, Options as CmarkToCmarkOptions, State};
 
-fn fmts(s: &str) -> (String, State<'static>) {
+fn fmts(s: &str) -> (String, State<'_>) {
     let mut buf = String::new();
     let s = cmark(Parser::new_ext(s, Options::all()), &mut buf).unwrap();
     (buf, s)
 }
 
-fn fmts_with_options(s: &str, options: CmarkToCmarkOptions) -> (String, State<'static>) {
+fn fmts_with_options<'a>(s: &'a str, options: CmarkToCmarkOptions<'a>) -> (String, State<'a>) {
     let mut buf = String::new();
     let s = cmark_resume_with_options(Parser::new_ext(s, Options::all()), &mut buf, None, options).unwrap();
     (buf, s)
 }
 
-fn fmtes(e: &[Event], s: State<'static>) -> (String, State<'static>) {
+fn fmtes<'a>(e: &'a [Event], s: State<'a>) -> (String, State<'a>) {
     let mut buf = String::new();
     let s = cmark_resume(e.iter(), &mut buf, Some(s)).unwrap();
     (buf, s)
 }
 
-fn fmte<'a>(e: impl AsRef<[Event<'a>]>) -> (String, State<'static>) {
+fn fmte<'a>(e: impl AsRef<[Event<'a>]>) -> (String, State<'a>) {
     let mut buf = String::new();
     let s = cmark(e.as_ref().iter(), &mut buf).unwrap();
     (buf, s)
@@ -43,19 +43,30 @@ fn assert_events_eq(s: &str) {
 }
 
 mod lazy_newlines {
-    use super::{fmte, fmts, Event, LinkType, State, Tag};
+    use super::{fmte, fmts, Event, LinkType, State, Tag, TagEnd};
 
     #[test]
     fn after_emphasis_there_is_no_newline() {
-        for t in &[
+        for t in [
             Tag::Emphasis,
             Tag::Strong,
-            Tag::Link(LinkType::Inline, "".into(), "".into()),
-            Tag::Image(LinkType::Inline, "".into(), "".into()),
+            Tag::Link {
+                link_type: LinkType::Inline,
+                dest_url: "".into(),
+                title: "".into(),
+                id: "".into(),
+            },
+            Tag::Image {
+                link_type: LinkType::Inline,
+                dest_url: "".into(),
+                title: "".into(),
+                id: "".into(),
+            },
             Tag::FootnoteDefinition("".into()),
         ] {
+            let end = t.to_end();
             assert_eq!(
-                fmte(&[Event::End(t.clone())]).1,
+                fmte(&[Event::Start(t), Event::End(end)]).1,
                 State {
                     newlines_before_start: 0,
                     ..Default::default()
@@ -67,9 +78,9 @@ mod lazy_newlines {
     #[test]
     fn after_anything_else_it_has_one_newline() {
         for e in &[
-            Event::End(Tag::Item),
-            Event::End(Tag::TableRow),
-            Event::End(Tag::TableHead),
+            Event::End(TagEnd::Item),
+            Event::End(TagEnd::TableRow),
+            Event::End(TagEnd::TableHead),
         ] {
             assert_eq!(
                 fmte(&[e.clone()]).1,
@@ -386,13 +397,13 @@ mod inline_elements {
 }
 
 mod blockquote {
-    use super::{assert_events_eq, fmte, fmtes, fmts, Event, State, Tag};
+    use super::{assert_events_eq, fmte, fmtes, fmts, Event, State, Tag, TagEnd};
 
     #[test]
     fn it_pops_padding_on_quote_end() {
         assert_eq!(
             fmtes(
-                &[Event::End(Tag::BlockQuote),],
+                &[Event::End(TagEnd::BlockQuote),],
                 State {
                     padding: vec![" > ".into()],
                     ..Default::default()
@@ -731,13 +742,13 @@ mod table {
     use pretty_assertions::assert_eq;
     use pulldown_cmark_to_cmark::Alignment;
 
-    use super::{fmte, fmtes, Alignment as TableAlignment, Event, State, Tag};
+    use super::{fmte, fmtes, Alignment as TableAlignment, Event, State, Tag, TagEnd};
 
     #[test]
     fn it_forgets_alignments_and_headers_at_the_end_of_tables() {
         assert_eq!(
             fmtes(
-                &[Event::End(Tag::Table(vec![])),],
+                &[Event::End(TagEnd::Table),],
                 State {
                     table_alignments: vec![Alignment::None, Alignment::Center],
                     table_headers: vec!["a".into(), "b".into()],
@@ -759,10 +770,10 @@ mod table {
                 Event::Start(Tag::TableHead),
                 Event::Start(Tag::TableCell),
                 Event::Text("a".into()),
-                Event::End(Tag::TableCell),
+                Event::End(TagEnd::TableCell),
                 Event::Start(Tag::TableCell),
                 Event::Text("b".into()),
-                Event::End(Tag::TableCell),
+                Event::End(TagEnd::TableCell),
             ])
             .1,
             State {
@@ -811,7 +822,7 @@ mod table {
 mod escapes {
     use pulldown_cmark::CowStr;
 
-    use crate::{fmts, CmarkToCmarkOptions, Event, Parser, Tag};
+    use crate::{fmts, CmarkToCmarkOptions, Event, Parser, Tag, TagEnd};
 
     fn run_test_on_each_special_char(f: impl Fn(String, CowStr)) {
         for c in CmarkToCmarkOptions::default().special_characters().chars() {
@@ -844,7 +855,7 @@ mod escapes {
                 Event::Start(Tag::Paragraph),
                 Event::Text("hello_there_and__hello again".into()),
                 Event::Text("_".into()),
-                Event::End(Tag::Paragraph),
+                Event::End(TagEnd::Paragraph),
             ]
         )
     }
@@ -859,7 +870,7 @@ mod escapes {
                 Event::Text("`".into()),
                 Event::Text("hi".into()),
                 Event::Text("`".into()),
-                Event::End(Tag::Paragraph),
+                Event::End(TagEnd::Paragraph),
             ]
         )
     }
@@ -929,7 +940,7 @@ mod escapes {
                 Event::Text("*hello again".into()),
                 Event::Text("*".into()),
                 Event::Text("*".into()),
-                Event::End(Tag::Paragraph),
+                Event::End(TagEnd::Paragraph),
             ]
         )
     }
@@ -944,12 +955,12 @@ mod escapes {
                 Event::Text("hello".into()),
                 Event::Start(Tag::Emphasis),
                 Event::Text("there".into()),
-                Event::End(Tag::Emphasis),
+                Event::End(TagEnd::Emphasis),
                 Event::Text("and".into()),
                 Event::Start(Tag::Strong),
                 Event::Text("hello again".into()),
-                Event::End(Tag::Strong),
-                Event::End(Tag::Paragraph),
+                Event::End(TagEnd::Strong),
+                Event::End(TagEnd::Paragraph),
             ]
         )
     }
@@ -963,7 +974,7 @@ mod escapes {
                 vec![
                     Event::Start(Tag::Paragraph),
                     Event::Text(c.to_string().into()),
-                    Event::End(Tag::Paragraph),
+                    Event::End(TagEnd::Paragraph),
                 ]
             )
         })
@@ -971,13 +982,13 @@ mod escapes {
 }
 
 mod list {
-    use super::{fmtes, fmts, fmts_with_options, CmarkToCmarkOptions, Event, State, Tag};
+    use super::{fmtes, fmts, fmts_with_options, CmarkToCmarkOptions, Event, State, TagEnd};
 
     #[test]
     fn it_pops_one_item_from_the_lists_stack_for_each_end_list() {
         assert_eq!(
             fmtes(
-                &[Event::End(Tag::List(None))],
+                &[Event::End(TagEnd::List(false))],
                 State {
                     list_stack: vec![None, None],
                     ..Default::default()
@@ -1214,5 +1225,15 @@ mod list {
             .0,
             "* [ ] foo\n* [x] bar",
         );
+    }
+}
+
+mod heading {
+    use super::assert_events_eq;
+
+    #[test]
+    fn heading_with_classes_and_attrs() {
+        assert_events_eq("# Heading { #id .class1 key1=val1 .class2 }");
+        assert_events_eq("# Heading { #id .class1 .class2 key1=val1 key2 }");
     }
 }
