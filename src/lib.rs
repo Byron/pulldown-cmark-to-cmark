@@ -533,8 +533,8 @@ where
                     }
                     Ok(())
                 }
-                TagEnd::MetadataBlock(MetadataBlockKind::PlusesStyle) => formatter.write_str("+++"),
-                TagEnd::MetadataBlock(MetadataBlockKind::YamlStyle) => formatter.write_str("..."),
+                TagEnd::MetadataBlock(MetadataBlockKind::PlusesStyle) => formatter.write_str("+++\n\n"),
+                TagEnd::MetadataBlock(MetadataBlockKind::YamlStyle) => formatter.write_str("---\n\n"),
                 TagEnd::Table => {
                     if state.newlines_before_start < options.newlines_after_table {
                         state.newlines_before_start = options.newlines_after_table;

@@ -1237,3 +1237,53 @@ mod heading {
         assert_events_eq("# Heading { #id .class1 .class2 key1=val1 key2 }");
     }
 }
+
+mod frontmatter {
+    use pulldown_cmark::{Options, Parser};
+    use pulldown_cmark_to_cmark::cmark;
+
+    #[test]
+    fn yaml_frontmatter_should_be_supported() {
+        let input = "---
+key1: value1
+key2: value2
+---
+
+# Frontmatter should be supported";
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_YAML_STYLE_METADATA_BLOCKS);
+        let events = Parser::new_ext(input, opts).map(|e| e).collect::<Vec<_>>();
+
+        let mut output = String::new();
+
+        let state = cmark(events.iter(), &mut output).unwrap();
+
+        state.finalize(&mut output).unwrap();
+
+        assert_eq!(input, output);
+    }
+
+    #[test]
+    fn toml_frontmatter_should_be_supported() {
+        let input = "+++
+key = value1
+key = value2
++++
+
+# Frontmatter should be supported";
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS);
+
+        let events = Parser::new_ext(input, opts).map(|e| e).collect::<Vec<_>>();
+
+        let mut output = String::new();
+
+        let state = cmark(events.iter(), &mut output).unwrap();
+
+        state.finalize(&mut output).unwrap();
+
+        assert_eq!(input, output);
+    }
+}
