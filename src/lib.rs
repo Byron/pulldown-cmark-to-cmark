@@ -52,11 +52,11 @@ pub struct State<'a> {
     /// True if the last event was text and the text does not have trailing newline. Used to inject additional newlines before code block end fence.
     pub last_was_text_without_trailing_newline: bool,
     /// Currently open links
-    pub link_stack: Vec<LinkCategory>,
+    pub link_stack: Vec<LinkCategory<'a>>,
     /// Currently open images
-    pub image_stack: Vec<ImageLink>,
+    pub image_stack: Vec<ImageLink<'a>>,
     /// Keeps track of the last seen heading's id, classes, and attributes
-    pub current_heading: Option<Heading>,
+    pub current_heading: Option<Heading<'a>>,
 
     /// Keeps track of the last seen shortcut/link
     pub current_shortcut_text: Option<String>,
@@ -65,23 +65,23 @@ pub struct State<'a> {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum LinkCategory {
+pub enum LinkCategory<'a> {
     AngleBracketed,
-    Shortcut { uri: String, title: String },
-    Other { uri: String, title: String },
+    Shortcut { uri: Cow<'a, str>, title: Cow<'a, str> },
+    Other { uri: Cow<'a, str>, title: Cow<'a, str> },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct ImageLink {
-    uri: String,
-    title: String,
+pub struct ImageLink<'a> {
+    uri: Cow<'a, str>,
+    title: Cow<'a, str>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Heading {
-    id: Option<String>,
-    classes: Vec<String>,
-    attributes: Vec<(String, Option<String>)>,
+pub struct Heading<'a> {
+    id: Option<Cow<'a, str>>,
+    classes: Vec<Cow<'a, str>>,
+    attributes: Vec<(Cow<'a, str>, Option<Cow<'a, str>>)>,
 }
 
 /// Thea mount of code-block tokens one needs to produce a valid fenced code-block.
@@ -347,15 +347,15 @@ where
                                 state.current_shortcut_text = Some(String::new());
                                 formatter.write_char('[')?;
                                 LinkCategory::Shortcut {
-                                    uri: dest_url.to_string(),
-                                    title: title.to_string(),
+                                    uri: dest_url.clone().into(),
+                                    title: title.clone().into(),
                                 }
                             }
                             _ => {
                                 formatter.write_char('[')?;
                                 LinkCategory::Other {
-                                    uri: dest_url.to_string(),
-                                    title: title.to_string(),
+                                    uri: dest_url.clone().into(),
+                                    title: title.clone().into(),
                                 }
                             }
                         });
@@ -368,8 +368,8 @@ where
                         id: _,
                     } => {
                         state.image_stack.push(ImageLink {
-                            uri: dest_url.to_string(),
-                            title: title.to_string(),
+                            uri: dest_url.clone().into(),
+                            title: title.clone().into(),
                         });
                         formatter.write_str("![")
                     }
@@ -388,11 +388,11 @@ where
                     } => {
                         assert_eq!(state.current_heading, None);
                         state.current_heading = Some(self::Heading {
-                            id: id.as_ref().map(|id| id.to_string()),
-                            classes: classes.iter().map(|class| class.to_string()).collect(),
+                            id: id.as_ref().map(|id| id.clone().into()),
+                            classes: classes.iter().map(|class| class.clone().into()).collect(),
                             attributes: attrs
                                 .iter()
-                                .map(|(k, v)| (k.to_string(), v.as_ref().map(|val| val.to_string())))
+                                .map(|(k, v)| (k.clone().into(), v.as_ref().map(|val| val.clone().into())))
                                 .collect(),
                         });
                         match level {
