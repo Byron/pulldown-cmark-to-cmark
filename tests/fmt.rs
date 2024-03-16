@@ -1240,7 +1240,7 @@ mod heading {
 
 mod frontmatter {
     use pulldown_cmark::{Options, Parser};
-    use pulldown_cmark_to_cmark::cmark;
+    use pulldown_cmark_to_cmark::{cmark, cmark_with_options};
 
     #[test]
     fn yaml_frontmatter_should_be_supported() {
@@ -1253,11 +1253,11 @@ key2: value2
 
         let mut opts = Options::empty();
         opts.insert(Options::ENABLE_YAML_STYLE_METADATA_BLOCKS);
-        let events = Parser::new_ext(input, opts).map(|e| e).collect::<Vec<_>>();
+        let events = Parser::new_ext(input, opts);
 
         let mut output = String::new();
 
-        let state = cmark(events.iter(), &mut output).unwrap();
+        let state = cmark(events, &mut output).unwrap();
 
         state.finalize(&mut output).unwrap();
 
@@ -1276,14 +1276,149 @@ key = value2
         let mut opts = Options::empty();
         opts.insert(Options::ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS);
 
-        let events = Parser::new_ext(input, opts).map(|e| e).collect::<Vec<_>>();
+        let events = Parser::new_ext(input, opts);
 
         let mut output = String::new();
 
-        let state = cmark(events.iter(), &mut output).unwrap();
+        let state = cmark(events, &mut output).unwrap();
 
         state.finalize(&mut output).unwrap();
 
         assert_eq!(input, output);
+    }
+
+    #[test]
+    fn yaml_zero_newline() {
+        let input = "---
+key: value1
+key: value2
+---
+# Frontmatter should be supported";
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_YAML_STYLE_METADATA_BLOCKS);
+
+        let events = Parser::new_ext(input, opts);
+        let mut output = String::new();
+
+        let state = cmark_with_options(
+            events,
+            &mut output,
+            pulldown_cmark_to_cmark::Options {
+                newlines_after_metadata: 0,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+
+        state.finalize(&mut output).unwrap();
+
+        assert_eq!(input, output);
+    }
+
+    #[test]
+    fn toml_zero_newline() {
+        let input = "+++
+key = value1
+key = value2
++++
+# Frontmatter should be supported";
+
+        let mut opts = Options::empty();
+        opts.insert(Options::ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS);
+
+        let events = Parser::new_ext(input, opts);
+
+        let mut output = String::new();
+
+        let state = cmark_with_options(
+            events,
+            &mut output,
+            pulldown_cmark_to_cmark::Options {
+                newlines_after_metadata: 0,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+
+        state.finalize(&mut output).unwrap();
+
+        assert_eq!(input, output);
+    }
+
+    #[test]
+    fn yaml_frontmatter_should_supported_newline_option() {
+        let mut newlines = String::new();
+
+        for i in 0..10 {
+            let input = format!(
+                "---
+key: value1
+key: value2
+---{newlines}
+# Frontmatter should be supported"
+            );
+
+            let mut opts = Options::empty();
+            opts.insert(Options::ENABLE_YAML_STYLE_METADATA_BLOCKS);
+
+            let events = Parser::new_ext(&input, opts);
+
+            let mut output = String::new();
+
+            let state = cmark_with_options(
+                events,
+                &mut output,
+                pulldown_cmark_to_cmark::Options {
+                    newlines_after_metadata: i,
+                    ..Default::default()
+                },
+            )
+            .unwrap();
+
+            state.finalize(&mut output).unwrap();
+
+            assert_eq!(input, output);
+
+            newlines.push('\n');
+        }
+    }
+
+    #[test]
+    fn toml_frontmatter_should_supported_newline_option() {
+        let mut newlines = String::new();
+
+        for i in 0..10 {
+            let input = format!(
+                "+++
+key = value1
+key = value2
++++{newlines}
+# Frontmatter should be supported"
+            );
+
+            let mut opts = Options::empty();
+            opts.insert(Options::ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS);
+
+            let events = Parser::new_ext(&input, opts);
+
+            let mut output = String::new();
+
+            let state = cmark_with_options(
+                events,
+                &mut output,
+                pulldown_cmark_to_cmark::Options {
+                    newlines_after_metadata: i,
+                    ..Default::default()
+                },
+            )
+            .unwrap();
+
+            state.finalize(&mut output).unwrap();
+
+            assert_eq!(input, output);
+
+            newlines.push('\n');
+        }
     }
 }

@@ -104,6 +104,7 @@ pub struct Options<'a> {
     pub newlines_after_list: usize,
     pub newlines_after_blockquote: usize,
     pub newlines_after_rest: usize,
+    pub newlines_after_metadata: usize,
     /// Token count for fenced code block. An appropriate value of this field can be decided by
     /// [`calculate_code_block_token_count()`].
     /// Note that the default value is `4` which allows for one level of nested code-blocks,
@@ -127,6 +128,7 @@ const DEFAULT_OPTIONS: Options<'_> = Options {
     newlines_after_list: 2,
     newlines_after_blockquote: 2,
     newlines_after_rest: 1,
+    newlines_after_metadata: 1,
     code_block_token_count: 4,
     code_block_token: '`',
     list_token: '*',
@@ -533,8 +535,20 @@ where
                     }
                     Ok(())
                 }
-                TagEnd::MetadataBlock(MetadataBlockKind::PlusesStyle) => formatter.write_str("+++\n\n"),
-                TagEnd::MetadataBlock(MetadataBlockKind::YamlStyle) => formatter.write_str("---\n\n"),
+                TagEnd::MetadataBlock(MetadataBlockKind::PlusesStyle) => {
+                    if state.newlines_before_start < options.newlines_after_metadata {
+                        state.newlines_before_start = options.newlines_after_metadata;
+                    }
+
+                    formatter.write_str("+++\n")
+                }
+                TagEnd::MetadataBlock(MetadataBlockKind::YamlStyle) => {
+                    if state.newlines_before_start < options.newlines_after_metadata {
+                        state.newlines_before_start = options.newlines_after_metadata;
+                    }
+
+                    formatter.write_str("---\n")
+                }
                 TagEnd::Table => {
                     if state.newlines_before_start < options.newlines_after_table {
                         state.newlines_before_start = options.newlines_after_table;
