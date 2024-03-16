@@ -4,25 +4,25 @@ extern crate indoc;
 use pulldown_cmark::{Alignment, CodeBlockKind, Event, LinkType, Options, Parser, Tag, TagEnd};
 use pulldown_cmark_to_cmark::{cmark, cmark_resume, cmark_resume_with_options, Options as CmarkToCmarkOptions, State};
 
-fn fmts(s: &str) -> (String, State<'static>) {
+fn fmts(s: &str) -> (String, State<'_>) {
     let mut buf = String::new();
     let s = cmark(Parser::new_ext(s, Options::all()), &mut buf).unwrap();
     (buf, s)
 }
 
-fn fmts_with_options(s: &str, options: CmarkToCmarkOptions) -> (String, State<'static>) {
+fn fmts_with_options<'a>(s: &'a str, options: CmarkToCmarkOptions<'a>) -> (String, State<'a>) {
     let mut buf = String::new();
     let s = cmark_resume_with_options(Parser::new_ext(s, Options::all()), &mut buf, None, options).unwrap();
     (buf, s)
 }
 
-fn fmtes(e: &[Event], s: State<'static>) -> (String, State<'static>) {
+fn fmtes<'a>(e: &'a [Event], s: State<'a>) -> (String, State<'a>) {
     let mut buf = String::new();
     let s = cmark_resume(e.iter(), &mut buf, Some(s)).unwrap();
     (buf, s)
 }
 
-fn fmte<'a>(e: impl AsRef<[Event<'a>]>) -> (String, State<'static>) {
+fn fmte<'a>(e: impl AsRef<[Event<'a>]>) -> (String, State<'a>) {
     let mut buf = String::new();
     let s = cmark(e.as_ref().iter(), &mut buf).unwrap();
     (buf, s)

@@ -181,9 +181,9 @@ impl<'a> Options<'a> {
 pub fn cmark_resume_with_options<'a, I, E, F>(
     events: I,
     mut formatter: F,
-    state: Option<State<'static>>,
+    state: Option<State<'a>>,
     options: Options<'_>,
-) -> Result<State<'static>, fmt::Error>
+) -> Result<State<'a>, fmt::Error>
 where
     I: Iterator<Item = E>,
     E: Borrow<Event<'a>>,
@@ -658,11 +658,7 @@ where
 }
 
 /// As [`cmark_resume_with_options()`], but with default [`Options`].
-pub fn cmark_resume<'a, I, E, F>(
-    events: I,
-    formatter: F,
-    state: Option<State<'static>>,
-) -> Result<State<'static>, fmt::Error>
+pub fn cmark_resume<'a, I, E, F>(events: I, formatter: F, state: Option<State<'a>>) -> Result<State<'a>, fmt::Error>
 where
     I: Iterator<Item = E>,
     E: Borrow<Event<'a>>,
@@ -741,7 +737,7 @@ pub fn cmark_with_options<'a, I, E, F>(
     events: I,
     mut formatter: F,
     options: Options<'_>,
-) -> Result<State<'static>, fmt::Error>
+) -> Result<State<'a>, fmt::Error>
 where
     I: Iterator<Item = E>,
     E: Borrow<Event<'a>>,
@@ -752,7 +748,7 @@ where
 }
 
 /// As [`cmark_with_options()`], but with default [`Options`].
-pub fn cmark<'a, I, E, F>(events: I, mut formatter: F) -> Result<State<'static>, fmt::Error>
+pub fn cmark<'a, I, E, F>(events: I, mut formatter: F) -> Result<State<'a>, fmt::Error>
 where
     I: Iterator<Item = E>,
     E: Borrow<Event<'a>>,
