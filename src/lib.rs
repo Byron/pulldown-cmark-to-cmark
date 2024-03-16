@@ -49,8 +49,6 @@ pub struct State<'a> {
     pub text_for_header: Option<String>,
     /// Is set while we are handling text in a code block
     pub is_in_code_block: bool,
-    /// True if the last event was html. Used to inject additional newlines to support markdown inside of HTML tags.
-    pub last_was_html: bool,
     /// True if the last event was text and the text does not have trailing newline. Used to inject additional newlines before code block end fence.
     pub last_was_text_without_trailing_newline: bool,
     /// Currently open links
