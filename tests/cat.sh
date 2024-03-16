@@ -81,3 +81,15 @@ title "stupicat"
     WITH_SNAPSHOT="$snapshot/stupicat-indented-code-block" \
     expect_run_sh $SUCCESSFULLY "${exe[*]} $fixture/indented-code-block.md 2>/dev/null"
 )
+
+(with "yaml frontmatter"
+  it "succeeds" && \
+    WITH_SNAPSHOT="$snapshot/stupicat-yaml-frontmatter-output" \
+    expect_run_sh $SUCCESSFULLY "${exe[*]} $fixture/yaml-frontmatter.md 2>/dev/null"
+)
+
+(with "toml frontmatter"
+  it "succeeds" && \
+    WITH_SNAPSHOT="$snapshot/stupicat-toml-frontmatter-output" \
+    expect_run_sh $SUCCESSFULLY "${exe[*]} $fixture/toml-frontmatter.md 2>/dev/null"
+)
