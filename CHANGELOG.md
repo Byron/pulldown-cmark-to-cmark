@@ -5,7 +5,49 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 13.0.0 (2024-03-17)
+
+### New Features
+
+ - <csr-id-8d39a30b20b621a0db6274ee6bb58755c5198d01/> add newlines_after_metadata option
+
+### Bug Fixes
+
+ - <csr-id-7b27baad538570400eeb651b2e9b2b786ad43189/> set correct yaml metablock end tag
+
+### Test
+
+ - <csr-id-5d940367d7d720a176c361b99ab8699897a53313/> add frontmatter snapshot
+
+### New Features (BREAKING)
+
+ - <csr-id-834c74b9df9b9451000b069988d8259e2b881692/> support for controlling the amount of newlines after metadata blocks.
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 5 commits contributed to the release.
+ - 4 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Support for controlling the amount of newlines after metadata blocks. ([`834c74b`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/834c74b9df9b9451000b069988d8259e2b881692))
+    - Refactor ([`b8ae359`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/b8ae35906a62e5e6d69b5412fff6a9a93918925e))
+    - Add frontmatter snapshot ([`5d94036`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/5d940367d7d720a176c361b99ab8699897a53313))
+    - Add newlines_after_metadata option ([`8d39a30`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/8d39a30b20b621a0db6274ee6bb58755c5198d01))
+    - Set correct yaml metablock end tag ([`7b27baa`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/7b27baad538570400eeb651b2e9b2b786ad43189))
+</details>
+
 ## 12.0.0 (2024-03-16)
+
+<csr-id-b90defbf6ade8b3c1c0585f7933421f086eeb123/>
 
 ### Other
 
@@ -24,7 +66,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 17 commits contributed to the release over the course of 34 calendar days.
+ - 18 commits contributed to the release over the course of 34 calendar days.
  - 48 days passed between releases.
  - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
@@ -36,6 +78,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release pulldown-cmark-to-cmark v12.0.0 ([`002be03`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/002be03e5ec58fce34879e26118689b0e9269441))
     - Upgrade to pulldown-cmark v0.10 ([`640148b`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/640148b354eb7325e1fbeec2acbd4867d3c536fc))
     - Avoid allocations ([`366f304`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/366f304104ec27e96f185ead57658532ecaecaa7))
     - Allow State to borrow from events ([`b3bfd40`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/b3bfd404951c19314e110ee2764ea69b8cd4a9e2))
