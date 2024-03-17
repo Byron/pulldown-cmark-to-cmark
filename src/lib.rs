@@ -104,6 +104,7 @@ pub struct Options<'a> {
     pub newlines_after_list: usize,
     pub newlines_after_blockquote: usize,
     pub newlines_after_rest: usize,
+    /// The amount of newlines placed after TOML or YAML metadata blocks at the beginning of a document.
     pub newlines_after_metadata: usize,
     /// Token count for fenced code block. An appropriate value of this field can be decided by
     /// [`calculate_code_block_token_count()`].
@@ -539,14 +540,12 @@ where
                     if state.newlines_before_start < options.newlines_after_metadata {
                         state.newlines_before_start = options.newlines_after_metadata;
                     }
-
                     formatter.write_str("+++\n")
                 }
                 TagEnd::MetadataBlock(MetadataBlockKind::YamlStyle) => {
                     if state.newlines_before_start < options.newlines_after_metadata {
                         state.newlines_before_start = options.newlines_after_metadata;
                     }
-
                     formatter.write_str("---\n")
                 }
                 TagEnd::Table => {

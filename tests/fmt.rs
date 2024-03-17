@@ -118,7 +118,7 @@ fn it_applies_newlines_before_start_before_text() {
                 newlines_before_start: 2,
                 last_was_text_without_trailing_newline: true,
                 ..Default::default()
-            }
+            },
         ),
         (
             "\n\nt".into(),
@@ -140,7 +140,7 @@ fn it_applies_newlines_before_start_before_any_start_tag() {
                 newlines_before_start: 2,
                 last_was_text_without_trailing_newline: true,
                 ..Default::default()
-            }
+            },
         ),
         (
             "\n\nh".into(),
@@ -166,7 +166,7 @@ mod padding {
                     padding: vec!["  ".into()],
                     last_was_text_without_trailing_newline: true,
                     ..Default::default()
-                }
+                },
             ),
             (
                 "\n  \n  h".into(),
@@ -226,6 +226,7 @@ mod inline_elements {
     fn autolinks_are_fully_resolved() {
         assert_eq!(fmts("<http://a/b>").0, "<http://a/b>",)
     }
+
     #[test]
     fn links() {
         assert_eq!(
@@ -407,7 +408,7 @@ mod blockquote {
                 State {
                     padding: vec![" > ".into()],
                     ..Default::default()
-                }
+                },
             )
             .1,
             State {
@@ -443,18 +444,22 @@ mod blockquote {
 
         assert_eq!(fmts(s).0, "\n > \n > <table>\n > </table>\n > ")
     }
+
     #[test]
     fn with_inlinehtml() {
         assert_eq!(fmts(" > <br>").0, "\n > \n > <br>")
     }
+
     #[test]
     fn with_plaintext_in_html() {
         assert_eq!(fmts("<del>\n*foo*\n</del>").0, "<del>\n*foo*\n</del>")
     }
+
     #[test]
     fn with_markdown_nested_in_html() {
         assert_eq!(fmts("<del>\n\n*foo*\n\n</del>").0, "<del>\n\n*foo*\n\n</del>")
     }
+
     #[test]
     fn with_codeblock() {
         let s = indoc!(
@@ -470,6 +475,7 @@ mod blockquote {
 
         assert_eq!(fmts(s).0, "\n > \n > ````a\n > t1\n > t2\n > ````",)
     }
+
     #[test]
     fn nested() {
         let s = indoc!(
@@ -696,6 +702,7 @@ mod codeblock {
             )
         )
     }
+
     #[test]
     fn simple() {
         assert_eq!(
@@ -753,7 +760,7 @@ mod table {
                     table_alignments: vec![Alignment::None, Alignment::Center],
                     table_headers: vec!["a".into(), "b".into()],
                     ..Default::default()
-                }
+                },
             )
             .1,
             State {
@@ -762,11 +769,12 @@ mod table {
             }
         )
     }
+
     #[test]
     fn it_keeps_track_of_alignments_and_headers() {
         assert_eq!(
             fmte(&[
-                Event::Start(Tag::Table(vec![TableAlignment::None, TableAlignment::Center,])),
+                Event::Start(Tag::Table(vec![TableAlignment::None, TableAlignment::Center])),
                 Event::Start(Tag::TableHead),
                 Event::Start(Tag::TableCell),
                 Event::Text("a".into()),
@@ -783,6 +791,7 @@ mod table {
             }
         )
     }
+
     #[test]
     fn it_generates_equivalent_table_markdown() {
         use pulldown_cmark::{Options, Parser};
@@ -992,7 +1001,7 @@ mod list {
                 State {
                     list_stack: vec![None, None],
                     ..Default::default()
-                }
+                },
             )
             .1,
             State {
@@ -1256,9 +1265,7 @@ key2: value2
         let events = Parser::new_ext(input, opts);
 
         let mut output = String::new();
-
         let state = cmark(events, &mut output).unwrap();
-
         state.finalize(&mut output).unwrap();
 
         assert_eq!(input, output);
@@ -1277,77 +1284,15 @@ key = value2
         opts.insert(Options::ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS);
 
         let events = Parser::new_ext(input, opts);
-
         let mut output = String::new();
-
         let state = cmark(events, &mut output).unwrap();
-
         state.finalize(&mut output).unwrap();
 
         assert_eq!(input, output);
     }
 
     #[test]
-    fn yaml_zero_newline() {
-        let input = "---
-key: value1
-key: value2
----
-# Frontmatter should be supported";
-
-        let mut opts = Options::empty();
-        opts.insert(Options::ENABLE_YAML_STYLE_METADATA_BLOCKS);
-
-        let events = Parser::new_ext(input, opts);
-        let mut output = String::new();
-
-        let state = cmark_with_options(
-            events,
-            &mut output,
-            pulldown_cmark_to_cmark::Options {
-                newlines_after_metadata: 0,
-                ..Default::default()
-            },
-        )
-        .unwrap();
-
-        state.finalize(&mut output).unwrap();
-
-        assert_eq!(input, output);
-    }
-
-    #[test]
-    fn toml_zero_newline() {
-        let input = "+++
-key = value1
-key = value2
-+++
-# Frontmatter should be supported";
-
-        let mut opts = Options::empty();
-        opts.insert(Options::ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS);
-
-        let events = Parser::new_ext(input, opts);
-
-        let mut output = String::new();
-
-        let state = cmark_with_options(
-            events,
-            &mut output,
-            pulldown_cmark_to_cmark::Options {
-                newlines_after_metadata: 0,
-                ..Default::default()
-            },
-        )
-        .unwrap();
-
-        state.finalize(&mut output).unwrap();
-
-        assert_eq!(input, output);
-    }
-
-    #[test]
-    fn yaml_frontmatter_should_supported_newline_option() {
+    fn yaml_frontmatter_supports_newline_option() {
         let mut newlines = String::new();
 
         for i in 0..10 {
@@ -1363,9 +1308,7 @@ key: value2
             opts.insert(Options::ENABLE_YAML_STYLE_METADATA_BLOCKS);
 
             let events = Parser::new_ext(&input, opts);
-
             let mut output = String::new();
-
             let state = cmark_with_options(
                 events,
                 &mut output,
@@ -1375,17 +1318,15 @@ key: value2
                 },
             )
             .unwrap();
-
             state.finalize(&mut output).unwrap();
 
             assert_eq!(input, output);
-
             newlines.push('\n');
         }
     }
 
     #[test]
-    fn toml_frontmatter_should_supported_newline_option() {
+    fn toml_frontmatter_supports_newline_option() {
         let mut newlines = String::new();
 
         for i in 0..10 {
@@ -1401,9 +1342,7 @@ key = value2
             opts.insert(Options::ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS);
 
             let events = Parser::new_ext(&input, opts);
-
             let mut output = String::new();
-
             let state = cmark_with_options(
                 events,
                 &mut output,
@@ -1413,11 +1352,9 @@ key = value2
                 },
             )
             .unwrap();
-
             state.finalize(&mut output).unwrap();
 
             assert_eq!(input, output);
-
             newlines.push('\n');
         }
     }
