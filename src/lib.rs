@@ -8,8 +8,10 @@ use std::{
 
 use pulldown_cmark::{Alignment as TableAlignment, Event, HeadingLevel, LinkType, MetadataBlockKind, Tag, TagEnd};
 
+mod source_mapping;
 mod text_modifications;
 
+pub use source_mapping::*;
 use text_modifications::*;
 
 /// Similar to [Pulldown-Cmark-Alignment][Alignment], but with required
