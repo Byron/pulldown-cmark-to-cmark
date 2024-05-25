@@ -309,6 +309,32 @@ mod inline_elements {
             )
         )
     }
+
+    #[test]
+    fn preserve_less_than_sign_escape() {
+        // `<` is not escaped if not escaped in the source.
+        assert_eq!(
+            fmts("a < 1"),
+            (
+                "a < 1".into(),
+                State {
+                    newlines_before_start: 2,
+                    ..Default::default()
+                }
+            )
+        );
+        // `<` is escaped if escaped in the source.
+        assert_eq!(
+            fmts(r"a \< 1"),
+            (
+                r"a \< 1".into(),
+                State {
+                    newlines_before_start: 2,
+                    ..Default::default()
+                }
+            )
+        )
+    }
 }
 
 mod blockquote {
