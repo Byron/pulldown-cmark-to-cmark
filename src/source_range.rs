@@ -2,6 +2,10 @@ use super::*;
 
 /// Serialize a stream of [pulldown-cmark-Events][Event] each with source string into a string-backed buffer.
 ///
+/// Different from [`cmark_resume_with_options`], which always escape Markdown special characters like `#` or `[`,
+/// this function preserves special character escapes.
+/// That is, it only escapes a special character if it is escaped in the source.
+///
 /// 1. **source**
 ///     * Markdown source.
 /// 1. **event_and_ranges**
