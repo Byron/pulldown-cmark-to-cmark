@@ -395,22 +395,6 @@ mod inline_elements {
             )
         )
     }
-
-    #[test]
-    #[ignore]
-    fn rustdoc_link() {
-        // Brackets are not escaped if necessary.
-        assert_eq!(
-            fmts("[`Vec`]"),
-            (
-                "[`Vec`]".into(),
-                State {
-                    newlines_before_start: 2,
-                    ..Default::default()
-                }
-            )
-        )
-    }
 }
 
 mod blockquote {
