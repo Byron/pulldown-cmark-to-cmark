@@ -4,14 +4,15 @@ use std::{
     borrow::{Borrow, Cow},
     collections::HashSet,
     fmt::{self, Write},
+    ops::Range,
 };
 
 use pulldown_cmark::{Alignment as TableAlignment, Event, HeadingLevel, LinkType, MetadataBlockKind, Tag, TagEnd};
 
-mod source_mapping;
+mod source_range;
 mod text_modifications;
 
-pub use source_mapping::*;
+pub use source_range::*;
 use text_modifications::*;
 
 /// Similar to [Pulldown-Cmark-Alignment][Alignment], but with required
@@ -38,7 +39,7 @@ impl<'a> From<&'a TableAlignment> for Alignment {
 /// The state of the [`cmark_resume()`] and [`cmark_resume_with_options()`] functions.
 /// This does not only allow introspection, but enables the user
 /// to halt the serialization at any time, and resume it later.
-#[derive(Clone, Default, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Default, Debug, PartialEq, Eq, Hash)]
 pub struct State<'a> {
     /// The amount of newlines to insert after `Event::Start(...)`
     pub newlines_before_start: usize,
@@ -68,6 +69,8 @@ pub struct State<'a> {
     pub current_shortcut_text: Option<String>,
     /// A list of shortcuts seen so far for later emission
     pub shortcuts: Vec<(String, String, String)>,
+    /// Index of the end of the last event.
+    pub last_event_end_index: usize,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]

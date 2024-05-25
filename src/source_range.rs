@@ -1,5 +1,3 @@
-use std::ops::Range;
-
 use super::*;
 
 /// Serialize a stream of [pulldown-cmark-Events][Event] each with source string into a string-backed buffer.
@@ -21,19 +19,39 @@ use super::*;
 /// *Errors* are only happening if the underlying buffer fails, which is unlikely.
 pub fn cmark_resume_with_source_range_and_options<'a, I, E, F>(
     event_and_ranges: I,
-    _source: &'a str,
+    source: &'a str,
     mut formatter: F,
     state: Option<State<'a>>,
     options: Options<'_>,
 ) -> Result<State<'a>, fmt::Error>
 where
-    I: Iterator<Item = (E, Range<usize>)>,
+    I: Iterator<Item = (E, Option<Range<usize>>)>,
     E: Borrow<Event<'a>>,
     F: fmt::Write,
 {
     let mut state = state.unwrap_or_default();
-    for (event, _range) in event_and_ranges {
+    for (event, range) in event_and_ranges {
+        let update_event_end_index = !matches!(*event.borrow(), Event::Start(_));
+        let prevent_escape_leading_special_characters = match (&range, event.borrow()) {
+            (Some(range), Event::Text(_)) => {
+                range.start <= state.last_event_end_index ||
+                // Some source characters are not captured,
+                // so check the previous character.
+                source.as_bytes().get(range.start.saturating_sub(1)) != Some(&b'\\')
+            }
+            _ => false,
+        };
+        let was_in_code_block = state.is_in_code_block;
+        if prevent_escape_leading_special_characters {
+            // Hack to not escape leading special characters.
+            state.is_in_code_block = true;
+        }
         cmark_resume_one_event(event, &mut formatter, &mut state, &options)?;
+        state.is_in_code_block = was_in_code_block;
+
+        if let (true, Some(range)) = (update_event_end_index, range) {
+            state.last_event_end_index = range.end
+        }
     }
     Ok(state)
 }
@@ -46,7 +64,7 @@ pub fn cmark_resume_with_source_range<'a, I, E, F>(
     state: Option<State<'a>>,
 ) -> Result<State<'a>, fmt::Error>
 where
-    I: Iterator<Item = (E, Range<usize>)>,
+    I: Iterator<Item = (E, Option<Range<usize>>)>,
     E: Borrow<Event<'a>>,
     F: fmt::Write,
 {
@@ -61,7 +79,7 @@ pub fn cmark_with_source_range_and_options<'a, I, E, F>(
     options: Options<'_>,
 ) -> Result<State<'a>, fmt::Error>
 where
-    I: Iterator<Item = (E, Range<usize>)>,
+    I: Iterator<Item = (E, Option<Range<usize>>)>,
     E: Borrow<Event<'a>>,
     F: fmt::Write,
 {
@@ -82,7 +100,7 @@ pub fn cmark_with_source_range<'a, I, E, F>(
     mut formatter: F,
 ) -> Result<State<'a>, fmt::Error>
 where
-    I: Iterator<Item = (E, Range<usize>)>,
+    I: Iterator<Item = (E, Option<Range<usize>>)>,
     E: Borrow<Event<'a>>,
     F: fmt::Write,
 {

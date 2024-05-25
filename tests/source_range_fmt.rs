@@ -9,20 +9,33 @@ use pulldown_cmark_to_cmark::{
 
 fn fmts(s: &str) -> (String, State<'_>) {
     let mut buf = String::new();
-    let s = cmark_with_source_range(Parser::new_ext(s, Options::all()).into_offset_iter(), s, &mut buf).unwrap();
+    let mut s = cmark_with_source_range(
+        Parser::new_ext(s, Options::all())
+            .into_offset_iter()
+            .map(|(e, r)| (e, Some(r))),
+        s,
+        &mut buf,
+    )
+    .unwrap();
+    // Not testing this field.
+    s.last_event_end_index = Default::default();
     (buf, s)
 }
 
 fn fmts_with_options<'a>(s: &'a str, options: CmarkToCmarkOptions<'a>) -> (String, State<'a>) {
     let mut buf = String::new();
-    let s = cmark_resume_with_source_range_and_options(
-        Parser::new_ext(s, Options::all()).into_offset_iter(),
+    let mut s = cmark_resume_with_source_range_and_options(
+        Parser::new_ext(s, Options::all())
+            .into_offset_iter()
+            .map(|(e, r)| (e, Some(r))),
         s,
         &mut buf,
         None,
         options,
     )
     .unwrap();
+    // Not testing this field.
+    s.last_event_end_index = Default::default();
     (buf, s)
 }
 
@@ -32,7 +45,14 @@ fn assert_events_eq(s: &str) {
     let _before_events = Parser::new_ext(s, Options::all());
 
     let mut buf = String::new();
-    cmark_with_source_range(Parser::new_ext(s, Options::all()).into_offset_iter(), s, &mut buf).unwrap();
+    cmark_with_source_range(
+        Parser::new_ext(s, Options::all())
+            .into_offset_iter()
+            .map(|(e, r)| (e, Some(r))),
+        s,
+        &mut buf,
+    )
+    .unwrap();
 
     let before_events = Parser::new_ext(s, Options::all());
     let after_events = Parser::new_ext(&buf, Options::all());
@@ -276,9 +296,8 @@ mod inline_elements {
     }
 
     #[test]
-    #[ignore]
     fn rustdoc_link() {
-        // Brackets are not escaped if necessary.
+        // Brackets are not escaped if not escaped in the source.
         assert_eq!(
             fmts("[`Vec`]"),
             (
@@ -611,11 +630,8 @@ mod escapes {
     }
 
     #[test]
-    fn it_does_not_recreate_escapes_for_underscores_in_the_middle_of_a_word() {
-        assert_eq!(
-            fmts("\\_hello_world_").0,
-            "\\_hello_world\\_" // it actually makes mal-formatted markdown better
-        );
+    fn it_preserves_underscores_escapes() {
+        assert_eq!(fmts("\\_hello_world_").0, "\\_hello_world_");
     }
 
     #[test]
@@ -697,10 +713,10 @@ mod escapes {
     }
 
     #[test]
-    fn it_does_esscape_lone_square_brackets_in_text() {
+    fn it_does_not_escape_lone_square_brackets_in_text_if_the_source_does_not() {
         assert_eq!(
             fmts("] a closing bracket does nothing").0,
-            "\\] a closing bracket does nothing"
+            "] a closing bracket does nothing"
         )
     }
 
