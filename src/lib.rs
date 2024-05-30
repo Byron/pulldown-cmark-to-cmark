@@ -72,7 +72,10 @@ pub struct State<'a> {
     pub current_shortcut_text: Option<String>,
     /// A list of shortcuts seen so far for later emission
     pub shortcuts: Vec<(String, String, String)>,
-    /// Index of the end of the range corresponding to the last event.
+    /// Index into the `source` bytes of the end of the range corresponding to the last event.
+    ///
+    /// It's used to see if the current event didn't capture some bytes because of a
+    /// skipped-over backslash.
     pub last_event_end_index: usize,
 }
 
