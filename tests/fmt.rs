@@ -4,6 +4,26 @@ extern crate indoc;
 use pulldown_cmark::{Alignment, CodeBlockKind, Event, LinkType, Options, Parser, Tag, TagEnd};
 use pulldown_cmark_to_cmark::{cmark, cmark_resume, cmark_resume_with_options, Options as CmarkToCmarkOptions, State};
 
+mod source_range_fmt;
+
+fn assert_output_and_states_eq(output0: &str, state0: &State, output1: &str, state1: &State) {
+    assert_eq!(
+        output0, output1,
+        "Output of formatting without and with source range differs!"
+    );
+    assert_eq!(
+        state0, state1,
+        "States of formatting without and with source range differs!"
+    );
+}
+
+fn fmts_both(s: &str) -> (String, State<'_>) {
+    let (buf0, s0) = fmts(s);
+    let (buf1, s1) = source_range_fmt::fmts(s);
+    assert_output_and_states_eq(&buf0, &s0, &buf1, &s1);
+    (buf0, s0)
+}
+
 fn fmts(s: &str) -> (String, State<'_>) {
     let mut buf = String::new();
     let s = cmark(Parser::new_ext(s, Options::all()), &mut buf).unwrap();
@@ -11,8 +31,10 @@ fn fmts(s: &str) -> (String, State<'_>) {
 }
 
 fn fmts_with_options<'a>(s: &'a str, options: CmarkToCmarkOptions<'a>) -> (String, State<'a>) {
+    let (buf1, s1) = source_range_fmt::fmts_with_options(s, options.clone());
     let mut buf = String::new();
     let s = cmark_resume_with_options(Parser::new_ext(s, Options::all()), &mut buf, None, options).unwrap();
+    assert_output_and_states_eq(&buf, &s, &buf1, &s1);
     (buf, s)
 }
 
@@ -26,6 +48,11 @@ fn fmte<'a>(e: impl AsRef<[Event<'a>]>) -> (String, State<'a>) {
     let mut buf = String::new();
     let s = cmark(e.as_ref().iter(), &mut buf).unwrap();
     (buf, s)
+}
+
+fn assert_events_eq_both(s: &str) {
+    assert_events_eq(s);
+    source_range_fmt::assert_events_eq(s);
 }
 
 /// Asserts that if we parse our `str` s into a series of events, then serialize them with `cmark`
@@ -43,7 +70,7 @@ fn assert_events_eq(s: &str) {
 }
 
 mod lazy_newlines {
-    use super::{fmte, fmts, Event, LinkType, State, Tag, TagEnd};
+    use super::{fmte, fmts_both, Event, LinkType, State, Tag, TagEnd};
 
     #[test]
     fn after_emphasis_there_is_no_newline() {
@@ -96,7 +123,7 @@ mod lazy_newlines {
     fn after_some_types_it_has_multiple_newlines() {
         for md in &["paragraph", "## headline", "\n````\n````", "---"] {
             assert_eq!(
-                fmts(md),
+                fmts_both(md),
                 (
                     String::from(*md),
                     State {
@@ -182,14 +209,14 @@ mod padding {
 }
 
 mod inline_elements {
-    use crate::fmts_with_options;
+    use crate::{fmts_with_options, source_range_fmt};
 
-    use super::{fmts, CmarkToCmarkOptions, State};
+    use super::{fmts_both, CmarkToCmarkOptions, State};
 
     #[test]
     fn image() {
         assert_eq!(
-            fmts("![a](b)\n![c][d]\n\n[d]: e"),
+            fmts_both("![a](b)\n![c][d]\n\n[d]: e"),
             (
                 "![a](b)\n![c](e)".into(),
                 State {
@@ -203,7 +230,7 @@ mod inline_elements {
     #[test]
     fn footnote() {
         assert_eq!(
-            fmts("a [^b]\n\n[^b]: c"),
+            fmts_both("a [^b]\n\n[^b]: c"),
             (
                 "a [^b]\n\n[^b]: c".into(),
                 State {
@@ -217,20 +244,20 @@ mod inline_elements {
     #[test]
     fn multiline_footnote() {
         assert_eq!(
-            fmts("a [^b]\n\n[^b]: this is\n    one footnote").0,
+            fmts_both("a [^b]\n\n[^b]: this is\n    one footnote").0,
             "a [^b]\n\n[^b]: this is\n    one footnote",
         )
     }
 
     #[test]
     fn autolinks_are_fully_resolved() {
-        assert_eq!(fmts("<http://a/b>").0, "<http://a/b>",)
+        assert_eq!(fmts_both("<http://a/b>").0, "<http://a/b>",)
     }
 
     #[test]
     fn links() {
         assert_eq!(
-            fmts("[a](b)\n[c][d]\n\n[d]: e"),
+            fmts_both("[a](b)\n[c][d]\n\n[d]: e"),
             (
                 "[a](b)\n[c](e)".into(),
                 State {
@@ -244,7 +271,7 @@ mod inline_elements {
     #[test]
     fn shortcut_links() {
         assert_eq!(
-            fmts("[a](b)\n[c]\n\n[c]: e"),
+            fmts_both("[a](b)\n[c]\n\n[c]: e"),
             (
                 "[a](b)\n[c]\n\n[c]: e".into(),
                 State {
@@ -258,7 +285,7 @@ mod inline_elements {
     #[test]
     fn shortcut_code_links() {
         assert_eq!(
-            fmts("[a](b)\n[`c`]\n\n[`c`]: e"),
+            fmts_both("[a](b)\n[`c`]\n\n[`c`]: e"),
             (
                 "[a](b)\n[`c`]\n\n[`c`]: e".into(),
                 State {
@@ -272,7 +299,7 @@ mod inline_elements {
     #[test]
     fn multiple_shortcut_links() {
         assert_eq!(
-            fmts("[a](b)\n[c] [d]\n\n[c]: e\n[d]: f"),
+            fmts_both("[a](b)\n[c] [d]\n\n[c]: e\n[d]: f"),
             (
                 "[a](b)\n[c] [d]\n\n[c]: e\n[d]: f".into(),
                 State {
@@ -286,7 +313,7 @@ mod inline_elements {
     #[test]
     fn various() {
         assert_eq!(
-            fmts("*a* b **c**\n<br>\nd\n\ne `c`"),
+            fmts_both("*a* b **c**\n<br>\nd\n\ne `c`"),
             (
                 "*a* b **c**\n<br>\nd\n\ne `c`".into(),
                 State {
@@ -319,13 +346,13 @@ mod inline_elements {
 
     #[test]
     fn strikethrough() {
-        assert_eq!(fmts("~~strikethrough~~").0, "~~strikethrough~~",);
+        assert_eq!(fmts_both("~~strikethrough~~").0, "~~strikethrough~~",);
     }
 
     #[test]
     fn code_double_backtick() {
         assert_eq!(
-            fmts("lorem ``ipsum `dolor` sit`` amet"),
+            fmts_both("lorem ``ipsum `dolor` sit`` amet"),
             (
                 "lorem ``ipsum `dolor` sit`` amet".into(),
                 State {
@@ -339,7 +366,7 @@ mod inline_elements {
     #[test]
     fn code_triple_backtick() {
         assert_eq!(
-            fmts("lorem ```ipsum ``dolor`` sit``` amet"),
+            fmts_both("lorem ```ipsum ``dolor`` sit``` amet"),
             (
                 "lorem ```ipsum ``dolor`` sit``` amet".into(),
                 State {
@@ -354,7 +381,7 @@ mod inline_elements {
     fn code_backtick_normalization() {
         // The minimum amount of backticks are inserted.
         assert_eq!(
-            fmts("lorem ```ipsum ` dolor``` amet"),
+            fmts_both("lorem ```ipsum ` dolor``` amet"),
             (
                 "lorem ``ipsum ` dolor`` amet".into(),
                 State {
@@ -370,7 +397,7 @@ mod inline_elements {
         // Spaces are inserted if the inline code starts or ends with
         // a backtick.
         assert_eq!(
-            fmts("`` `lorem ``   `` ipsum` ``"),
+            fmts_both("`` `lorem ``   `` ipsum` ``"),
             (
                 "`` `lorem ``   `` ipsum` ``".into(),
                 State {
@@ -385,9 +412,50 @@ mod inline_elements {
     fn code_spaces_before_backtick() {
         //  No space is inserted if it is not needed.
         assert_eq!(
-            fmts("` lorem `   ` `"),
+            fmts_both("` lorem `   ` `"),
             (
                 "`lorem`   ` `".into(),
+                State {
+                    newlines_before_start: 2,
+                    ..Default::default()
+                }
+            )
+        )
+    }
+
+    #[test]
+    fn rustdoc_link() {
+        // Brackets are not escaped if not escaped in the source.
+        assert_eq!(
+            source_range_fmt::fmts("[`Vec`]"),
+            (
+                "[`Vec`]".into(),
+                State {
+                    newlines_before_start: 2,
+                    ..Default::default()
+                }
+            )
+        )
+    }
+
+    #[test]
+    fn preserve_less_than_sign_escape() {
+        // `<` is not escaped if not escaped in the source.
+        assert_eq!(
+            source_range_fmt::fmts("a < 1"),
+            (
+                "a < 1".into(),
+                State {
+                    newlines_before_start: 2,
+                    ..Default::default()
+                }
+            )
+        );
+        // `<` is escaped if escaped in the source.
+        assert_eq!(
+            source_range_fmt::fmts(r"a \< 1"),
+            (
+                r"a \< 1".into(),
                 State {
                     newlines_before_start: 2,
                     ..Default::default()
@@ -398,7 +466,7 @@ mod inline_elements {
 }
 
 mod blockquote {
-    use super::{assert_events_eq, fmte, fmtes, fmts, Event, State, Tag, TagEnd};
+    use super::{assert_events_eq_both, fmte, fmtes, fmts_both, Event, State, Tag, TagEnd};
 
     #[test]
     fn it_pops_padding_on_quote_end() {
@@ -440,24 +508,24 @@ mod blockquote {
              "
         );
 
-        assert_events_eq(s);
+        assert_events_eq_both(s);
 
-        assert_eq!(fmts(s).0, "\n > \n > <table>\n > </table>\n > ")
+        assert_eq!(fmts_both(s).0, "\n > \n > <table>\n > </table>\n > ")
     }
 
     #[test]
     fn with_inlinehtml() {
-        assert_eq!(fmts(" > <br>").0, "\n > \n > <br>")
+        assert_eq!(fmts_both(" > <br>").0, "\n > \n > <br>")
     }
 
     #[test]
     fn with_plaintext_in_html() {
-        assert_eq!(fmts("<del>\n*foo*\n</del>").0, "<del>\n*foo*\n</del>")
+        assert_eq!(fmts_both("<del>\n*foo*\n</del>").0, "<del>\n*foo*\n</del>")
     }
 
     #[test]
     fn with_markdown_nested_in_html() {
-        assert_eq!(fmts("<del>\n\n*foo*\n\n</del>").0, "<del>\n\n*foo*\n\n</del>")
+        assert_eq!(fmts_both("<del>\n\n*foo*\n\n</del>").0, "<del>\n\n*foo*\n\n</del>")
     }
 
     #[test]
@@ -471,9 +539,9 @@ mod blockquote {
             "
         );
 
-        assert_events_eq(s);
+        assert_events_eq_both(s);
 
-        assert_eq!(fmts(s).0, "\n > \n > ````a\n > t1\n > t2\n > ````",)
+        assert_eq!(fmts_both(s).0, "\n > \n > ````a\n > t1\n > t2\n > ````",)
     }
 
     #[test]
@@ -488,9 +556,9 @@ mod blockquote {
             "
         );
 
-        assert_events_eq(s);
+        assert_events_eq_both(s);
 
-        assert_eq!(fmts(s).0, "\n > \n > a\n > \n >  > \n >  > b\n > \n > c",)
+        assert_eq!(fmts_both(s).0, "\n > \n > a\n > \n >  > \n >  > b\n > \n > c",)
     }
 
     #[test]
@@ -503,9 +571,9 @@ mod blockquote {
             "
         );
 
-        assert_events_eq(s);
+        assert_events_eq_both(s);
 
-        assert_eq!(fmts(s).0, "\n > \n >  > \n >  > foo\n >  > bar\n >  > baz",)
+        assert_eq!(fmts_both(s).0, "\n > \n >  > \n >  > foo\n >  > bar\n >  > baz",)
     }
 
     #[test]
@@ -518,10 +586,10 @@ mod blockquote {
              "
         );
 
-        assert_events_eq(s);
+        assert_events_eq_both(s);
 
         assert_eq!(
-            fmts(s),
+            fmts_both(s),
             (
                 "\n > \n > a\n > b  \n > c".into(),
                 State {
@@ -536,10 +604,10 @@ mod blockquote {
     fn empty() {
         let s = " > ";
 
-        assert_events_eq(s);
+        assert_events_eq_both(s);
 
         assert_eq!(
-            fmts(s),
+            fmts_both(s),
             (
                 "\n > ".into(),
                 State {
@@ -560,10 +628,10 @@ mod blockquote {
             "
         );
 
-        assert_events_eq(s);
+        assert_events_eq_both(s);
 
         assert_eq!(
-            fmts(s),
+            fmts_both(s),
             (
                 "\n > \n > foo\n\n > \n > bar".into(),
                 State {
@@ -585,10 +653,10 @@ mod blockquote {
             "
         );
 
-        assert_events_eq(s);
+        assert_events_eq_both(s);
 
         assert_eq!(
-            fmts(s),
+            fmts_both(s),
             (
                 "\n > \n > foo\n > baz\n\n > \n > bar".into(),
                 State {
@@ -609,10 +677,10 @@ mod blockquote {
             "
         );
 
-        assert_events_eq(s);
+        assert_events_eq_both(s);
 
         assert_eq!(
-            fmts(s),
+            fmts_both(s),
             (
                 "* \n   > \n   > * foo\n   >   * baz\n  \n  * \n     > \n     > bar".into(),
                 State {
@@ -625,7 +693,7 @@ mod blockquote {
 
     #[test]
     fn complex_nesting() {
-        assert_events_eq(indoc!(
+        assert_events_eq_both(indoc!(
             "
             > one
             > > two
@@ -662,7 +730,7 @@ mod blockquote {
 }
 
 mod codeblock {
-    use super::{fmte, fmts, fmts_with_options, CmarkToCmarkOptions, CodeBlockKind, Event, State, Tag};
+    use super::{fmte, fmts_both, fmts_with_options, CmarkToCmarkOptions, CodeBlockKind, Event, State, Tag};
 
     #[test]
     fn it_keeps_track_of_the_presence_of_a_code_block() {
@@ -678,7 +746,7 @@ mod codeblock {
     #[test]
     fn simple_and_paragraph() {
         assert_eq!(
-            fmts("````hi\nsome\ntext\n````\na"),
+            fmts_both("````hi\nsome\ntext\n````\na"),
             (
                 "\n````hi\nsome\ntext\n````\n\na".into(),
                 State {
@@ -692,7 +760,7 @@ mod codeblock {
     #[test]
     fn empty() {
         assert_eq!(
-            fmts("```\n```"),
+            fmts_both("```\n```"),
             (
                 "\n````\n````".into(),
                 State {
@@ -706,7 +774,7 @@ mod codeblock {
     #[test]
     fn simple() {
         assert_eq!(
-            fmts("```hi\nsome\ntext\n```"),
+            fmts_both("```hi\nsome\ntext\n```"),
             (
                 "\n````hi\nsome\ntext\n````".into(),
                 State {
@@ -720,7 +788,7 @@ mod codeblock {
     #[test]
     fn simple_other_syntax() {
         assert_eq!(
-            fmts("~~~hi\nsome\ntext\n~~~"),
+            fmts_both("~~~hi\nsome\ntext\n~~~"),
             (
                 "\n````hi\nsome\ntext\n````".into(),
                 State {
@@ -831,7 +899,7 @@ mod table {
 mod escapes {
     use pulldown_cmark::CowStr;
 
-    use crate::{fmts, CmarkToCmarkOptions, Event, Parser, Tag, TagEnd};
+    use crate::{fmts, fmts_both, source_range_fmt, CmarkToCmarkOptions, Event, Parser, Tag, TagEnd};
 
     fn run_test_on_each_special_char(f: impl Fn(String, CowStr)) {
         for c in CmarkToCmarkOptions::default().special_characters().chars() {
@@ -849,9 +917,14 @@ mod escapes {
     }
 
     #[test]
+    fn it_preserves_underscores_escapes() {
+        assert_eq!(source_range_fmt::fmts("\\_hello_world_").0, "\\_hello_world_");
+    }
+
+    #[test]
     fn it_recreates_escapes_for_known_special_characters_at_the_beginning_of_the_word() {
         run_test_on_each_special_char(|escaped_special_character, _| {
-            assert_eq!(fmts(&escaped_special_character).0, escaped_special_character);
+            assert_eq!(fmts_both(&escaped_special_character).0, escaped_special_character);
         })
     }
 
@@ -887,7 +960,7 @@ mod escapes {
     #[test]
     fn it_escapes_closing_square_brackets() {
         assert_eq!(
-            fmts(r#"[\[1\]](http://example.com)"#).0,
+            fmts_both(r#"[\[1\]](http://example.com)"#).0,
             r#"[\[1\]](http://example.com)"#
         );
     }
@@ -897,31 +970,31 @@ mod escapes {
         // See https://spec.commonmark.org/0.30/#link-title for the rules around
         // link titles and the characters they may contain
         assert_eq!(
-            fmts(r#"[link](http://example.com "'link title'")"#).0,
+            fmts_both(r#"[link](http://example.com "'link title'")"#).0,
             r#"[link](http://example.com "'link title'")"#
         );
         assert_eq!(
-            fmts(r#"[link](http://example.com "\\\"link \\ title\"")"#).0,
+            fmts_both(r#"[link](http://example.com "\\\"link \\ title\"")"#).0,
             r#"[link](http://example.com "\\\"link \\ title\"")"#
         );
         assert_eq!(
-            fmts(r#"[link](http://example.com "\"link title\"")"#).0,
+            fmts_both(r#"[link](http://example.com "\"link title\"")"#).0,
             r#"[link](http://example.com "\"link title\"")"#
         );
         assert_eq!(
-            fmts(r#"[link](http://example.com '"link title"')"#).0,
+            fmts_both(r#"[link](http://example.com '"link title"')"#).0,
             r#"[link](http://example.com "\"link title\"")"#
         );
         assert_eq!(
-            fmts(r#"[link](http://example.com '\'link title\'')"#).0,
+            fmts_both(r#"[link](http://example.com '\'link title\'')"#).0,
             r#"[link](http://example.com "'link title'")"#
         );
         assert_eq!(
-            fmts(r#"[link](http://example.com (\(link title\)))"#).0,
+            fmts_both(r#"[link](http://example.com (\(link title\)))"#).0,
             r#"[link](http://example.com "(link title)")"#
         );
         assert_eq!(
-            fmts(r#"[link](http://example.com (你好👋))"#).0,
+            fmts_both(r#"[link](http://example.com (你好👋))"#).0,
             r#"[link](http://example.com "你好👋")"#
         );
     }
@@ -931,6 +1004,14 @@ mod escapes {
         assert_eq!(
             fmts("] a closing bracket does nothing").0,
             "\\] a closing bracket does nothing"
+        )
+    }
+
+    #[test]
+    fn it_does_not_escape_lone_square_brackets_in_text_if_the_source_does_not() {
+        assert_eq!(
+            source_range_fmt::fmts("] a closing bracket does nothing").0,
+            "] a closing bracket does nothing"
         )
     }
 
@@ -991,7 +1072,7 @@ mod escapes {
 }
 
 mod list {
-    use super::{fmtes, fmts, fmts_with_options, CmarkToCmarkOptions, Event, State, TagEnd};
+    use super::{fmtes, fmts_both, fmts_with_options, CmarkToCmarkOptions, Event, State, TagEnd};
 
     #[test]
     fn it_pops_one_item_from_the_lists_stack_for_each_end_list() {
@@ -1014,7 +1095,7 @@ mod list {
     #[test]
     fn ordered_and_unordered_nested_and_ordered() {
         assert_eq!(
-            fmts("1. *b*\n   * *b*\n1. c"),
+            fmts_both("1. *b*\n   * *b*\n1. c"),
             (
                 "1. *b*\n   * *b*\n1. c".into(),
                 State {
@@ -1028,7 +1109,7 @@ mod list {
     #[test]
     fn ordered_and_multiple_unordered() {
         assert_eq!(
-            fmts("11. *b*\n    * *b*\n    * c"),
+            fmts_both("11. *b*\n    * *b*\n    * c"),
             (
                 "11. *b*\n    * *b*\n    * c".into(),
                 State {
@@ -1041,13 +1122,13 @@ mod list {
 
     #[test]
     fn unordered_ordered_unordered() {
-        assert_eq!(fmts("* a\n  1. b\n* c").0, "* a\n  1. b\n* c",)
+        assert_eq!(fmts_both("* a\n  1. b\n* c").0, "* a\n  1. b\n* c",)
     }
 
     #[test]
     fn ordered_and_unordered_nested() {
         assert_eq!(
-            fmts("1. *b*\n   * *b*"),
+            fmts_both("1. *b*\n   * *b*"),
             (
                 "1. *b*\n   * *b*".into(),
                 State {
@@ -1061,7 +1142,7 @@ mod list {
     #[test]
     fn unordered() {
         assert_eq!(
-            fmts("* a\n* b"),
+            fmts_both("* a\n* b"),
             (
                 "* a\n* b".into(),
                 State {
@@ -1088,7 +1169,7 @@ mod list {
     #[test]
     fn ordered() {
         assert_eq!(
-            fmts("2. a\n2. b"),
+            fmts_both("2. a\n2. b"),
             (
                 "2. a\n2. b".into(),
                 State {
@@ -1225,7 +1306,7 @@ mod list {
     #[test]
     fn checkboxes() {
         assert_eq!(
-            fmts(indoc!(
+            fmts_both(indoc!(
                 "
             * [ ] foo
             * [x] bar
@@ -1238,12 +1319,12 @@ mod list {
 }
 
 mod heading {
-    use super::assert_events_eq;
+    use super::assert_events_eq_both;
 
     #[test]
     fn heading_with_classes_and_attrs() {
-        assert_events_eq("# Heading { #id .class1 key1=val1 .class2 }");
-        assert_events_eq("# Heading { #id .class1 .class2 key1=val1 key2 }");
+        assert_events_eq_both("# Heading { #id .class1 key1=val1 .class2 }");
+        assert_events_eq_both("# Heading { #id .class1 .class2 key1=val1 key2 }");
     }
 }
 
