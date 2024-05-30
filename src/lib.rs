@@ -12,7 +12,10 @@ use pulldown_cmark::{Alignment as TableAlignment, Event, HeadingLevel, LinkType,
 mod source_range;
 mod text_modifications;
 
-pub use source_range::*;
+pub use source_range::{
+    cmark_resume_with_source_range, cmark_resume_with_source_range_and_options, cmark_with_source_range,
+    cmark_with_source_range_and_options,
+};
 use text_modifications::*;
 
 /// Similar to [Pulldown-Cmark-Alignment][Alignment], but with required
@@ -69,7 +72,7 @@ pub struct State<'a> {
     pub current_shortcut_text: Option<String>,
     /// A list of shortcuts seen so far for later emission
     pub shortcuts: Vec<(String, String, String)>,
-    /// Index of the end of the last event.
+    /// Index of the end of the range corresponding to the last event.
     pub last_event_end_index: usize,
 }
 

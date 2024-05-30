@@ -1,19 +1,20 @@
-use super::*;
+use super::{cmark_resume_one_event, fmt, Borrow, Event, Options, Range, State};
 
-/// Serialize a stream of [pulldown-cmark-Events][Event] each with source string into a string-backed buffer.
+/// Serialize a stream of [pulldown-cmark-Events][Event] while preserving the escape characters in `source`.
+/// Each input [Event] is accompanied by an optional [Range] that maps it back to the `source` string.
 ///
 /// Different from [`cmark_resume_with_options`], which always escape Markdown special characters like `#` or `[`,
-/// this function preserves special character escapes.
-/// That is, it only escapes a special character if it is escaped in the source.
+/// this function only escapes a special character if it is escaped in `source`.
 ///
 /// 1. **source**
-///     * Markdown source.
+///     * Markdown source from which `event_and_ranges` are created.
 /// 1. **event_and_ranges**
 ///    * An iterator over [`Event`]-range pairs, for example as returned by [`pulldown_cmark::OffsetIter`].
+///     Must match what's provided in `source`.
 /// 1. **formatter**
 ///    * A format writer, can be a `String`.
 /// 1. **state**
-///    * The optional initial state of the serialization.
+///    * The optional initial state of the serialization, useful when the operation should be resumed.
 /// 1. **options**
 ///    * Customize the appearance of the serialization. All otherwise magic values are contained
 ///      here.

@@ -1,4 +1,4 @@
-use super::*;
+use super::{fmt, Cow, Options, State};
 
 pub fn padding<F>(f: &mut F, p: &[Cow<'_, str>]) -> fmt::Result
 where
