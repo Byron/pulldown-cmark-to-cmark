@@ -4,9 +4,19 @@ use std::{
     borrow::{Borrow, Cow},
     collections::HashSet,
     fmt::{self, Write},
+    ops::Range,
 };
 
 use pulldown_cmark::{Alignment as TableAlignment, Event, HeadingLevel, LinkType, MetadataBlockKind, Tag, TagEnd};
+
+mod source_range;
+mod text_modifications;
+
+pub use source_range::{
+    cmark_resume_with_source_range, cmark_resume_with_source_range_and_options, cmark_with_source_range,
+    cmark_with_source_range_and_options,
+};
+use text_modifications::*;
 
 /// Similar to [Pulldown-Cmark-Alignment][Alignment], but with required
 /// traits for comparison to allow testing.
@@ -62,6 +72,11 @@ pub struct State<'a> {
     pub current_shortcut_text: Option<String>,
     /// A list of shortcuts seen so far for later emission
     pub shortcuts: Vec<(String, String, String)>,
+    /// Index into the `source` bytes of the end of the range corresponding to the last event.
+    ///
+    /// It's used to see if the current event didn't capture some bytes because of a
+    /// skipped-over backslash.
+    pub last_event_end_index: usize,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -193,481 +208,422 @@ where
     F: fmt::Write,
 {
     let mut state = state.unwrap_or_default();
-    fn padding<F>(f: &mut F, p: &[Cow<'_, str>]) -> fmt::Result
-    where
-        F: fmt::Write,
-    {
-        for padding in p {
-            write!(f, "{}", padding)?;
-        }
-        Ok(())
-    }
-    fn consume_newlines<F>(f: &mut F, s: &mut State<'_>) -> fmt::Result
-    where
-        F: fmt::Write,
-    {
-        while s.newlines_before_start != 0 {
-            s.newlines_before_start -= 1;
-            f.write_char('\n')?;
-            padding(f, &s.padding)?;
-        }
-        Ok(())
-    }
-
-    fn escape_leading_special_characters<'a>(
-        t: &'a str,
-        is_in_block_quote: bool,
-        options: &Options<'a>,
-    ) -> Cow<'a, str> {
-        if is_in_block_quote || t.is_empty() {
-            return Cow::Borrowed(t);
-        }
-
-        let first = t.chars().next().expect("at least one char");
-        if options.special_characters().contains(first) {
-            let mut s = String::with_capacity(t.len() + 1);
-            s.push('\\');
-            s.push(first);
-            s.push_str(&t[1..]);
-            Cow::Owned(s)
-        } else {
-            Cow::Borrowed(t)
-        }
-    }
-
-    fn print_text_without_trailing_newline<F>(t: &str, f: &mut F, p: &[Cow<'_, str>]) -> fmt::Result
-    where
-        F: fmt::Write,
-    {
-        if t.contains('\n') {
-            let line_count = t.split('\n').count();
-            for (tid, token) in t.split('\n').enumerate() {
-                f.write_str(token).and(if tid + 1 == line_count {
-                    Ok(())
-                } else {
-                    f.write_char('\n').and(padding(f, p))
-                })?;
-            }
-            Ok(())
-        } else {
-            f.write_str(t)
-        }
-    }
-
-    fn padding_of(l: Option<u64>) -> Cow<'static, str> {
-        match l {
-            None => "  ".into(),
-            Some(n) => format!("{}. ", n).chars().map(|_| ' ').collect::<String>().into(),
-        }
-    }
-
     for event in events {
-        use pulldown_cmark::{CodeBlockKind, Event::*, Tag::*};
+        cmark_resume_one_event(event, &mut formatter, &mut state, &options)?;
+    }
+    Ok(state)
+}
 
-        let event = event.borrow();
+fn cmark_resume_one_event<'a, E, F>(
+    event: E,
+    formatter: &mut F,
+    state: &mut State<'a>,
+    options: &Options<'_>,
+) -> Result<(), fmt::Error>
+where
+    E: Borrow<Event<'a>>,
+    F: fmt::Write,
+{
+    use pulldown_cmark::{CodeBlockKind, Event::*, Tag::*};
 
-        let last_was_text_without_trailing_newline = state.last_was_text_without_trailing_newline;
-        state.last_was_text_without_trailing_newline = false;
-        match *event {
-            Rule => {
-                consume_newlines(&mut formatter, &mut state)?;
-                if state.newlines_before_start < options.newlines_after_rule {
-                    state.newlines_before_start = options.newlines_after_rule;
-                }
-                formatter.write_str("---")
+    let last_was_text_without_trailing_newline = state.last_was_text_without_trailing_newline;
+    state.last_was_text_without_trailing_newline = false;
+    match *event.borrow() {
+        Rule => {
+            consume_newlines(formatter, state)?;
+            if state.newlines_before_start < options.newlines_after_rule {
+                state.newlines_before_start = options.newlines_after_rule;
             }
-            Code(ref text) => {
-                if let Some(shortcut_text) = state.current_shortcut_text.as_mut() {
-                    shortcut_text.push('`');
-                    shortcut_text.push_str(text);
-                    shortcut_text.push('`');
-                }
-                if let Some(text_for_header) = state.text_for_header.as_mut() {
-                    text_for_header.push('`');
-                    text_for_header.push_str(text);
-                    text_for_header.push('`');
-                }
-                if text.chars().all(|ch| ch == ' ') {
-                    write!(formatter, "`{text}`")
-                } else {
-                    let backticks = "`".repeat(count_consecutive(text, '`') + 1);
-                    let space = match text.as_bytes() {
-                        &[b'`', ..] | &[.., b'`'] => " ", // Space needed to separate backtick.
-                        &[b' ', .., b' '] => " ",         // Space needed to escape inner space.
-                        _ => "",                          // No space needed.
-                    };
-                    write!(formatter, "{backticks}{space}{text}{space}{backticks}")
-                }
+            formatter.write_str("---")
+        }
+        Code(ref text) => {
+            if let Some(shortcut_text) = state.current_shortcut_text.as_mut() {
+                shortcut_text.push('`');
+                shortcut_text.push_str(text);
+                shortcut_text.push('`');
             }
-            Start(ref tag) => {
-                if let List(ref list_type) = *tag {
-                    state.list_stack.push(*list_type);
-                    if state.list_stack.len() > 1 && state.newlines_before_start < options.newlines_after_rest {
-                        state.newlines_before_start = options.newlines_after_rest;
-                    }
-                }
-                let consumed_newlines = state.newlines_before_start != 0;
-                consume_newlines(&mut formatter, &mut state)?;
-                match tag {
-                    Item => match state.list_stack.last_mut() {
-                        Some(inner) => {
-                            state.padding.push(padding_of(*inner));
-                            match inner {
-                                Some(n) => {
-                                    let bullet_number = *n;
-                                    if options.increment_ordered_list_bullets {
-                                        *n += 1;
-                                    }
-                                    write!(formatter, "{}{} ", bullet_number, options.ordered_list_token)
-                                }
-                                None => write!(formatter, "{} ", options.list_token),
-                            }
-                        }
-                        None => Ok(()),
-                    },
-                    Table(ref alignments) => {
-                        state.table_alignments = alignments.iter().map(From::from).collect();
-                        Ok(())
-                    }
-                    TableHead => Ok(()),
-                    TableRow => Ok(()),
-                    TableCell => {
-                        state.text_for_header = Some(String::new());
-                        formatter.write_char('|')
-                    }
-                    Link {
-                        link_type,
-                        dest_url,
-                        title,
-                        id: _,
-                    } => {
-                        state.link_stack.push(match link_type {
-                            LinkType::Autolink | LinkType::Email => {
-                                formatter.write_char('<')?;
-                                LinkCategory::AngleBracketed
-                            }
-                            LinkType::Shortcut => {
-                                state.current_shortcut_text = Some(String::new());
-                                formatter.write_char('[')?;
-                                LinkCategory::Shortcut {
-                                    uri: dest_url.clone().into(),
-                                    title: title.clone().into(),
-                                }
-                            }
-                            _ => {
-                                formatter.write_char('[')?;
-                                LinkCategory::Other {
-                                    uri: dest_url.clone().into(),
-                                    title: title.clone().into(),
-                                }
-                            }
-                        });
-                        Ok(())
-                    }
-                    Image {
-                        link_type: _,
-                        dest_url,
-                        title,
-                        id: _,
-                    } => {
-                        state.image_stack.push(ImageLink {
-                            uri: dest_url.clone().into(),
-                            title: title.clone().into(),
-                        });
-                        formatter.write_str("![")
-                    }
-                    Emphasis => formatter.write_char(options.emphasis_token),
-                    Strong => formatter.write_str(options.strong_token),
-                    FootnoteDefinition(ref name) => {
-                        state.padding.push("    ".into());
-                        write!(formatter, "[^{}]: ", name)
-                    }
-                    Paragraph => Ok(()),
-                    Heading {
-                        level,
-                        id,
-                        classes,
-                        attrs,
-                    } => {
-                        assert_eq!(state.current_heading, None);
-                        state.current_heading = Some(self::Heading {
-                            id: id.as_ref().map(|id| id.clone().into()),
-                            classes: classes.iter().map(|class| class.clone().into()).collect(),
-                            attributes: attrs
-                                .iter()
-                                .map(|(k, v)| (k.clone().into(), v.as_ref().map(|val| val.clone().into())))
-                                .collect(),
-                        });
-                        match level {
-                            HeadingLevel::H1 => formatter.write_str("#"),
-                            HeadingLevel::H2 => formatter.write_str("##"),
-                            HeadingLevel::H3 => formatter.write_str("###"),
-                            HeadingLevel::H4 => formatter.write_str("####"),
-                            HeadingLevel::H5 => formatter.write_str("#####"),
-                            HeadingLevel::H6 => formatter.write_str("######"),
-                        }?;
-                        formatter.write_char(' ')
-                    }
-                    BlockQuote => {
-                        state.padding.push(" > ".into());
-                        state.newlines_before_start = 1;
-
-                        // if we consumed some newlines, we know that we can just write out the next
-                        // level in our blockquote. This should work regardless if we have other
-                        // padding or if we're in a list
-                        if consumed_newlines {
-                            formatter.write_str(" > ")
-                        } else {
-                            formatter.write_char('\n').and(padding(&mut formatter, &state.padding))
-                        }
-                    }
-                    CodeBlock(CodeBlockKind::Indented) => {
-                        state.is_in_code_block = true;
-                        for _ in 0..options.code_block_token_count {
-                            formatter.write_char(options.code_block_token)?;
-                        }
-                        formatter.write_char('\n').and(padding(&mut formatter, &state.padding))
-                    }
-                    CodeBlock(CodeBlockKind::Fenced(ref info)) => {
-                        state.is_in_code_block = true;
-                        let s = if !consumed_newlines {
-                            formatter
-                                .write_char('\n')
-                                .and_then(|_| padding(&mut formatter, &state.padding))
-                        } else {
-                            Ok(())
-                        };
-
-                        s.and_then(|_| {
-                            for _ in 0..options.code_block_token_count {
-                                formatter.write_char(options.code_block_token)?;
-                            }
-                            Ok(())
-                        })
-                        .and_then(|_| formatter.write_str(info))
-                        .and_then(|_| formatter.write_char('\n'))
-                        .and_then(|_| padding(&mut formatter, &state.padding))
-                    }
-                    HtmlBlock => Ok(()),
-                    MetadataBlock(MetadataBlockKind::YamlStyle) => formatter.write_str("---\n"),
-                    MetadataBlock(MetadataBlockKind::PlusesStyle) => formatter.write_str("+++\n"),
-                    List(_) => Ok(()),
-                    Strikethrough => formatter.write_str("~~"),
+            if let Some(text_for_header) = state.text_for_header.as_mut() {
+                text_for_header.push('`');
+                text_for_header.push_str(text);
+                text_for_header.push('`');
+            }
+            if text.chars().all(|ch| ch == ' ') {
+                write!(formatter, "`{text}`")
+            } else {
+                let backticks = "`".repeat(count_consecutive(text, '`') + 1);
+                let space = match text.as_bytes() {
+                    &[b'`', ..] | &[.., b'`'] => " ", // Space needed to separate backtick.
+                    &[b' ', .., b' '] => " ",         // Space needed to escape inner space.
+                    _ => "",                          // No space needed.
+                };
+                write!(formatter, "{backticks}{space}{text}{space}{backticks}")
+            }
+        }
+        Start(ref tag) => {
+            if let List(ref list_type) = *tag {
+                state.list_stack.push(*list_type);
+                if state.list_stack.len() > 1 && state.newlines_before_start < options.newlines_after_rest {
+                    state.newlines_before_start = options.newlines_after_rest;
                 }
             }
-            End(ref tag) => match tag {
-                TagEnd::Link => match state.link_stack.pop().unwrap() {
-                    LinkCategory::AngleBracketed => formatter.write_char('>'),
-                    LinkCategory::Shortcut { uri, title } => {
-                        if let Some(shortcut_text) = state.current_shortcut_text.take() {
-                            state
-                                .shortcuts
-                                .push((shortcut_text, uri.to_string(), title.to_string()));
+            let consumed_newlines = state.newlines_before_start != 0;
+            consume_newlines(formatter, state)?;
+            match tag {
+                Item => match state.list_stack.last_mut() {
+                    Some(inner) => {
+                        state.padding.push(padding_of(*inner));
+                        match inner {
+                            Some(n) => {
+                                let bullet_number = *n;
+                                if options.increment_ordered_list_bullets {
+                                    *n += 1;
+                                }
+                                write!(formatter, "{}{} ", bullet_number, options.ordered_list_token)
+                            }
+                            None => write!(formatter, "{} ", options.list_token),
                         }
-                        formatter.write_char(']')
                     }
-                    LinkCategory::Other { uri, title } => close_link(&uri, &title, &mut formatter, LinkType::Inline),
+                    None => Ok(()),
                 },
-                TagEnd::Image => {
-                    let ImageLink { uri, title } = state.image_stack.pop().unwrap();
-                    close_link(uri.as_ref(), title.as_ref(), &mut formatter, LinkType::Inline)
+                Table(ref alignments) => {
+                    state.table_alignments = alignments.iter().map(From::from).collect();
+                    Ok(())
                 }
-                TagEnd::Emphasis => formatter.write_char(options.emphasis_token),
-                TagEnd::Strong => formatter.write_str(options.strong_token),
-                TagEnd::Heading(_) => {
-                    let self::Heading {
-                        id,
-                        classes,
-                        attributes,
-                    } = state.current_heading.take().unwrap();
-                    let emit_braces = id.is_some() || !classes.is_empty() || !attributes.is_empty();
-                    if emit_braces {
-                        formatter.write_str(" {")?;
-                    }
-                    if let Some(id_str) = id {
-                        formatter.write_char(' ')?;
-                        formatter.write_char('#')?;
-                        formatter.write_str(&id_str)?;
-                    }
-                    for class in classes.iter() {
-                        formatter.write_char(' ')?;
-                        formatter.write_char('.')?;
-                        formatter.write_str(class)?;
-                    }
-                    for (key, val) in attributes.iter() {
-                        formatter.write_char(' ')?;
-                        formatter.write_str(key)?;
-                        if let Some(val) = val {
-                            formatter.write_char('=')?;
-                            formatter.write_str(val)?;
+                TableHead => Ok(()),
+                TableRow => Ok(()),
+                TableCell => {
+                    state.text_for_header = Some(String::new());
+                    formatter.write_char('|')
+                }
+                Link {
+                    link_type,
+                    dest_url,
+                    title,
+                    id: _,
+                } => {
+                    state.link_stack.push(match link_type {
+                        LinkType::Autolink | LinkType::Email => {
+                            formatter.write_char('<')?;
+                            LinkCategory::AngleBracketed
                         }
-                    }
-                    if emit_braces {
-                        formatter.write_char(' ')?;
-                        formatter.write_char('}')?;
-                    }
-                    if state.newlines_before_start < options.newlines_after_headline {
-                        state.newlines_before_start = options.newlines_after_headline;
-                    }
+                        LinkType::Shortcut => {
+                            state.current_shortcut_text = Some(String::new());
+                            formatter.write_char('[')?;
+                            LinkCategory::Shortcut {
+                                uri: dest_url.clone().into(),
+                                title: title.clone().into(),
+                            }
+                        }
+                        _ => {
+                            formatter.write_char('[')?;
+                            LinkCategory::Other {
+                                uri: dest_url.clone().into(),
+                                title: title.clone().into(),
+                            }
+                        }
+                    });
                     Ok(())
                 }
-                TagEnd::Paragraph => {
-                    if state.newlines_before_start < options.newlines_after_paragraph {
-                        state.newlines_before_start = options.newlines_after_paragraph;
-                    }
-                    Ok(())
+                Image {
+                    link_type: _,
+                    dest_url,
+                    title,
+                    id: _,
+                } => {
+                    state.image_stack.push(ImageLink {
+                        uri: dest_url.clone().into(),
+                        title: title.clone().into(),
+                    });
+                    formatter.write_str("![")
                 }
-                TagEnd::CodeBlock => {
-                    if state.newlines_before_start < options.newlines_after_codeblock {
-                        state.newlines_before_start = options.newlines_after_codeblock;
+                Emphasis => formatter.write_char(options.emphasis_token),
+                Strong => formatter.write_str(options.strong_token),
+                FootnoteDefinition(ref name) => {
+                    state.padding.push("    ".into());
+                    write!(formatter, "[^{}]: ", name)
+                }
+                Paragraph => Ok(()),
+                Heading {
+                    level,
+                    id,
+                    classes,
+                    attrs,
+                } => {
+                    assert_eq!(state.current_heading, None);
+                    state.current_heading = Some(self::Heading {
+                        id: id.as_ref().map(|id| id.clone().into()),
+                        classes: classes.iter().map(|class| class.clone().into()).collect(),
+                        attributes: attrs
+                            .iter()
+                            .map(|(k, v)| (k.clone().into(), v.as_ref().map(|val| val.clone().into())))
+                            .collect(),
+                    });
+                    match level {
+                        HeadingLevel::H1 => formatter.write_str("#"),
+                        HeadingLevel::H2 => formatter.write_str("##"),
+                        HeadingLevel::H3 => formatter.write_str("###"),
+                        HeadingLevel::H4 => formatter.write_str("####"),
+                        HeadingLevel::H5 => formatter.write_str("#####"),
+                        HeadingLevel::H6 => formatter.write_str("######"),
+                    }?;
+                    formatter.write_char(' ')
+                }
+                BlockQuote => {
+                    state.padding.push(" > ".into());
+                    state.newlines_before_start = 1;
+
+                    // if we consumed some newlines, we know that we can just write out the next
+                    // level in our blockquote. This should work regardless if we have other
+                    // padding or if we're in a list
+                    if consumed_newlines {
+                        formatter.write_str(" > ")
+                    } else {
+                        formatter.write_char('\n').and(padding(formatter, &state.padding))
                     }
-                    state.is_in_code_block = false;
-                    if last_was_text_without_trailing_newline {
-                        formatter.write_char('\n')?;
-                    }
+                }
+                CodeBlock(CodeBlockKind::Indented) => {
+                    state.is_in_code_block = true;
                     for _ in 0..options.code_block_token_count {
                         formatter.write_char(options.code_block_token)?;
                     }
-                    Ok(())
+                    formatter.write_char('\n').and(padding(formatter, &state.padding))
                 }
-                TagEnd::HtmlBlock => {
-                    if state.newlines_before_start < options.newlines_after_htmlblock {
-                        state.newlines_before_start = options.newlines_after_htmlblock;
-                    }
-                    Ok(())
-                }
-                TagEnd::MetadataBlock(MetadataBlockKind::PlusesStyle) => {
-                    if state.newlines_before_start < options.newlines_after_metadata {
-                        state.newlines_before_start = options.newlines_after_metadata;
-                    }
-                    formatter.write_str("+++\n")
-                }
-                TagEnd::MetadataBlock(MetadataBlockKind::YamlStyle) => {
-                    if state.newlines_before_start < options.newlines_after_metadata {
-                        state.newlines_before_start = options.newlines_after_metadata;
-                    }
-                    formatter.write_str("---\n")
-                }
-                TagEnd::Table => {
-                    if state.newlines_before_start < options.newlines_after_table {
-                        state.newlines_before_start = options.newlines_after_table;
-                    }
-                    state.table_alignments.clear();
-                    state.table_headers.clear();
-                    Ok(())
-                }
-                TagEnd::TableCell => {
-                    state.table_headers.push(
-                        state
-                            .text_for_header
-                            .take()
-                            .filter(|s| !s.is_empty())
-                            .unwrap_or_else(|| "  ".into()),
-                    );
-                    Ok(())
-                }
-                ref t @ TagEnd::TableRow | ref t @ TagEnd::TableHead => {
-                    if state.newlines_before_start < options.newlines_after_rest {
-                        state.newlines_before_start = options.newlines_after_rest;
-                    }
-                    formatter.write_char('|')?;
-
-                    if let TagEnd::TableHead = t {
+                CodeBlock(CodeBlockKind::Fenced(ref info)) => {
+                    state.is_in_code_block = true;
+                    let s = if !consumed_newlines {
                         formatter
                             .write_char('\n')
-                            .and(padding(&mut formatter, &state.padding))?;
-                        for (alignment, name) in state.table_alignments.iter().zip(state.table_headers.iter()) {
-                            formatter.write_char('|')?;
-                            // NOTE: For perfect counting, count grapheme clusters.
-                            // The reason this is not done is to avoid the dependency.
-                            let last_minus_one = name.chars().count().saturating_sub(1);
-                            for c in 0..name.len() {
-                                formatter.write_char(
-                                    if (c == 0 && (alignment == &Alignment::Center || alignment == &Alignment::Left))
-                                        || (c == last_minus_one
-                                            && (alignment == &Alignment::Center || alignment == &Alignment::Right))
-                                    {
-                                        ':'
-                                    } else {
-                                        '-'
-                                    },
-                                )?;
-                            }
+                            .and_then(|_| padding(formatter, &state.padding))
+                    } else {
+                        Ok(())
+                    };
+
+                    s.and_then(|_| {
+                        for _ in 0..options.code_block_token_count {
+                            formatter.write_char(options.code_block_token)?;
                         }
-                        formatter.write_char('|')?;
+                        Ok(())
+                    })
+                    .and_then(|_| formatter.write_str(info))
+                    .and_then(|_| formatter.write_char('\n'))
+                    .and_then(|_| padding(formatter, &state.padding))
+                }
+                HtmlBlock => Ok(()),
+                MetadataBlock(MetadataBlockKind::YamlStyle) => formatter.write_str("---\n"),
+                MetadataBlock(MetadataBlockKind::PlusesStyle) => formatter.write_str("+++\n"),
+                List(_) => Ok(()),
+                Strikethrough => formatter.write_str("~~"),
+            }
+        }
+        End(ref tag) => match tag {
+            TagEnd::Link => match state.link_stack.pop().unwrap() {
+                LinkCategory::AngleBracketed => formatter.write_char('>'),
+                LinkCategory::Shortcut { uri, title } => {
+                    if let Some(shortcut_text) = state.current_shortcut_text.take() {
+                        state
+                            .shortcuts
+                            .push((shortcut_text, uri.to_string(), title.to_string()));
                     }
-                    Ok(())
+                    formatter.write_char(']')
                 }
-                TagEnd::Item => {
-                    state.padding.pop();
-                    if state.newlines_before_start < options.newlines_after_rest {
-                        state.newlines_before_start = options.newlines_after_rest;
-                    }
-                    Ok(())
-                }
-                TagEnd::List(_) => {
-                    state.list_stack.pop();
-                    if state.list_stack.is_empty() && state.newlines_before_start < options.newlines_after_list {
-                        state.newlines_before_start = options.newlines_after_list;
-                    }
-                    Ok(())
-                }
-                TagEnd::BlockQuote => {
-                    state.padding.pop();
-
-                    if state.newlines_before_start < options.newlines_after_blockquote {
-                        state.newlines_before_start = options.newlines_after_blockquote;
-                    }
-
-                    Ok(())
-                }
-                TagEnd::FootnoteDefinition => {
-                    state.padding.pop();
-                    Ok(())
-                }
-                TagEnd::Strikethrough => formatter.write_str("~~"),
+                LinkCategory::Other { uri, title } => close_link(&uri, &title, formatter, LinkType::Inline),
             },
-            HardBreak => formatter.write_str("  \n").and(padding(&mut formatter, &state.padding)),
-            SoftBreak => formatter.write_char('\n').and(padding(&mut formatter, &state.padding)),
-            Text(ref text) => {
-                if let Some(shortcut_text) = state.current_shortcut_text.as_mut() {
-                    shortcut_text.push_str(text);
-                }
-                if let Some(text_for_header) = state.text_for_header.as_mut() {
-                    text_for_header.push_str(text)
-                }
-                consume_newlines(&mut formatter, &mut state)?;
-                state.last_was_text_without_trailing_newline = !text.ends_with('\n');
-                print_text_without_trailing_newline(
-                    &escape_leading_special_characters(text, state.is_in_code_block, &options),
-                    &mut formatter,
-                    &state.padding,
-                )
+            TagEnd::Image => {
+                let ImageLink { uri, title } = state.image_stack.pop().unwrap();
+                close_link(uri.as_ref(), title.as_ref(), formatter, LinkType::Inline)
             }
-            InlineHtml(ref text) => {
-                consume_newlines(&mut formatter, &mut state)?;
-                print_text_without_trailing_newline(text, &mut formatter, &state.padding)
-            }
-            Html(ref text) => {
-                let mut lines = text.split('\n');
-                if let Some(line) = lines.next() {
-                    formatter.write_str(line)?;
+            TagEnd::Emphasis => formatter.write_char(options.emphasis_token),
+            TagEnd::Strong => formatter.write_str(options.strong_token),
+            TagEnd::Heading(_) => {
+                let self::Heading {
+                    id,
+                    classes,
+                    attributes,
+                } = state.current_heading.take().unwrap();
+                let emit_braces = id.is_some() || !classes.is_empty() || !attributes.is_empty();
+                if emit_braces {
+                    formatter.write_str(" {")?;
                 }
-                for line in lines {
-                    formatter.write_char('\n')?;
-                    padding(&mut formatter, &state.padding)?;
-                    formatter.write_str(line)?;
+                if let Some(id_str) = id {
+                    formatter.write_char(' ')?;
+                    formatter.write_char('#')?;
+                    formatter.write_str(&id_str)?;
+                }
+                for class in classes.iter() {
+                    formatter.write_char(' ')?;
+                    formatter.write_char('.')?;
+                    formatter.write_str(class)?;
+                }
+                for (key, val) in attributes.iter() {
+                    formatter.write_char(' ')?;
+                    formatter.write_str(key)?;
+                    if let Some(val) = val {
+                        formatter.write_char('=')?;
+                        formatter.write_str(val)?;
+                    }
+                }
+                if emit_braces {
+                    formatter.write_char(' ')?;
+                    formatter.write_char('}')?;
+                }
+                if state.newlines_before_start < options.newlines_after_headline {
+                    state.newlines_before_start = options.newlines_after_headline;
                 }
                 Ok(())
             }
-            FootnoteReference(ref name) => write!(formatter, "[^{}]", name),
-            TaskListMarker(checked) => {
-                let check = if checked { "x" } else { " " };
-                write!(formatter, "[{}] ", check)
+            TagEnd::Paragraph => {
+                if state.newlines_before_start < options.newlines_after_paragraph {
+                    state.newlines_before_start = options.newlines_after_paragraph;
+                }
+                Ok(())
             }
-        }?
+            TagEnd::CodeBlock => {
+                if state.newlines_before_start < options.newlines_after_codeblock {
+                    state.newlines_before_start = options.newlines_after_codeblock;
+                }
+                state.is_in_code_block = false;
+                if last_was_text_without_trailing_newline {
+                    formatter.write_char('\n')?;
+                }
+                for _ in 0..options.code_block_token_count {
+                    formatter.write_char(options.code_block_token)?;
+                }
+                Ok(())
+            }
+            TagEnd::HtmlBlock => {
+                if state.newlines_before_start < options.newlines_after_htmlblock {
+                    state.newlines_before_start = options.newlines_after_htmlblock;
+                }
+                Ok(())
+            }
+            TagEnd::MetadataBlock(MetadataBlockKind::PlusesStyle) => {
+                if state.newlines_before_start < options.newlines_after_metadata {
+                    state.newlines_before_start = options.newlines_after_metadata;
+                }
+                formatter.write_str("+++\n")
+            }
+            TagEnd::MetadataBlock(MetadataBlockKind::YamlStyle) => {
+                if state.newlines_before_start < options.newlines_after_metadata {
+                    state.newlines_before_start = options.newlines_after_metadata;
+                }
+                formatter.write_str("---\n")
+            }
+            TagEnd::Table => {
+                if state.newlines_before_start < options.newlines_after_table {
+                    state.newlines_before_start = options.newlines_after_table;
+                }
+                state.table_alignments.clear();
+                state.table_headers.clear();
+                Ok(())
+            }
+            TagEnd::TableCell => {
+                state.table_headers.push(
+                    state
+                        .text_for_header
+                        .take()
+                        .filter(|s| !s.is_empty())
+                        .unwrap_or_else(|| "  ".into()),
+                );
+                Ok(())
+            }
+            ref t @ TagEnd::TableRow | ref t @ TagEnd::TableHead => {
+                if state.newlines_before_start < options.newlines_after_rest {
+                    state.newlines_before_start = options.newlines_after_rest;
+                }
+                formatter.write_char('|')?;
+
+                if let TagEnd::TableHead = t {
+                    formatter.write_char('\n').and(padding(formatter, &state.padding))?;
+                    for (alignment, name) in state.table_alignments.iter().zip(state.table_headers.iter()) {
+                        formatter.write_char('|')?;
+                        // NOTE: For perfect counting, count grapheme clusters.
+                        // The reason this is not done is to avoid the dependency.
+                        let last_minus_one = name.chars().count().saturating_sub(1);
+                        for c in 0..name.len() {
+                            formatter.write_char(
+                                if (c == 0 && (alignment == &Alignment::Center || alignment == &Alignment::Left))
+                                    || (c == last_minus_one
+                                        && (alignment == &Alignment::Center || alignment == &Alignment::Right))
+                                {
+                                    ':'
+                                } else {
+                                    '-'
+                                },
+                            )?;
+                        }
+                    }
+                    formatter.write_char('|')?;
+                }
+                Ok(())
+            }
+            TagEnd::Item => {
+                state.padding.pop();
+                if state.newlines_before_start < options.newlines_after_rest {
+                    state.newlines_before_start = options.newlines_after_rest;
+                }
+                Ok(())
+            }
+            TagEnd::List(_) => {
+                state.list_stack.pop();
+                if state.list_stack.is_empty() && state.newlines_before_start < options.newlines_after_list {
+                    state.newlines_before_start = options.newlines_after_list;
+                }
+                Ok(())
+            }
+            TagEnd::BlockQuote => {
+                state.padding.pop();
+
+                if state.newlines_before_start < options.newlines_after_blockquote {
+                    state.newlines_before_start = options.newlines_after_blockquote;
+                }
+
+                Ok(())
+            }
+            TagEnd::FootnoteDefinition => {
+                state.padding.pop();
+                Ok(())
+            }
+            TagEnd::Strikethrough => formatter.write_str("~~"),
+        },
+        HardBreak => formatter.write_str("  \n").and(padding(formatter, &state.padding)),
+        SoftBreak => formatter.write_char('\n').and(padding(formatter, &state.padding)),
+        Text(ref text) => {
+            if let Some(shortcut_text) = state.current_shortcut_text.as_mut() {
+                shortcut_text.push_str(text);
+            }
+            if let Some(text_for_header) = state.text_for_header.as_mut() {
+                text_for_header.push_str(text)
+            }
+            consume_newlines(formatter, state)?;
+            state.last_was_text_without_trailing_newline = !text.ends_with('\n');
+            print_text_without_trailing_newline(
+                &escape_leading_special_characters(text, state.is_in_code_block, options),
+                formatter,
+                &state.padding,
+            )
+        }
+        InlineHtml(ref text) => {
+            consume_newlines(formatter, state)?;
+            print_text_without_trailing_newline(text, formatter, &state.padding)
+        }
+        Html(ref text) => {
+            let mut lines = text.split('\n');
+            if let Some(line) = lines.next() {
+                formatter.write_str(line)?;
+            }
+            for line in lines {
+                formatter.write_char('\n')?;
+                padding(formatter, &state.padding)?;
+                formatter.write_str(line)?;
+            }
+            Ok(())
+        }
+        FootnoteReference(ref name) => write!(formatter, "[^{}]", name),
+        TaskListMarker(checked) => {
+            let check = if checked { "x" } else { " " };
+            write!(formatter, "[{}] ", check)
+        }
     }
-    Ok(state)
 }
 
 /// As [`cmark_resume_with_options()`], but with default [`Options`].
