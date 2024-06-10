@@ -5,7 +5,53 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+This release adds support for keeping escapes in the original source for the input events,
+assuming the new `cmark_resume_with_source_range_and_options()` function is used.
+
+Please also note that for most this won't be a breaking change as only a field was added
+to `State`, which isn't used unless you do incremental event serialization.
+
+### Bug Fixes (BREAKING)
+
+ - <csr-id-6c8297c03eb82ac95fa9dd559e3337e470d70c72/> clarify what `last_event_end_index` indices into and how it's used
+   This is marked as breaking change as the field itself is new in `State`
+   and could be breaking for some.
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 12 commits contributed to the release over the course of 16 calendar days.
+ - 84 days passed between releases.
+ - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Merge pull request #71 from SichangHe/no-unnecessary-escape ([`386e663`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/386e6634421373c6b9841a59c7639e416215566c))
+    - Clarify what `last_event_end_index` indices into and how it's used ([`6c8297c`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/6c8297c03eb82ac95fa9dd559e3337e470d70c72))
+    - Dedup test code ([`f66724b`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/f66724b2f74814fe6a8ddb168425b9097bb84135))
+    - Attempt to address @Bryon first comments https://github.com/Byron/pulldown-cmark-to-cmark/pull/71#pullrequestreview-2081814286 ([`bebff1e`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/bebff1e520f2da982cb1a7f9ba97ce13c9accab0))
+    - Test `<` escape handling ([`542bc1f`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/542bc1fad3d06d39d59c8842225afc864d7539c3))
+    - Restore `State` derives ([`ea17e27`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/ea17e2763d066bd454cfab0ae0a0768fdaf83bd1))
+    - Rm test that fail for old implementation ([`78965c4`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/78965c4520e031930e232758d942077ed40b7a1d))
+    - Better explain why `cmark_resume_with_source_range_and_options` is different ([`49f60d5`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/49f60d58ae2a1fd868797191c47d968f11c913df))
+    - `source_range` persist special character escape by peeking source ([`92ad2c8`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/92ad2c8f291df7e165e1110d05c638661627c5d6))
+    - Placeholder functions not using source range ([`a234ed5`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/a234ed5ece9d02eb8e9cb3c03432ca2a73165b5e))
+    - Extract nested functionalities ([`93cbb33`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/93cbb33bad931ac3f787cd13438a812c6adb3b7a))
+    - Failing rustdoc test <https://github.com/Byron/pulldown-cmark-to-cmark/issues/51> ([`8c6ccdb`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/8c6ccdbb01e015acc3a7e688bac2dad8319d03f8))
+</details>
+
 ## 13.0.0 (2024-03-17)
+
+<csr-id-5d940367d7d720a176c361b99ab8699897a53313/>
 
 ### New Features
 
@@ -27,7 +73,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 5 commits contributed to the release.
+ - 6 commits contributed to the release.
  - 4 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
@@ -38,6 +84,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release pulldown-cmark-to-cmark v13.0.0 ([`daeb618`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/daeb61841f171b1fdc1a51c6cc1a48adafa852ff))
     - Support for controlling the amount of newlines after metadata blocks. ([`834c74b`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/834c74b9df9b9451000b069988d8259e2b881692))
     - Refactor ([`b8ae359`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/b8ae35906a62e5e6d69b5412fff6a9a93918925e))
     - Add frontmatter snapshot ([`5d94036`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/5d940367d7d720a176c361b99ab8699897a53313))
