@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 14.0.0 (2024-06-10)
 
 This release adds support for keeping escapes in the original source for the input events,
 assuming the new `cmark_resume_with_source_range_and_options()` function is used.
@@ -23,7 +23,7 @@ to `State`, which isn't used unless you do incremental event serialization.
 
 <csr-read-only-do-not-edit/>
 
- - 12 commits contributed to the release over the course of 16 calendar days.
+ - 14 commits contributed to the release over the course of 16 calendar days.
  - 84 days passed between releases.
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
@@ -35,6 +35,8 @@ to `State`, which isn't used unless you do incremental event serialization.
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Fix doc-links ([`d9d81c0`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/d9d81c0bcac2471a26be35e21414f51b4a136b45))
+    - Prepare changelog prior to release ([`c332f98`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/c332f98d21c2f35638e88145ee224d5511ddc2d4))
     - Merge pull request #71 from SichangHe/no-unnecessary-escape ([`386e663`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/386e6634421373c6b9841a59c7639e416215566c))
     - Clarify what `last_event_end_index` indices into and how it's used ([`6c8297c`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/6c8297c03eb82ac95fa9dd559e3337e470d70c72))
     - Dedup test code ([`f66724b`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/f66724b2f74814fe6a8ddb168425b9097bb84135))
