@@ -5,17 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 14.0.1 (2024-06-10)
 
 This release contains a fix to avoid escaping characters within codeblocks. 
 See https://github.com/Byron/pulldown-cmark-to-cmark/issues/73 for details.
-
 
 ### Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
- - 2 commits contributed to the release.
+ - 3 commits contributed to the release.
  - 0 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 1 unique issue was worked on: [#73](https://github.com/Byron/pulldown-cmark-to-cmark/issues/73)
 
@@ -28,6 +27,7 @@ See https://github.com/Byron/pulldown-cmark-to-cmark/issues/73 for details.
  * **[#73](https://github.com/Byron/pulldown-cmark-to-cmark/issues/73)**
     - Fixdo not disturb code block detection when preventing escape ([`7376d42`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/7376d42ae3599c907061eba6b3a7676f79408bdb))
  * **Uncategorized**
+    - Prepare changelog prior to release. ([`857ff07`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/857ff07f8ae962de7d287008d875cc3ca342e510))
     - Merge pull request #74 from SichangHe/fix-unnecessary-range-escape ([`a6045c6`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/a6045c664fda1c56edf8d749601a6562d94a3871))
 </details>
 
