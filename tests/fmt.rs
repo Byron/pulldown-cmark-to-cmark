@@ -424,6 +424,34 @@ mod inline_elements {
     }
 
     #[test]
+    fn no_escaping_special_character_in_code() {
+        // https://github.com/Byron/pulldown-cmark-to-cmark/issues/73
+        let input = r#"
+```rust
+# fn main() {
+println!("Hello, world!");
+# }
+```
+"#;
+        let iter = pulldown_cmark::Parser::new(input);
+        let mut actual = String::new();
+        pulldown_cmark_to_cmark::cmark_with_source_range_and_options(
+            iter.map(|e| (e, None)),
+            input,
+            &mut actual,
+            Default::default(),
+        )
+        .unwrap();
+        let expected = r#"
+````rust
+# fn main() {
+println!("Hello, world!");
+# }
+````"#;
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
     fn rustdoc_link() {
         // Brackets are not escaped if not escaped in the source.
         assert_eq!(

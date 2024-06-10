@@ -39,6 +39,8 @@ where
     for (event, range) in event_and_ranges {
         let update_event_end_index = !matches!(*event.borrow(), Event::Start(_));
         let prevent_escape_leading_special_characters = match (&range, event.borrow()) {
+            // IMPORTANT: Any changes that allow anything other than `Text`
+            // breaks the assumption below.
             (Some(range), Event::Text(_)) => {
                 range.start <= state.last_event_end_index ||
                 // Some source characters are not captured,
@@ -46,14 +48,18 @@ where
                 source.as_bytes().get(range.start.saturating_sub(1)) != Some(&b'\\')
             }
             _ => false,
-        };
-        let was_in_code_block = state.is_in_code_block;
+        } && !state.is_in_code_block;
         if prevent_escape_leading_special_characters {
             // Hack to not escape leading special characters.
             state.is_in_code_block = true;
         }
         cmark_resume_one_event(event, &mut formatter, &mut state, &options)?;
-        state.is_in_code_block = was_in_code_block;
+        if prevent_escape_leading_special_characters {
+            // Assumption: this case only happens when `event` is `Text`,
+            // so `state.is_in_code_block` should not be changed to `true`.
+            // Also, `state.is_in_code_block` was `false`.
+            state.is_in_code_block = false;
+        }
 
         if let (true, Some(range)) = (update_event_end_index, range) {
             state.last_event_end_index = range.end
