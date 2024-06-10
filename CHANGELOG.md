@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+This release contains a fix to avoid escaping characters within codeblocks. 
+See https://github.com/Byron/pulldown-cmark-to-cmark/issues/73 for details.
+
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 2 commits contributed to the release.
+ - 0 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 1 unique issue was worked on: [#73](https://github.com/Byron/pulldown-cmark-to-cmark/issues/73)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#73](https://github.com/Byron/pulldown-cmark-to-cmark/issues/73)**
+    - Fixdo not disturb code block detection when preventing escape ([`7376d42`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/7376d42ae3599c907061eba6b3a7676f79408bdb))
+ * **Uncategorized**
+    - Merge pull request #74 from SichangHe/fix-unnecessary-range-escape ([`a6045c6`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/a6045c664fda1c56edf8d749601a6562d94a3871))
+</details>
+
 ## 14.0.0 (2024-06-10)
 
 This release adds support for keeping escapes in the original source for the input events,
@@ -23,7 +49,7 @@ to `State`, which isn't used unless you do incremental event serialization.
 
 <csr-read-only-do-not-edit/>
 
- - 16 commits contributed to the release over the course of 16 calendar days.
+ - 17 commits contributed to the release over the course of 16 calendar days.
  - 84 days passed between releases.
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
@@ -35,6 +61,7 @@ to `State`, which isn't used unless you do incremental event serialization.
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release pulldown-cmark-to-cmark v14.0.0 ([`1978c0c`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/1978c0c0fb42e20bc0d015611c1336975bd1965c))
     - Fix manifest includes to allow publishing ([`cfcabc4`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/cfcabc44bf5b73ab1567f062787be917d1933877))
     - Release pulldown-cmark-to-cmark v14.0.0 ([`8c6bee4`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/8c6bee4c037c3aff3c211c87146909ab0cd85aaf))
     - Fix doc-links ([`d9d81c0`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/d9d81c0bcac2471a26be35e21414f51b4a136b45))
