@@ -15,7 +15,7 @@ homepage = "https://github.com/Byron/pulldown-cmark-to-cmark"
 documentation = "https://docs.rs/crate/pulldown-cmark-to-cmark"
 readme = "README.md"
 edition = "2018"
-include = ["src/lib.rs", "LICENSE-APACHE", "README.md", "CHANGELOG.md"]
+include = ["src/*.rs", "LICENSE-APACHE", "README.md", "CHANGELOG.md"]
 
 [dependencies]
 pulldown-cmark = { version = "0.10.0", default-features = false }
