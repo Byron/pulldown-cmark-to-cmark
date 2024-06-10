@@ -23,7 +23,7 @@ to `State`, which isn't used unless you do incremental event serialization.
 
 <csr-read-only-do-not-edit/>
 
- - 14 commits contributed to the release over the course of 16 calendar days.
+ - 16 commits contributed to the release over the course of 16 calendar days.
  - 84 days passed between releases.
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
@@ -35,6 +35,8 @@ to `State`, which isn't used unless you do incremental event serialization.
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Fix manifest includes to allow publishing ([`cfcabc4`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/cfcabc44bf5b73ab1567f062787be917d1933877))
+    - Release pulldown-cmark-to-cmark v14.0.0 ([`8c6bee4`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/8c6bee4c037c3aff3c211c87146909ab0cd85aaf))
     - Fix doc-links ([`d9d81c0`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/d9d81c0bcac2471a26be35e21414f51b4a136b45))
     - Prepare changelog prior to release ([`c332f98`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/c332f98d21c2f35638e88145ee224d5511ddc2d4))
     - Merge pull request #71 from SichangHe/no-unnecessary-escape ([`386e663`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/386e6634421373c6b9841a59c7639e416215566c))
