@@ -518,7 +518,7 @@ mod blockquote {
     #[test]
     fn it_pushes_padding_on_quote_start() {
         assert_eq!(
-            fmte(&[Event::Start(Tag::BlockQuote),]).1,
+            fmte(&[Event::Start(Tag::BlockQuote(None)),]).1,
             State {
                 newlines_before_start: 1,
                 padding: vec![" > ".into()],
