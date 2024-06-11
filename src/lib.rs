@@ -7,7 +7,9 @@ use std::{
     ops::Range,
 };
 
-use pulldown_cmark::{Alignment as TableAlignment, Event, HeadingLevel, LinkType, MetadataBlockKind, Tag, TagEnd};
+use pulldown_cmark::{
+    Alignment as TableAlignment, BlockQuoteKind, Event, HeadingLevel, LinkType, MetadataBlockKind, Tag, TagEnd,
+};
 
 mod source_range;
 mod text_modifications;
@@ -368,13 +370,33 @@ where
                     }?;
                     formatter.write_char(' ')
                 }
-                BlockQuote => {
+                BlockQuote(None) => {
                     state.padding.push(" > ".into());
                     state.newlines_before_start = 1;
 
                     // if we consumed some newlines, we know that we can just write out the next
                     // level in our blockquote. This should work regardless if we have other
                     // padding or if we're in a list
+                    if consumed_newlines {
+                        formatter.write_str(" > ")
+                    } else {
+                        formatter.write_char('\n').and(padding(formatter, &state.padding))
+                    }
+                }
+                BlockQuote(Some(kind)) => {
+                    let kind = match kind {
+                        BlockQuoteKind::Note => "NOTE",
+                        BlockQuoteKind::Tip => "TIP",
+                        BlockQuoteKind::Important => "IMPORTANT",
+                        BlockQuoteKind::Warning => "WARNING",
+                        BlockQuoteKind::Caution => "CAUTION",
+                    };
+                    state.padding.push(format!(" > [!{kind}]").into());
+                    state.padding.push("\n".into());
+                    state.padding.push(format!(" > ").into());
+                    state.newlines_before_start = 1;
+
+                    // same logic as traditional blockquote, see above
                     if consumed_newlines {
                         formatter.write_str(" > ")
                     } else {
@@ -623,6 +645,8 @@ where
             let check = if checked { "x" } else { " " };
             write!(formatter, "[{}] ", check)
         }
+        InlineMath(ref text) => write!(formatter, "${}$", text),
+        DisplayMath(ref text) => write!(formatter, "$${}$$", text),
     }
 }
 
