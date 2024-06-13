@@ -4,7 +4,7 @@ use std::{
     borrow::{Borrow, Cow},
     collections::HashSet,
     fmt::{self, Write},
-    ops::Range,
+    ops::{Not, Range},
 };
 
 use pulldown_cmark::{
@@ -642,6 +642,9 @@ where
         TaskListMarker(checked) => {
             let check = if checked { "x" } else { " " };
             write!(formatter, "[{}] ", check)
+        }
+        InlineMath(ref text) if text.contains('$') && (text.starts_with('`').not() && text.ends_with('`').not()) => {
+            write!(formatter, "$`{}`$", text)
         }
         InlineMath(ref text) => write!(formatter, "${}$", text),
         DisplayMath(ref text) => write!(formatter, "$${}$$", text),
