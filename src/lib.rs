@@ -391,9 +391,7 @@ where
                         BlockQuoteKind::Warning => "WARNING",
                         BlockQuoteKind::Caution => "CAUTION",
                     };
-                    state.padding.push(format!(" > [!{kind}]").into());
-                    state.padding.push("\n".into());
-                    state.padding.push(format!(" > ").into());
+                    state.padding.push(format!(" > [!{kind}]\n > ").into());
                     state.newlines_before_start = 1;
 
                     // same logic as traditional blockquote, see above
