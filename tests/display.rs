@@ -313,6 +313,15 @@ fn footnote_reference() {
 }
 #[test]
 fn math() {
-    assert_eq!(s(Event::InlineMath("x".into())), "$x$");
-    assert_eq!(s(Event::DisplayMath("x".into())), "$$x$$");
+    assert_eq!(
+        s(Event::InlineMath(r##"\sqrt{3x-1}+(1+x)^2"##.into())),
+        r##"$\sqrt{3x-1}+(1+x)^2$"##
+    );
+    assert_eq!(s(Event::InlineMath(r##"\sqrt{\$4}"##.into())), r##"$`\sqrt{\$4}`$"##);
+    assert_eq!(s(
+      Event::DisplayMath(
+        r##"\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \left( \sum_{k=1}^n b_k^2 \right)"##.into()
+      )),
+        r##"$$\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \left( \sum_{k=1}^n b_k^2 \right)$$"##
+      );
 }
