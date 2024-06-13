@@ -643,7 +643,7 @@ where
             let check = if checked { "x" } else { " " };
             write!(formatter, "[{}] ", check)
         }
-        InlineMath(ref text) if text.contains('$') && (text.starts_with('`').not() && text.ends_with('`').not()) => {
+        InlineMath(ref text) if text.contains(r"\$") && (text.starts_with('`').not() && text.ends_with('`').not()) => {
             write!(formatter, "$`{}`$", text)
         }
         InlineMath(ref text) => write!(formatter, "${}$", text),
