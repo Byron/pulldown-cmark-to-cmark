@@ -68,7 +68,7 @@ either$
 
 `$` character can be escaped with backslash in mathematical expressions:
 
-$`\$`$
+$\$$
 
 $$y = \$ x$$
 
@@ -213,7 +213,7 @@ $$$$\\text{first $$ second}$$
 
 Dollar signs must also be backslash-escaped if they occur within math:
 
-$`\text{\$}`$
+$\text{\$}$
 
 $$x$x$$
 
@@ -327,7 +327,7 @@ $$ x = {-b \pm \sqrt{b^2-4ac} \over 2a} $$
 
 Spacing around dollar sign in math mode
 
-$`x = \$`$
+$x = \$$
 
 Math in italic text
 
