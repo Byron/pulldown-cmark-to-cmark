@@ -370,31 +370,24 @@ where
                     }?;
                     formatter.write_char(' ')
                 }
-                BlockQuote(None) => {
-                    state.padding.push(" > ".into());
+                BlockQuote(kind) => {
+                    if let Some(kind) = kind {
+                        let kind = match kind {
+                            BlockQuoteKind::Note => "NOTE",
+                            BlockQuoteKind::Tip => "TIP",
+                            BlockQuoteKind::Important => "IMPORTANT",
+                            BlockQuoteKind::Warning => "WARNING",
+                            BlockQuoteKind::Caution => "CAUTION",
+                        };
+                        state.padding.push(format!(" > [!{kind}]\n > ").into());
+                    } else {
+                        state.padding.push(" > ".into());
+                    }
                     state.newlines_before_start = 1;
 
                     // if we consumed some newlines, we know that we can just write out the next
                     // level in our blockquote. This should work regardless if we have other
                     // padding or if we're in a list
-                    if consumed_newlines {
-                        formatter.write_str(" > ")
-                    } else {
-                        formatter.write_char('\n').and(padding(formatter, &state.padding))
-                    }
-                }
-                BlockQuote(Some(kind)) => {
-                    let kind = match kind {
-                        BlockQuoteKind::Note => "NOTE",
-                        BlockQuoteKind::Tip => "TIP",
-                        BlockQuoteKind::Important => "IMPORTANT",
-                        BlockQuoteKind::Warning => "WARNING",
-                        BlockQuoteKind::Caution => "CAUTION",
-                    };
-                    state.padding.push(format!(" > [!{kind}]\n > ").into());
-                    state.newlines_before_start = 1;
-
-                    // same logic as traditional blockquote, see above
                     if consumed_newlines {
                         formatter.write_str(" > ")
                     } else {
