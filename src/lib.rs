@@ -4,7 +4,7 @@ use std::{
     borrow::{Borrow, Cow},
     collections::HashSet,
     fmt::{self, Write},
-    ops::{Not, Range},
+    ops::Range,
 };
 
 use pulldown_cmark::{
