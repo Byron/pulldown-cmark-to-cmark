@@ -5,6 +5,52 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+> [!NOTE]
+> This release adds support for Math expressions, and notification boxes like the one this text is written in.
+
+### New Features (BREAKING)
+
+ - <csr-id-bff28af3c51a3a55675d5a64d8f3bda2d37701aa/> Update to pulldown-cmark v0.11 for math-expression support and special block quotes
+   Update pulldown cmark
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 18 commits contributed to the release over the course of 4 calendar days.
+ - 4 days passed between releases.
+ - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Upgrade dev-dependencies ([`d8cbd37`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/d8cbd37355cacdf58625e08765cf4000914d1057))
+    - Update to pulldown-cmark v0.11 for math-expression support and special block quotes ([`bff28af`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/bff28af3c51a3a55675d5a64d8f3bda2d37701aa))
+    - Merge blockquote kind parsing ([`6d05a28`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/6d05a28029087187bbbbe085aa77689c6ed89a07))
+    - Remove unused import ([`89d5dd5`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/89d5dd56d07fdc373ec901bc535862c5b2fac155))
+    - Remove support for dollar surrounding backtick ([`d55ac5d`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/d55ac5dc61e2b5afc098f817737668acd8743700))
+    - Generate snapshot ([`c8632c4`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/c8632c4c7c462e5dd6446b8883f527fc8e415ef7))
+    - Add suggested fixture ([`f961f76`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/f961f7686b24838607e2508bf2ff65f12bed4225))
+    - Use escaped comparison ([`74a5b59`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/74a5b5989c59c3d4dd1bff8f66b79be62bce0052))
+    - Update math tests ([`e94e9e4`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/e94e9e4a259aa4747334f123c352a4812a14c42a))
+    - Fix alternate math notation ([`8e09ddb`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/8e09ddb9d0c28873a5ae9c116a0a1f310179dc85))
+    - Regenerate snapshots ([`153ff68`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/153ff68c4ac5e804211f41eb702fa00f7a16a311))
+    - Add mathematical expressions ([`42049d9`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/42049d99af1bbfda53f5c50a59b56b0fae947b53))
+    - Regenerate snapshots ([`ea04970`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/ea0497047b69fcd962568bce34b55e938d3f5db0))
+    - Fix incorrect formatting ([`1d047be`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/1d047be50ca18ffd5a28ca64475d1100b6068cca))
+    - Add blockquote kinds ([`dcf769c`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/dcf769c1d1f57d7e540e172988d18da84fa95492))
+    - Update tests ([`8723b1f`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/8723b1ffcf2248d8fbad77c044d6eff96dda2fec))
+    - Handle new types and change ([`c81d969`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/c81d969679b77dd0e9f9bf065190cfddc57f3dd3))
+    - Update pulldown-cmark ([`173b8a4`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/173b8a40761d571772815f4227e3962a619bd7fd))
+</details>
+
 ## 14.0.1 (2024-06-10)
 
 This release contains a fix to avoid escaping characters within codeblocks. 
@@ -14,7 +60,7 @@ See https://github.com/Byron/pulldown-cmark-to-cmark/issues/73 for details.
 
 <csr-read-only-do-not-edit/>
 
- - 3 commits contributed to the release.
+ - 4 commits contributed to the release.
  - 0 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 1 unique issue was worked on: [#73](https://github.com/Byron/pulldown-cmark-to-cmark/issues/73)
 
@@ -27,6 +73,7 @@ See https://github.com/Byron/pulldown-cmark-to-cmark/issues/73 for details.
  * **[#73](https://github.com/Byron/pulldown-cmark-to-cmark/issues/73)**
     - Fixdo not disturb code block detection when preventing escape ([`7376d42`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/7376d42ae3599c907061eba6b3a7676f79408bdb))
  * **Uncategorized**
+    - Release pulldown-cmark-to-cmark v14.0.1 ([`fd7815a`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/fd7815a480181fa2f442ce8969111038927f49b6))
     - Prepare changelog prior to release. ([`857ff07`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/857ff07f8ae962de7d287008d875cc3ca342e510))
     - Merge pull request #74 from SichangHe/fix-unnecessary-range-escape ([`a6045c6`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/a6045c664fda1c56edf8d749601a6562d94a3871))
 </details>
