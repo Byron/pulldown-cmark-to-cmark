@@ -1,6 +1,3 @@
-#[macro_use]
-extern crate indoc;
-
 use pulldown_cmark::{Alignment, CodeBlockKind, Event, LinkType, Options, Parser, Tag, TagEnd};
 use pulldown_cmark_to_cmark::{cmark, cmark_resume, cmark_resume_with_options, Options as CmarkToCmarkOptions, State};
 
@@ -495,6 +492,7 @@ println!("Hello, world!");
 
 mod blockquote {
     use super::{assert_events_eq_both, fmte, fmtes, fmts_both, Event, State, Tag, TagEnd};
+    use indoc::indoc;
 
     #[test]
     fn it_pops_padding_on_quote_end() {
@@ -842,6 +840,7 @@ mod codeblock {
 }
 
 mod table {
+    use indoc::indoc;
     use pretty_assertions::assert_eq;
     use pulldown_cmark_to_cmark::Alignment;
 
@@ -1101,6 +1100,7 @@ mod escapes {
 
 mod list {
     use super::{fmtes, fmts_both, fmts_with_options, CmarkToCmarkOptions, Event, State, TagEnd};
+    use indoc::indoc;
 
     #[test]
     fn it_pops_one_item_from_the_lists_stack_for_each_end_list() {
