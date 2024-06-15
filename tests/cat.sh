@@ -14,6 +14,12 @@ snapshot="$fixture/snapshots"
 
 title "stupicat"
 
+(with "a mathematical expression"
+  it "succeeds" && \
+    WITH_SNAPSHOT="$snapshot/stupicat-math-output" \
+    expect_run_sh $SUCCESSFULLY "${exe[*]} $fixture/math.md 2>/dev/null"
+)
+
 (with "a table"
   it "succeeds" && \
     WITH_SNAPSHOT="$snapshot/stupicat-table-output" \

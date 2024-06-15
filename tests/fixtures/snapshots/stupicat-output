@@ -100,6 +100,26 @@ Block quotes
  > eirmod tempor invidunt ut `labore et dolore magna` aliquyam erat, sed diam
  > voluptua.
 
+ > 
+ > [!NOTE]
+ > Highlights information that users should take into account, even when skimming.
+
+ > 
+ > [!TIP]
+ > Optional information to help a user be more successful.
+
+ > 
+ > [!IMPORTANT]
+ > Crucial information necessary for users to succeed.
+
+ > 
+ > [!WARNING]
+ > Critical content demanding immediate user attention due to potential risks.
+
+ > 
+ > [!CAUTION]
+ > Negative potential consequences of an action.
+
 Before we continue, have a ruler:
 
 ---
@@ -163,6 +183,25 @@ sadipscing elitr, sed <abbr>diam</abbr> nonumy eirmod tempor invidunt ut labore
 et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et
 justo duo dolores et ea rebum. <strong>Stet clita kasd gubergren</strong>, no
 sea takimata sanctus est Lorem ipsum dolor sit amet.
+
+## Math
+
+This sentence uses `$` delimiters to show math inline:  $\sqrt{3x-1}+(1+x)^2$
+
+This sentence uses $\` and \`$ delimiters to show math inline:  $`\sqrt{3x-1}+(1+x)^2`$
+
+**The Cauchy-Schwarz Inequality**
+$$\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \left( \sum_{k=1}^n b_k^2 \right)$$
+
+**The Cauchy-Schwarz Inequality**
+
+````math
+\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \left( \sum_{k=1}^n b_k^2 \right)
+````
+
+This expression uses `\$` to display a dollar sign: $`\sqrt{\$4}`$
+
+To split <span>$</span>100 in half, we calculate $100/2$
 
 ## Escapes
 

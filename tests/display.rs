@@ -34,7 +34,7 @@ mod rule {
 mod start {
     use pulldown_cmark::{
         Alignment::{self, Center, Left, Right},
-        CodeBlockKind,
+        BlockQuoteKind, CodeBlockKind,
         Event::*,
         HeadingLevel,
         LinkType::*,
@@ -73,7 +73,21 @@ mod start {
     }
     #[test]
     fn blockquote() {
-        assert_eq!(s(Start(BlockQuote)), "\n > ")
+        assert_eq!(s(Start(BlockQuote(None))), "\n > ");
+        assert_eq!(s(Start(BlockQuote(Some(BlockQuoteKind::Note)))), "\n > [!NOTE]\n > ");
+        assert_eq!(s(Start(BlockQuote(Some(BlockQuoteKind::Tip)))), "\n > [!TIP]\n > ");
+        assert_eq!(
+            s(Start(BlockQuote(Some(BlockQuoteKind::Important)))),
+            "\n > [!IMPORTANT]\n > "
+        );
+        assert_eq!(
+            s(Start(BlockQuote(Some(BlockQuoteKind::Warning)))),
+            "\n > [!WARNING]\n > "
+        );
+        assert_eq!(
+            s(Start(BlockQuote(Some(BlockQuoteKind::Caution)))),
+            "\n > [!CAUTION]\n > "
+        );
     }
     #[test]
     fn codeblock() {
@@ -296,4 +310,18 @@ fn text() {
 #[test]
 fn footnote_reference() {
     assert_eq!(s(Event::FootnoteReference("asdf".into())), "[^asdf]")
+}
+#[test]
+fn math() {
+    assert_eq!(
+        s(Event::InlineMath(r##"\sqrt{3x-1}+(1+x)^2"##.into())),
+        r##"$\sqrt{3x-1}+(1+x)^2$"##
+    );
+    assert_eq!(s(Event::InlineMath(r##"\sqrt{\$4}"##.into())), r##"$\sqrt{\$4}$"##);
+    assert_eq!(s(
+      Event::DisplayMath(
+        r##"\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \left( \sum_{k=1}^n b_k^2 \right)"##.into()
+      )),
+        r##"$$\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \left( \sum_{k=1}^n b_k^2 \right)$$"##
+      );
 }

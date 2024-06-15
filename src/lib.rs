@@ -7,7 +7,9 @@ use std::{
     ops::Range,
 };
 
-use pulldown_cmark::{Alignment as TableAlignment, Event, HeadingLevel, LinkType, MetadataBlockKind, Tag, TagEnd};
+use pulldown_cmark::{
+    Alignment as TableAlignment, BlockQuoteKind, Event, HeadingLevel, LinkType, MetadataBlockKind, Tag, TagEnd,
+};
 
 mod source_range;
 mod text_modifications;
@@ -368,8 +370,19 @@ where
                     }?;
                     formatter.write_char(' ')
                 }
-                BlockQuote => {
-                    state.padding.push(" > ".into());
+                BlockQuote(kind) => {
+                    if let Some(kind) = kind {
+                        let kind = match kind {
+                            BlockQuoteKind::Note => "NOTE",
+                            BlockQuoteKind::Tip => "TIP",
+                            BlockQuoteKind::Important => "IMPORTANT",
+                            BlockQuoteKind::Warning => "WARNING",
+                            BlockQuoteKind::Caution => "CAUTION",
+                        };
+                        state.padding.push(format!(" > [!{kind}]\n > ").into());
+                    } else {
+                        state.padding.push(" > ".into());
+                    }
                     state.newlines_before_start = 1;
 
                     // if we consumed some newlines, we know that we can just write out the next
@@ -623,6 +636,8 @@ where
             let check = if checked { "x" } else { " " };
             write!(formatter, "[{}] ", check)
         }
+        InlineMath(ref text) => write!(formatter, "${}$", text),
+        DisplayMath(ref text) => write!(formatter, "$${}$$", text),
     }
 }
 
