@@ -530,13 +530,9 @@ where
                 Ok(())
             }
             TagEnd::TableCell => {
-                state.table_headers.push(
-                    state
-                        .text_for_header
-                        .take()
-                        .filter(|s| !s.is_empty())
-                        .unwrap_or_else(|| "  ".into()),
-                );
+                state
+                    .table_headers
+                    .push(state.text_for_header.take().unwrap_or_default());
                 Ok(())
             }
             ref t @ TagEnd::TableRow | ref t @ TagEnd::TableHead => {
@@ -551,8 +547,19 @@ where
                         formatter.write_char('|')?;
                         // NOTE: For perfect counting, count grapheme clusters.
                         // The reason this is not done is to avoid the dependency.
-                        let last_minus_one = name.chars().count().saturating_sub(1);
-                        for c in 0..name.len() {
+
+                        // The minimum width of the column so that we can represent its alignment.
+                        let min_width = match alignment {
+                            // Must at least represent `-`.
+                            Alignment::None => 1,
+                            // Must at least represent `:-` or `-:`
+                            Alignment::Left | Alignment::Right => 2,
+                            // Must at least represent `:-:`
+                            Alignment::Center => 3,
+                        };
+                        let length = name.chars().count().max(min_width);
+                        let last_minus_one = length.saturating_sub(1);
+                        for c in 0..length {
                             formatter.write_char(
                                 if (c == 0 && (alignment == &Alignment::Center || alignment == &Alignment::Left))
                                     || (c == last_minus_one
