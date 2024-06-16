@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 15.0.1 (2024-06-16)
+
+### Bug Fixes
+
+ - <csr-id-2ac74720c4d3fc8ccda8eaae86508bd62c28b43d/> tables render more correctly
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 2 commits contributed to the release.
+ - 1 day passed between releases.
+ - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
+ - 2 unique issues were worked on: [#70](https://github.com/Byron/pulldown-cmark-to-cmark/issues/70), [#76](https://github.com/Byron/pulldown-cmark-to-cmark/issues/76)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#70](https://github.com/Byron/pulldown-cmark-to-cmark/issues/70)**
+    - Tables render more correctly ([`2ac7472`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/2ac74720c4d3fc8ccda8eaae86508bd62c28b43d))
+ * **[#76](https://github.com/Byron/pulldown-cmark-to-cmark/issues/76)**
+    - Tables render more correctly ([`2ac7472`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/2ac74720c4d3fc8ccda8eaae86508bd62c28b43d))
+ * **Uncategorized**
+    - Fix emitting `::` for centered column in table. ([`33811dc`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/33811dc085da284c82bb74da590b14066ff44402))
+</details>
+
 ## 15.0.0 (2024-06-15)
 
 > [!NOTE]
@@ -19,7 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 19 commits contributed to the release over the course of 4 calendar days.
+ - 20 commits contributed to the release over the course of 4 calendar days.
  - 5 days passed between releases.
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
@@ -31,6 +60,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release pulldown-cmark-to-cmark v15.0.0 ([`e6c8c3e`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/e6c8c3ec310f79c080fe466183baf6842e66608c))
     - Prepare changelog prior to release ([`d72bfd3`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/d72bfd376a12412e4c394fa16fc99f8b8fb0e14e))
     - Upgrade dev-dependencies ([`d8cbd37`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/d8cbd37355cacdf58625e08765cf4000914d1057))
     - Update to pulldown-cmark v0.11 for math-expression support and special block quotes ([`bff28af`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/bff28af3c51a3a55675d5a64d8f3bda2d37701aa))
