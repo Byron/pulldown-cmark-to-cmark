@@ -607,9 +607,9 @@ where
                 Ok(())
             }
             TagEnd::Strikethrough => formatter.write_str("~~"),
-            TagEnd::DefinitionList => todo!(),
-            TagEnd::DefinitionListTitle => todo!(),
-            TagEnd::DefinitionListDefinition => todo!(),
+            TagEnd::DefinitionList => Ok(()),
+            TagEnd::DefinitionListTitle => Ok(()),
+            TagEnd::DefinitionListDefinition => Ok(()),
         },
         HardBreak => formatter.write_str("  \n").and(padding(formatter, &state.padding)),
         SoftBreak => formatter.write_char('\n').and(padding(formatter, &state.padding)),
