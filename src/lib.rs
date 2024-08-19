@@ -427,7 +427,7 @@ where
                 List(_) => Ok(()),
                 Strikethrough => formatter.write_str("~~"),
                 DefinitionList => Ok(()),
-                DefinitionListTitle => Ok(()),
+                DefinitionListTitle => formatter.write_char('\n'),
                 DefinitionListDefinition => formatter.write_str(": "),
             }
         }
@@ -608,8 +608,8 @@ where
             }
             TagEnd::Strikethrough => formatter.write_str("~~"),
             TagEnd::DefinitionList => Ok(()),
-            TagEnd::DefinitionListTitle => Ok(()),
-            TagEnd::DefinitionListDefinition => Ok(()),
+            TagEnd::DefinitionListTitle => formatter.write_char('\n'),
+            TagEnd::DefinitionListDefinition => formatter.write_char('\n'),
         },
         HardBreak => formatter.write_str("  \n").and(padding(formatter, &state.padding)),
         SoftBreak => formatter.write_char('\n').and(padding(formatter, &state.padding)),
