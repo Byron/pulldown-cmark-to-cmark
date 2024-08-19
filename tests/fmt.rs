@@ -498,7 +498,7 @@ mod blockquote {
     fn it_pops_padding_on_quote_end() {
         assert_eq!(
             fmtes(
-                &[Event::End(TagEnd::BlockQuote),],
+                &[Event::End(TagEnd::BlockQuote(None)),],
                 State {
                     padding: vec![" > ".into()],
                     ..Default::default()

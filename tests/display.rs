@@ -207,7 +207,7 @@ mod end {
     }
     #[test]
     fn blockquote() {
-        assert_eq!(s(End(TagEnd::BlockQuote)), "")
+        assert_eq!(s(End(TagEnd::BlockQuote(None))), "")
     }
     #[test]
     fn codeblock() {

@@ -426,6 +426,9 @@ where
                 MetadataBlock(MetadataBlockKind::PlusesStyle) => formatter.write_str("+++\n"),
                 List(_) => Ok(()),
                 Strikethrough => formatter.write_str("~~"),
+                DefinitionList => todo!(),
+                DefinitionListTitle => todo!(),
+                DefinitionListDefinition => todo!(),
             }
         }
         End(ref tag) => match tag {
@@ -590,7 +593,7 @@ where
                 }
                 Ok(())
             }
-            TagEnd::BlockQuote => {
+            TagEnd::BlockQuote(_) => {
                 state.padding.pop();
 
                 if state.newlines_before_start < options.newlines_after_blockquote {
@@ -604,6 +607,9 @@ where
                 Ok(())
             }
             TagEnd::Strikethrough => formatter.write_str("~~"),
+            TagEnd::DefinitionList => todo!(),
+            TagEnd::DefinitionListTitle => todo!(),
+            TagEnd::DefinitionListDefinition => todo!(),
         },
         HardBreak => formatter.write_str("  \n").and(padding(formatter, &state.padding)),
         SoftBreak => formatter.write_char('\n').and(padding(formatter, &state.padding)),
