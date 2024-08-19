@@ -426,9 +426,9 @@ where
                 MetadataBlock(MetadataBlockKind::PlusesStyle) => formatter.write_str("+++\n"),
                 List(_) => Ok(()),
                 Strikethrough => formatter.write_str("~~"),
-                DefinitionList => todo!(),
-                DefinitionListTitle => todo!(),
-                DefinitionListDefinition => todo!(),
+                DefinitionList => Ok(()),
+                DefinitionListTitle => Ok(()),
+                DefinitionListDefinition => formatter.write_str(": "),
             }
         }
         End(ref tag) => match tag {
