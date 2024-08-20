@@ -1006,7 +1006,7 @@ mod escapes {
 
     #[test]
     fn would_be_needed_for_single_backticks() {
-        let e: Vec<_> = Parser::new(r#"\`hi`"#).collect();
+        let e: Vec<_> = Parser::new(r"\`hi`").collect();
         assert_eq!(
             e,
             vec![
@@ -1022,8 +1022,8 @@ mod escapes {
     #[test]
     fn it_escapes_closing_square_brackets() {
         assert_eq!(
-            fmts_both(r#"[\[1\]](http://example.com)"#).0,
-            r#"[\[1\]](http://example.com)"#
+            fmts_both(r"[\[1\]](http://example.com)").0,
+            r"[\[1\]](http://example.com)"
         );
     }
 
@@ -1048,15 +1048,15 @@ mod escapes {
             r#"[link](http://example.com "\"link title\"")"#
         );
         assert_eq!(
-            fmts_both(r#"[link](http://example.com '\'link title\'')"#).0,
+            fmts_both(r"[link](http://example.com '\'link title\'')").0,
             r#"[link](http://example.com "'link title'")"#
         );
         assert_eq!(
-            fmts_both(r#"[link](http://example.com (\(link title\)))"#).0,
+            fmts_both(r"[link](http://example.com (\(link title\)))").0,
             r#"[link](http://example.com "(link title)")"#
         );
         assert_eq!(
-            fmts_both(r#"[link](http://example.com (你好👋))"#).0,
+            fmts_both(r"[link](http://example.com (你好👋))").0,
             r#"[link](http://example.com "你好👋")"#
         );
     }
@@ -1079,7 +1079,7 @@ mod escapes {
 
     #[test]
     fn make_special_characters_into_text_blocks() {
-        let e: Vec<_> = Parser::new(r#"hello\*there*and\*\*hello again\*\*"#).collect();
+        let e: Vec<_> = Parser::new(r"hello\*there*and\*\*hello again\*\*").collect();
         assert_eq!(
             e,
             vec![
