@@ -5,7 +5,7 @@ where
     F: fmt::Write,
 {
     for padding in p {
-        write!(f, "{}", padding)?;
+        write!(f, "{padding}")?;
     }
     Ok(())
 }
@@ -64,6 +64,6 @@ where
 pub fn padding_of(l: Option<u64>) -> Cow<'static, str> {
     match l {
         None => "  ".into(),
-        Some(n) => format!("{}. ", n).chars().map(|_| ' ').collect::<String>().into(),
+        Some(n) => format!("{n}. ").chars().map(|_| ' ').collect::<String>().into(),
     }
 }

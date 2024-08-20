@@ -62,7 +62,7 @@ where
         }
 
         if let (true, Some(range)) = (update_event_end_index, range) {
-            state.last_event_end_index = range.end
+            state.last_event_end_index = range.end;
         }
     }
     Ok(state)

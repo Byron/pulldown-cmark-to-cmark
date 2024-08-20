@@ -62,7 +62,7 @@ fn assert_events_eq(s: &str) {
 
     let before_events = Parser::new_ext(s, Options::all());
     let after_events = Parser::new_ext(&buf, Options::all());
-    println!("{}", buf);
+    println!("{buf}");
     assert_eq!(before_events.collect::<Vec<_>>(), after_events.collect::<Vec<_>>());
 }
 
@@ -95,7 +95,7 @@ mod lazy_newlines {
                     newlines_before_start: 0,
                     ..Default::default()
                 }
-            )
+            );
         }
     }
 
@@ -112,7 +112,7 @@ mod lazy_newlines {
                     newlines_before_start: 1,
                     ..Default::default()
                 }
-            )
+            );
         }
     }
 
@@ -128,7 +128,7 @@ mod lazy_newlines {
                         ..Default::default()
                     }
                 )
-            )
+            );
         }
     }
 }
@@ -152,7 +152,7 @@ fn it_applies_newlines_before_start_before_text() {
                 ..Default::default()
             }
         )
-    )
+    );
 }
 
 #[test]
@@ -174,7 +174,7 @@ fn it_applies_newlines_before_start_before_any_start_tag() {
                 ..Default::default()
             }
         )
-    )
+    );
 }
 
 mod padding {
@@ -201,7 +201,7 @@ mod padding {
                     ..Default::default()
                 }
             )
-        )
+        );
     }
 }
 
@@ -221,7 +221,7 @@ mod inline_elements {
                     ..Default::default()
                 }
             )
-        )
+        );
     }
 
     #[test]
@@ -235,7 +235,7 @@ mod inline_elements {
                     ..Default::default()
                 }
             )
-        )
+        );
     }
 
     #[test]
@@ -243,12 +243,12 @@ mod inline_elements {
         assert_eq!(
             fmts_both("a [^b]\n\n[^b]: this is\n    one footnote").0,
             "a [^b]\n\n[^b]: this is\n    one footnote",
-        )
+        );
     }
 
     #[test]
     fn autolinks_are_fully_resolved() {
-        assert_eq!(fmts_both("<http://a/b>").0, "<http://a/b>",)
+        assert_eq!(fmts_both("<http://a/b>").0, "<http://a/b>",);
     }
 
     #[test]
@@ -262,7 +262,7 @@ mod inline_elements {
                     ..Default::default()
                 }
             )
-        )
+        );
     }
 
     #[test]
@@ -276,7 +276,7 @@ mod inline_elements {
                     ..Default::default()
                 }
             )
-        )
+        );
     }
 
     #[test]
@@ -290,7 +290,7 @@ mod inline_elements {
                     ..Default::default()
                 }
             )
-        )
+        );
     }
 
     #[test]
@@ -304,7 +304,7 @@ mod inline_elements {
                     ..Default::default()
                 }
             )
-        )
+        );
     }
 
     #[test]
@@ -318,7 +318,7 @@ mod inline_elements {
                     ..Default::default()
                 }
             )
-        )
+        );
     }
 
     #[test]
@@ -338,7 +338,7 @@ mod inline_elements {
                 newlines_before_start: 2,
                 ..Default::default()
             }
-        )
+        );
     }
 
     #[test]
@@ -357,7 +357,7 @@ mod inline_elements {
                     ..Default::default()
                 }
             )
-        )
+        );
     }
 
     #[test]
@@ -371,7 +371,7 @@ mod inline_elements {
                     ..Default::default()
                 }
             )
-        )
+        );
     }
 
     #[test]
@@ -386,7 +386,7 @@ mod inline_elements {
                     ..Default::default()
                 }
             )
-        )
+        );
     }
 
     #[test]
@@ -402,7 +402,7 @@ mod inline_elements {
                     ..Default::default()
                 }
             )
-        )
+        );
     }
 
     #[test]
@@ -417,7 +417,7 @@ mod inline_elements {
                     ..Default::default()
                 }
             )
-        )
+        );
     }
 
     #[test]
@@ -460,7 +460,7 @@ println!("Hello, world!");
                     ..Default::default()
                 }
             )
-        )
+        );
     }
 
     #[test]
@@ -486,7 +486,7 @@ println!("Hello, world!");
                     ..Default::default()
                 }
             )
-        )
+        );
     }
 }
 
@@ -510,7 +510,7 @@ mod blockquote {
                 padding: vec![],
                 ..Default::default()
             }
-        )
+        );
     }
 
     #[test]
@@ -522,7 +522,7 @@ mod blockquote {
                 padding: vec![" > ".into()],
                 ..Default::default()
             }
-        )
+        );
     }
 
     #[test]
@@ -536,22 +536,22 @@ mod blockquote {
 
         assert_events_eq_both(s);
 
-        assert_eq!(fmts_both(s).0, "\n > \n > <table>\n > </table>\n > ")
+        assert_eq!(fmts_both(s).0, "\n > \n > <table>\n > </table>\n > ");
     }
 
     #[test]
     fn with_inlinehtml() {
-        assert_eq!(fmts_both(" > <br>").0, "\n > \n > <br>")
+        assert_eq!(fmts_both(" > <br>").0, "\n > \n > <br>");
     }
 
     #[test]
     fn with_plaintext_in_html() {
-        assert_eq!(fmts_both("<del>\n*foo*\n</del>").0, "<del>\n*foo*\n</del>")
+        assert_eq!(fmts_both("<del>\n*foo*\n</del>").0, "<del>\n*foo*\n</del>");
     }
 
     #[test]
     fn with_markdown_nested_in_html() {
-        assert_eq!(fmts_both("<del>\n\n*foo*\n\n</del>").0, "<del>\n\n*foo*\n\n</del>")
+        assert_eq!(fmts_both("<del>\n\n*foo*\n\n</del>").0, "<del>\n\n*foo*\n\n</del>");
     }
 
     #[test]
@@ -567,7 +567,7 @@ mod blockquote {
 
         assert_events_eq_both(s);
 
-        assert_eq!(fmts_both(s).0, "\n > \n > ````a\n > t1\n > t2\n > ````",)
+        assert_eq!(fmts_both(s).0, "\n > \n > ````a\n > t1\n > t2\n > ````",);
     }
 
     #[test]
@@ -584,7 +584,7 @@ mod blockquote {
 
         assert_events_eq_both(s);
 
-        assert_eq!(fmts_both(s).0, "\n > \n > a\n > \n >  > \n >  > b\n > \n > c",)
+        assert_eq!(fmts_both(s).0, "\n > \n > a\n > \n >  > \n >  > b\n > \n > c",);
     }
 
     #[test]
@@ -599,7 +599,7 @@ mod blockquote {
 
         assert_events_eq_both(s);
 
-        assert_eq!(fmts_both(s).0, "\n > \n >  > \n >  > foo\n >  > bar\n >  > baz",)
+        assert_eq!(fmts_both(s).0, "\n > \n >  > \n >  > foo\n >  > bar\n >  > baz",);
     }
 
     #[test]
@@ -623,7 +623,7 @@ mod blockquote {
                     ..Default::default()
                 }
             )
-        )
+        );
     }
 
     #[test]
@@ -641,7 +641,7 @@ mod blockquote {
                     ..Default::default()
                 }
             )
-        )
+        );
     }
 
     #[test]
@@ -665,7 +665,7 @@ mod blockquote {
                     ..Default::default()
                 }
             )
-        )
+        );
     }
 
     #[test]
@@ -690,7 +690,7 @@ mod blockquote {
                     ..Default::default()
                 }
             )
-        )
+        );
     }
 
     #[test]
@@ -714,7 +714,7 @@ mod blockquote {
                     ..Default::default()
                 }
             )
-        )
+        );
     }
 
     #[test]
@@ -766,7 +766,7 @@ mod codeblock {
                 is_in_code_block: true,
                 ..Default::default()
             }
-        )
+        );
     }
 
     #[test]
@@ -780,7 +780,7 @@ mod codeblock {
                     ..Default::default()
                 }
             )
-        )
+        );
     }
 
     #[test]
@@ -794,7 +794,7 @@ mod codeblock {
                     ..Default::default()
                 }
             )
-        )
+        );
     }
 
     #[test]
@@ -808,7 +808,7 @@ mod codeblock {
                     ..Default::default()
                 }
             )
-        )
+        );
     }
 
     #[test]
@@ -822,7 +822,7 @@ mod codeblock {
                     ..Default::default()
                 }
             )
-        )
+        );
     }
 
     #[test]
@@ -862,7 +862,7 @@ mod table {
                 newlines_before_start: 2,
                 ..Default::default()
             }
-        )
+        );
     }
 
     #[test]
@@ -884,7 +884,7 @@ mod table {
                 table_headers: vec!["a".into(), "b".into()],
                 ..Default::default()
             }
-        )
+        );
     }
 
     #[test]
@@ -965,8 +965,8 @@ mod escapes {
 
     fn run_test_on_each_special_char(f: impl Fn(String, CowStr)) {
         for c in CmarkToCmarkOptions::default().special_characters().chars() {
-            let s = format!(r#"\{special}"#, special = c);
-            f(s, c.to_string().into())
+            let s = format!(r#"\{c}"#);
+            f(s, c.to_string().into());
         }
     }
 
@@ -987,7 +987,7 @@ mod escapes {
     fn it_recreates_escapes_for_known_special_characters_at_the_beginning_of_the_word() {
         run_test_on_each_special_char(|escaped_special_character, _| {
             assert_eq!(fmts_both(&escaped_special_character).0, escaped_special_character);
-        })
+        });
     }
 
     #[test]
@@ -1001,12 +1001,12 @@ mod escapes {
                 Event::Text("_".into()),
                 Event::End(TagEnd::Paragraph),
             ]
-        )
+        );
     }
 
     #[test]
     fn would_be_needed_for_single_backticks() {
-        let e: Vec<_> = Parser::new(r#"\`hi`"#).collect();
+        let e: Vec<_> = Parser::new(r"\`hi`").collect();
         assert_eq!(
             e,
             vec![
@@ -1016,14 +1016,14 @@ mod escapes {
                 Event::Text("`".into()),
                 Event::End(TagEnd::Paragraph),
             ]
-        )
+        );
     }
 
     #[test]
     fn it_escapes_closing_square_brackets() {
         assert_eq!(
-            fmts_both(r#"[\[1\]](http://example.com)"#).0,
-            r#"[\[1\]](http://example.com)"#
+            fmts_both(r"[\[1\]](http://example.com)").0,
+            r"[\[1\]](http://example.com)"
         );
     }
 
@@ -1048,15 +1048,15 @@ mod escapes {
             r#"[link](http://example.com "\"link title\"")"#
         );
         assert_eq!(
-            fmts_both(r#"[link](http://example.com '\'link title\'')"#).0,
+            fmts_both(r"[link](http://example.com '\'link title\'')").0,
             r#"[link](http://example.com "'link title'")"#
         );
         assert_eq!(
-            fmts_both(r#"[link](http://example.com (\(link title\)))"#).0,
+            fmts_both(r"[link](http://example.com (\(link title\)))").0,
             r#"[link](http://example.com "(link title)")"#
         );
         assert_eq!(
-            fmts_both(r#"[link](http://example.com (你好👋))"#).0,
+            fmts_both(r"[link](http://example.com (你好👋))").0,
             r#"[link](http://example.com "你好👋")"#
         );
     }
@@ -1066,7 +1066,7 @@ mod escapes {
         assert_eq!(
             fmts("] a closing bracket does nothing").0,
             "\\] a closing bracket does nothing"
-        )
+        );
     }
 
     #[test]
@@ -1074,12 +1074,12 @@ mod escapes {
         assert_eq!(
             source_range_fmt::fmts("] a closing bracket does nothing").0,
             "] a closing bracket does nothing"
-        )
+        );
     }
 
     #[test]
     fn make_special_characters_into_text_blocks() {
-        let e: Vec<_> = Parser::new(r#"hello\*there*and\*\*hello again\*\*"#).collect();
+        let e: Vec<_> = Parser::new(r"hello\*there*and\*\*hello again\*\*").collect();
         assert_eq!(
             e,
             vec![
@@ -1094,7 +1094,7 @@ mod escapes {
                 Event::Text("*".into()),
                 Event::End(TagEnd::Paragraph),
             ]
-        )
+        );
     }
 
     #[test]
@@ -1114,7 +1114,7 @@ mod escapes {
                 Event::End(TagEnd::Strong),
                 Event::End(TagEnd::Paragraph),
             ]
-        )
+        );
     }
 
     #[test]
@@ -1128,8 +1128,8 @@ mod escapes {
                     Event::Text(c.to_string().into()),
                     Event::End(TagEnd::Paragraph),
                 ]
-            )
-        })
+            );
+        });
     }
 }
 
@@ -1152,7 +1152,7 @@ mod list {
                 list_stack: vec![None],
                 ..Default::default()
             }
-        )
+        );
     }
 
     #[test]
@@ -1166,7 +1166,7 @@ mod list {
                     ..Default::default()
                 }
             )
-        )
+        );
     }
 
     #[test]
@@ -1180,12 +1180,12 @@ mod list {
                     ..Default::default()
                 }
             )
-        )
+        );
     }
 
     #[test]
     fn unordered_ordered_unordered() {
-        assert_eq!(fmts_both("* a\n  1. b\n* c").0, "* a\n  1. b\n* c",)
+        assert_eq!(fmts_both("* a\n  1. b\n* c").0, "* a\n  1. b\n* c",);
     }
 
     #[test]
@@ -1199,7 +1199,7 @@ mod list {
                     ..Default::default()
                 }
             )
-        )
+        );
     }
 
     #[test]
@@ -1213,7 +1213,7 @@ mod list {
                     ..Default::default()
                 }
             )
-        )
+        );
     }
 
     #[test]
@@ -1226,7 +1226,7 @@ mod list {
         let original = "* a\n* b";
         let (s, _) = fmts_with_options(original, custom_options);
 
-        assert_eq!(s, "- a\n- b".to_string())
+        assert_eq!(s, "- a\n- b".to_string());
     }
 
     #[test]
@@ -1240,7 +1240,7 @@ mod list {
                     ..Default::default()
                 }
             )
-        )
+        );
     }
 
     #[test]
@@ -1258,7 +1258,7 @@ mod list {
                     ..Default::default()
                 }
             )
-        )
+        );
     }
 
     #[test]
@@ -1276,7 +1276,7 @@ mod list {
                     ..Default::default()
                 }
             )
-        )
+        );
     }
 
     #[test]
@@ -1313,7 +1313,7 @@ mod list {
                     ..Default::default()
                 }
             )
-        )
+        );
     }
 
     #[test]
@@ -1363,7 +1363,7 @@ mod list {
                     ..Default::default()
                 }
             )
-        )
+        );
     }
 
     #[test]
