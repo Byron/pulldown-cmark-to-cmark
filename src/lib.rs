@@ -538,7 +538,7 @@ where
                     .push(state.text_for_header.take().unwrap_or_default());
                 Ok(())
             }
-            ref t @ TagEnd::TableRow | ref t @ TagEnd::TableHead => {
+            ref t @ (TagEnd::TableRow | TagEnd::TableHead) => {
                 if state.newlines_before_start < options.newlines_after_rest {
                     state.newlines_before_start = options.newlines_after_rest;
                 }
