@@ -184,6 +184,11 @@ mod start {
     fn table_cell() {
         assert_eq!(s(Start(TableCell)), "|")
     }
+
+    #[test]
+    fn definition_list_definition() {
+        assert_eq!(s(Start(DefinitionListDefinition)), ": ")
+    }
 }
 
 mod end {
@@ -207,7 +212,7 @@ mod end {
     }
     #[test]
     fn blockquote() {
-        assert_eq!(s(End(TagEnd::BlockQuote)), "")
+        assert_eq!(s(End(TagEnd::BlockQuote(None))), "")
     }
     #[test]
     fn codeblock() {
