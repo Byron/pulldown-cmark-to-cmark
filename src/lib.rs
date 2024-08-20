@@ -406,20 +406,20 @@ where
                     let s = if !consumed_newlines {
                         formatter
                             .write_char('\n')
-                            .and_then(|_| padding(formatter, &state.padding))
+                            .and_then(|()| padding(formatter, &state.padding))
                     } else {
                         Ok(())
                     };
 
-                    s.and_then(|_| {
+                    s.and_then(|()| {
                         for _ in 0..options.code_block_token_count {
                             formatter.write_char(options.code_block_token)?;
                         }
                         Ok(())
                     })
-                    .and_then(|_| formatter.write_str(info))
-                    .and_then(|_| formatter.write_char('\n'))
-                    .and_then(|_| padding(formatter, &state.padding))
+                    .and_then(|()| formatter.write_str(info))
+                    .and_then(|()| formatter.write_char('\n'))
+                    .and_then(|()| padding(formatter, &state.padding))
                 }
                 HtmlBlock => Ok(()),
                 MetadataBlock(MetadataBlockKind::YamlStyle) => formatter.write_str("---\n"),
