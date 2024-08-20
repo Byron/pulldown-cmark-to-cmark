@@ -465,12 +465,12 @@ where
                     formatter.write_char('#')?;
                     formatter.write_str(&id_str)?;
                 }
-                for class in classes.iter() {
+                for class in &classes {
                     formatter.write_char(' ')?;
                     formatter.write_char('.')?;
                     formatter.write_str(class)?;
                 }
-                for (key, val) in attributes.iter() {
+                for (key, val) in &attributes {
                     formatter.write_char(' ')?;
                     formatter.write_str(key)?;
                     if let Some(val) = val {
