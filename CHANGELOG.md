@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 16.0.0 (2024-08-20)
 
 Add support for `pulldown-cmark` v0.12, and an understanding of markdown Definition Lists.
 
@@ -13,7 +13,7 @@ Add support for `pulldown-cmark` v0.12, and an understanding of markdown Definit
 
 <csr-read-only-do-not-edit/>
 
- - 5 commits contributed to the release.
+ - 7 commits contributed to the release.
  - 64 days passed between releases.
  - 0 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
@@ -25,6 +25,8 @@ Add support for `pulldown-cmark` v0.12, and an understanding of markdown Definit
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Bump major version to help isolage the `pulldown-cmark` crate at v0.12 ([`17b5308`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/17b5308e2592ef593e84a89cebbb28955024769b))
+    - Update changelog prior to release ([`7b74f1b`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/7b74f1b301db131f615b42e7645d413cc6c161cf))
     - Merge branch 'cmark-12' ([`f1f18d4`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/f1f18d44147dfcffee8caf9f46d870f1e651b208))
     - Fix test ([`173ae85`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/173ae8507f34d4163c735c9ca5f6b4b83a338948))
     - Add failing test case ([`7674b54`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/7674b549f0fb865c65d432ce4a5acfcc04af9c24))
