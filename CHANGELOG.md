@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+Add support for `pulldown-cmark` v0.12, and an understanding of markdown Definition Lists.
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 5 commits contributed to the release.
+ - 64 days passed between releases.
+ - 0 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Merge branch 'cmark-12' ([`f1f18d4`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/f1f18d44147dfcffee8caf9f46d870f1e651b208))
+    - Fix test ([`173ae85`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/173ae8507f34d4163c735c9ca5f6b4b83a338948))
+    - Add failing test case ([`7674b54`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/7674b549f0fb865c65d432ce4a5acfcc04af9c24))
+    - Add test for definition list item start ([`e686a8f`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/e686a8f7ee35fe83fe1b7f8f6466b62d0af35fd9))
+    - Add 'todo' placeholders ([`f1a8a3e`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/f1a8a3efd57a9bff2073796387d70eba49d93399))
+</details>
+
 ## 15.0.1 (2024-06-16)
 
 ### Bug Fixes
@@ -15,7 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 2 commits contributed to the release.
+ - 3 commits contributed to the release.
  - 1 day passed between releases.
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 2 unique issues were worked on: [#70](https://github.com/Byron/pulldown-cmark-to-cmark/issues/70), [#76](https://github.com/Byron/pulldown-cmark-to-cmark/issues/76)
@@ -31,6 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#76](https://github.com/Byron/pulldown-cmark-to-cmark/issues/76)**
     - Tables render more correctly ([`2ac7472`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/2ac74720c4d3fc8ccda8eaae86508bd62c28b43d))
  * **Uncategorized**
+    - Release pulldown-cmark-to-cmark v15.0.1 ([`7cc274e`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/7cc274e52d44f4901465796f4bfcc69f0a71f01a))
     - Fix emitting `::` for centered column in table. ([`33811dc`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/33811dc085da284c82bb74da590b14066ff44402))
 </details>
 
