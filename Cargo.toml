@@ -16,6 +16,7 @@ documentation = "https://docs.rs/crate/pulldown-cmark-to-cmark"
 readme = "README.md"
 edition = "2018"
 include = ["src/*.rs", "LICENSE-APACHE", "README.md", "CHANGELOG.md"]
+rust-version = "1.79.0"
 
 [dependencies]
 pulldown-cmark = { version = "0.12.0", default-features = false }
