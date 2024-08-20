@@ -62,7 +62,7 @@ fn assert_events_eq(s: &str) {
 
     let before_events = Parser::new_ext(s, Options::all());
     let after_events = Parser::new_ext(&buf, Options::all());
-    println!("{}", buf);
+    println!("{buf}");
     assert_eq!(before_events.collect::<Vec<_>>(), after_events.collect::<Vec<_>>());
 }
 
@@ -965,7 +965,7 @@ mod escapes {
 
     fn run_test_on_each_special_char(f: impl Fn(String, CowStr)) {
         for c in CmarkToCmarkOptions::default().special_characters().chars() {
-            let s = format!(r#"\{special}"#, special = c);
+            let s = format!(r#"\{c}"#);
             f(s, c.to_string().into());
         }
     }

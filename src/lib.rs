@@ -342,7 +342,7 @@ where
                 Strong => formatter.write_str(options.strong_token),
                 FootnoteDefinition(ref name) => {
                     state.padding.push("    ".into());
-                    write!(formatter, "[^{}]: ", name)
+                    write!(formatter, "[^{name}]: ")
                 }
                 Paragraph => Ok(()),
                 Heading {
@@ -644,13 +644,13 @@ where
             }
             Ok(())
         }
-        FootnoteReference(ref name) => write!(formatter, "[^{}]", name),
+        FootnoteReference(ref name) => write!(formatter, "[^{name}]"),
         TaskListMarker(checked) => {
             let check = if checked { "x" } else { " " };
-            write!(formatter, "[{}] ", check)
+            write!(formatter, "[{check}] ")
         }
-        InlineMath(ref text) => write!(formatter, "${}$", text),
-        DisplayMath(ref text) => write!(formatter, "$${}$$", text),
+        InlineMath(ref text) => write!(formatter, "${text}$"),
+        DisplayMath(ref text) => write!(formatter, "$${text}$$"),
     }
 }
 
@@ -674,9 +674,9 @@ where
     };
 
     if uri.contains(' ') {
-        write!(f, "]{}<{uri}>", separator, uri = uri)?;
+        write!(f, "]{separator}<{uri}>")?;
     } else {
-        write!(f, "]{}{uri}", separator, uri = uri)?;
+        write!(f, "]{separator}{uri}")?;
     }
     if !title.is_empty() {
         write!(f, " \"{title}\"", title = EscapeLinkTitle(title))?;
