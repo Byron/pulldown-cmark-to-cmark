@@ -16,7 +16,7 @@ mod code {
 
     #[test]
     fn code() {
-        assert_eq!(s(Code("foo\nbar".into())), "`foo\nbar`")
+        assert_eq!(s(Code("foo\nbar".into())), "`foo\nbar`");
     }
 }
 
@@ -27,7 +27,7 @@ mod rule {
 
     #[test]
     fn rule() {
-        assert_eq!(s(Rule), "---")
+        assert_eq!(s(Rule), "---");
     }
 }
 
@@ -45,7 +45,7 @@ mod start {
 
     #[test]
     fn paragraph() {
-        assert_eq!(s(Start(Paragraph)), "")
+        assert_eq!(s(Start(Paragraph)), "");
     }
     #[test]
     fn header1() {
@@ -57,7 +57,7 @@ mod start {
                 attrs: vec![]
             })),
             "# "
-        )
+        );
     }
     #[test]
     fn header2() {
@@ -69,7 +69,7 @@ mod start {
                 attrs: vec![]
             })),
             "## "
-        )
+        );
     }
     #[test]
     fn blockquote() {
@@ -94,31 +94,31 @@ mod start {
         assert_eq!(
             s(Start(CodeBlock(CodeBlockKind::Fenced("asdf".into())))),
             "\n````asdf\n"
-        )
+        );
     }
     #[test]
     fn list_unordered() {
-        assert_eq!(s(Start(List(None))), "")
+        assert_eq!(s(Start(List(None))), "");
     }
     #[test]
     fn list_ordered() {
-        assert_eq!(s(Start(List(Some(1)))), "")
+        assert_eq!(s(Start(List(Some(1)))), "");
     }
     #[test]
     fn item() {
-        assert_eq!(s(Start(Item)), "")
+        assert_eq!(s(Start(Item)), "");
     }
     #[test]
     fn footnote_definition() {
-        assert_eq!(s(Start(FootnoteDefinition("asdf".into()))), "[^asdf]: ")
+        assert_eq!(s(Start(FootnoteDefinition("asdf".into()))), "[^asdf]: ");
     }
     #[test]
     fn emphasis() {
-        assert_eq!(s(Start(Emphasis)), "*")
+        assert_eq!(s(Start(Emphasis)), "*");
     }
     #[test]
     fn strong() {
-        assert_eq!(s(Start(Strong)), "**")
+        assert_eq!(s(Start(Strong)), "**");
     }
     #[test]
     fn link() {
@@ -130,7 +130,7 @@ mod start {
                 id: "".into(),
             })),
             "["
-        )
+        );
     }
     #[test]
     fn link_without_title() {
@@ -142,7 +142,7 @@ mod start {
                 id: "".into()
             })),
             "["
-        )
+        );
     }
     #[test]
     fn image() {
@@ -154,7 +154,7 @@ mod start {
                 id: "".into()
             })),
             "!["
-        )
+        );
     }
     #[test]
     fn image_without_title() {
@@ -166,28 +166,28 @@ mod start {
                 id: "".into()
             })),
             "!["
-        )
+        );
     }
     #[test]
     fn table() {
-        assert_eq!(s(Start(Table(vec![Left, Center, Right, Alignment::None]))), "")
+        assert_eq!(s(Start(Table(vec![Left, Center, Right, Alignment::None]))), "");
     }
     #[test]
     fn table_head() {
-        assert_eq!(s(Start(TableHead)), "")
+        assert_eq!(s(Start(TableHead)), "");
     }
     #[test]
     fn table_row() {
-        assert_eq!(s(Start(TableRow)), "")
+        assert_eq!(s(Start(TableRow)), "");
     }
     #[test]
     fn table_cell() {
-        assert_eq!(s(Start(TableCell)), "|")
+        assert_eq!(s(Start(TableCell)), "|");
     }
 
     #[test]
     fn definition_list_definition() {
-        assert_eq!(s(Start(DefinitionListDefinition)), ": ")
+        assert_eq!(s(Start(DefinitionListDefinition)), ": ");
     }
 }
 
@@ -204,43 +204,43 @@ mod end {
             classes: Default::default(),
             attrs: Default::default(),
         };
-        assert_eq!(es([Start(tag.clone()), End(tag.to_end())]), "## ")
+        assert_eq!(es([Start(tag.clone()), End(tag.to_end())]), "## ");
     }
     #[test]
     fn paragraph() {
-        assert_eq!(s(End(TagEnd::Paragraph)), "")
+        assert_eq!(s(End(TagEnd::Paragraph)), "");
     }
     #[test]
     fn blockquote() {
-        assert_eq!(s(End(TagEnd::BlockQuote(None))), "")
+        assert_eq!(s(End(TagEnd::BlockQuote(None))), "");
     }
     #[test]
     fn codeblock() {
-        assert_eq!(s(End(TagEnd::CodeBlock)), "````")
+        assert_eq!(s(End(TagEnd::CodeBlock)), "````");
     }
     #[test]
     fn footnote_definition() {
-        assert_eq!(s(End(TagEnd::FootnoteDefinition)), "")
+        assert_eq!(s(End(TagEnd::FootnoteDefinition)), "");
     }
     #[test]
     fn emphasis() {
-        assert_eq!(s(End(TagEnd::Emphasis)), "*")
+        assert_eq!(s(End(TagEnd::Emphasis)), "*");
     }
     #[test]
     fn strong() {
-        assert_eq!(s(End(TagEnd::Strong)), "**")
+        assert_eq!(s(End(TagEnd::Strong)), "**");
     }
     #[test]
     fn list_unordered() {
-        assert_eq!(s(End(TagEnd::List(false))), "")
+        assert_eq!(s(End(TagEnd::List(false))), "");
     }
     #[test]
     fn list_ordered() {
-        assert_eq!(s(End(TagEnd::List(true))), "")
+        assert_eq!(s(End(TagEnd::List(true))), "");
     }
     #[test]
     fn item() {
-        assert_eq!(s(End(TagEnd::Item)), "")
+        assert_eq!(s(End(TagEnd::Item)), "");
     }
     #[test]
     fn link() {
@@ -250,7 +250,7 @@ mod end {
             title: "title".into(),
             id: "".into(),
         };
-        assert_eq!(es([Start(tag.clone()), End(tag.to_end())]), "[](/uri \"title\")")
+        assert_eq!(es([Start(tag.clone()), End(tag.to_end())]), "[](/uri \"title\")");
     }
     #[test]
     fn link_without_title() {
@@ -260,7 +260,7 @@ mod end {
             title: "".into(),
             id: "".into(),
         };
-        assert_eq!(es([Start(tag.clone()), End(tag.to_end())]), "[](/uri)")
+        assert_eq!(es([Start(tag.clone()), End(tag.to_end())]), "[](/uri)");
     }
     #[test]
     fn image() {
@@ -270,7 +270,7 @@ mod end {
             title: "title".into(),
             id: "".into(),
         };
-        assert_eq!(es([Start(tag.clone()), End(tag.to_end())]), "![](/uri \"title\")")
+        assert_eq!(es([Start(tag.clone()), End(tag.to_end())]), "![](/uri \"title\")");
     }
     #[test]
     fn image_without_title() {
@@ -280,41 +280,41 @@ mod end {
             title: "".into(),
             id: "".into(),
         };
-        assert_eq!(es([Start(tag.clone()), End(tag.to_end())]), "![](/uri)")
+        assert_eq!(es([Start(tag.clone()), End(tag.to_end())]), "![](/uri)");
     }
     #[test]
     fn table() {
-        assert_eq!(s(End(TagEnd::Table)), "")
+        assert_eq!(s(End(TagEnd::Table)), "");
     }
     #[test]
     fn table_row() {
-        assert_eq!(s(End(TagEnd::TableRow)), "|")
+        assert_eq!(s(End(TagEnd::TableRow)), "|");
     }
     #[test]
     fn table_cell() {
-        assert_eq!(s(End(TagEnd::TableCell)), "")
+        assert_eq!(s(End(TagEnd::TableCell)), "");
     }
 }
 
 #[test]
 fn hardbreak() {
-    assert_eq!(s(Event::HardBreak), "  \n")
+    assert_eq!(s(Event::HardBreak), "  \n");
 }
 #[test]
 fn softbreak() {
-    assert_eq!(s(Event::SoftBreak), "\n")
+    assert_eq!(s(Event::SoftBreak), "\n");
 }
 #[test]
 fn html() {
-    assert_eq!(s(Event::Html("<table>hi</table>".into())), "<table>hi</table>")
+    assert_eq!(s(Event::Html("<table>hi</table>".into())), "<table>hi</table>");
 }
 #[test]
 fn text() {
-    assert_eq!(s(Event::Text("asdf".into())), "asdf")
+    assert_eq!(s(Event::Text("asdf".into())), "asdf");
 }
 #[test]
 fn footnote_reference() {
-    assert_eq!(s(Event::FootnoteReference("asdf".into())), "[^asdf]")
+    assert_eq!(s(Event::FootnoteReference("asdf".into())), "[^asdf]");
 }
 #[test]
 fn math() {

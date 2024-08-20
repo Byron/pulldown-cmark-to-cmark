@@ -618,7 +618,7 @@ where
                 shortcut_text.push_str(text);
             }
             if let Some(text_for_header) = state.text_for_header.as_mut() {
-                text_for_header.push_str(text)
+                text_for_header.push_str(text);
             }
             consume_newlines(formatter, state)?;
             state.last_was_text_without_trailing_newline = !text.ends_with('\n');
