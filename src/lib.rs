@@ -33,10 +33,10 @@ pub enum Alignment {
 impl<'a> From<&'a TableAlignment> for Alignment {
     fn from(s: &'a TableAlignment) -> Self {
         match *s {
-            TableAlignment::None => Alignment::None,
-            TableAlignment::Left => Alignment::Left,
-            TableAlignment::Center => Alignment::Center,
-            TableAlignment::Right => Alignment::Right,
+            TableAlignment::None => Self::None,
+            TableAlignment::Left => Self::Left,
+            TableAlignment::Center => Self::Center,
+            TableAlignment::Right => Self::Right,
         }
     }
 }
