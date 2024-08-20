@@ -403,12 +403,12 @@ where
                 }
                 CodeBlock(CodeBlockKind::Fenced(info)) => {
                     state.is_in_code_block = true;
-                    let s = if !consumed_newlines {
+                    let s = if consumed_newlines {
+                        Ok(())
+                    } else {
                         formatter
                             .write_char('\n')
                             .and_then(|()| padding(formatter, &state.padding))
-                    } else {
-                        Ok(())
                     };
 
                     s.and_then(|()| {
