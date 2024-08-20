@@ -230,7 +230,7 @@ where
 
     let last_was_text_without_trailing_newline = state.last_was_text_without_trailing_newline;
     state.last_was_text_without_trailing_newline = false;
-    match *event.borrow() {
+    match event.borrow() {
         Rule => {
             consume_newlines(formatter, state)?;
             if state.newlines_before_start < options.newlines_after_rule {
@@ -238,7 +238,7 @@ where
             }
             formatter.write_str("---")
         }
-        Code(ref text) => {
+        Code(text) => {
             if let Some(shortcut_text) = state.current_shortcut_text.as_mut() {
                 shortcut_text.push('`');
                 shortcut_text.push_str(text);
@@ -261,8 +261,8 @@ where
                 write!(formatter, "{backticks}{space}{text}{space}{backticks}")
             }
         }
-        Start(ref tag) => {
-            if let List(ref list_type) = *tag {
+        Start(tag) => {
+            if let List(list_type) = tag {
                 state.list_stack.push(*list_type);
                 if state.list_stack.len() > 1 && state.newlines_before_start < options.newlines_after_rest {
                     state.newlines_before_start = options.newlines_after_rest;
@@ -287,7 +287,7 @@ where
                     }
                     None => Ok(()),
                 },
-                Table(ref alignments) => {
+                Table(alignments) => {
                     state.table_alignments = alignments.iter().map(From::from).collect();
                     Ok(())
                 }
@@ -340,7 +340,7 @@ where
                 }
                 Emphasis => formatter.write_char(options.emphasis_token),
                 Strong => formatter.write_str(options.strong_token),
-                FootnoteDefinition(ref name) => {
+                FootnoteDefinition(name) => {
                     state.padding.push("    ".into());
                     write!(formatter, "[^{name}]: ")
                 }
@@ -401,7 +401,7 @@ where
                     }
                     formatter.write_char('\n').and(padding(formatter, &state.padding))
                 }
-                CodeBlock(CodeBlockKind::Fenced(ref info)) => {
+                CodeBlock(CodeBlockKind::Fenced(info)) => {
                     state.is_in_code_block = true;
                     let s = if !consumed_newlines {
                         formatter
@@ -431,7 +431,7 @@ where
                 DefinitionListDefinition => formatter.write_str(": "),
             }
         }
-        End(ref tag) => match tag {
+        End(tag) => match tag {
             TagEnd::Link => match state.link_stack.pop().unwrap() {
                 LinkCategory::AngleBracketed => formatter.write_char('>'),
                 LinkCategory::Shortcut { uri, title } => {
@@ -538,7 +538,7 @@ where
                     .push(state.text_for_header.take().unwrap_or_default());
                 Ok(())
             }
-            ref t @ (TagEnd::TableRow | TagEnd::TableHead) => {
+            t @ (TagEnd::TableRow | TagEnd::TableHead) => {
                 if state.newlines_before_start < options.newlines_after_rest {
                     state.newlines_before_start = options.newlines_after_rest;
                 }
@@ -613,7 +613,7 @@ where
         },
         HardBreak => formatter.write_str("  \n").and(padding(formatter, &state.padding)),
         SoftBreak => formatter.write_char('\n').and(padding(formatter, &state.padding)),
-        Text(ref text) => {
+        Text(text) => {
             if let Some(shortcut_text) = state.current_shortcut_text.as_mut() {
                 shortcut_text.push_str(text);
             }
@@ -628,11 +628,11 @@ where
                 &state.padding,
             )
         }
-        InlineHtml(ref text) => {
+        InlineHtml(text) => {
             consume_newlines(formatter, state)?;
             print_text_without_trailing_newline(text, formatter, &state.padding)
         }
-        Html(ref text) => {
+        Html(text) => {
             let mut lines = text.split('\n');
             if let Some(line) = lines.next() {
                 formatter.write_str(line)?;
@@ -644,13 +644,13 @@ where
             }
             Ok(())
         }
-        FootnoteReference(ref name) => write!(formatter, "[^{name}]"),
+        FootnoteReference(name) => write!(formatter, "[^{name}]"),
         TaskListMarker(checked) => {
-            let check = if checked { "x" } else { " " };
+            let check = if *checked { "x" } else { " " };
             write!(formatter, "[{check}] ")
         }
-        InlineMath(ref text) => write!(formatter, "${text}$"),
-        DisplayMath(ref text) => write!(formatter, "$${text}$$"),
+        InlineMath(text) => write!(formatter, "${text}$"),
+        DisplayMath(text) => write!(formatter, "$${text}$$"),
     }
 }
 
