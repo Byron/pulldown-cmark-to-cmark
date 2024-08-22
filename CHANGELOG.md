@@ -5,6 +5,50 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 16.0.1 (2024-08-22)
+
+### Other
+
+ - <csr-id-21a7f26a611e7a5b99ab33e9386acd30f0188960/> Lower MSRV to 1.71.1
+   This project builds successfully with the MSRV of `pulldown-cmark`. Therefore we can lower `rust-version` to 1.71.1.
+   
+   Add documentation for the current MSRV and that this project follows MSRV policy of `pulldown-cmark`.
+   
+   Use `cargo hack` for MSRV CI job, to automatically install rustc according to `rust-version` and then execute `cargo check`.
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 15 commits contributed to the release over the course of 2 calendar days.
+ - 2 days passed between releases.
+ - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Merge pull request #81 from caspermeijn/msrv ([`85ca9d4`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/85ca9d4d63aab14b3193a2438959baa7fc6e4b05))
+    - Make clear that the rust-version field follows `pulldown-cmark`'s MSRV. ([`7269c4f`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/7269c4f8aabb8ca3fdb63f4ba95b207899f9f845))
+    - Lower MSRV to 1.71.1 ([`21a7f26`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/21a7f26a611e7a5b99ab33e9386acd30f0188960))
+    - Merge pull request #79 from danieleades/clippy ([`c6899bc`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/c6899bce8ca1b018c03bda2515892762ed53f933))
+    - Use 'Self' keyword (clippy::use_self) ([`1a3029f`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/1a3029f41f4b97ddd1d2c0e373c63e1e388c40d9))
+    - Remove unnecessary negation (clippy::if_not_else) ([`5745ce5`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/5745ce5a6574434fd673533586b3cfb6d5123ea3))
+    - Remove unneeded 'ref' bindings (clippy::ref_binding_to_reference) ([`820b661`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/820b661395d9855bf8c7a8c58e906f86741ce168))
+    - Nest or patterns (clippy::unnested_or_patterns) ([`43c6e8a`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/43c6e8a3ddffb91277cec72c11f5e9f714266b51))
+    - Explicitly match unit values (clippy::ignored_unit_patterns) ([`d636dc6`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/d636dc68f0b72088d761774d60e8762b26562cc4))
+    - Avoid explicit iter loops (clippy::explicit_iter_loop) ([`a8c7fa5`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/a8c7fa5a77145021fe9d67741e4a00d40851919f))
+    - Use inline format args (clippy::uninlined_format_args) ([`d97f8f5`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/d97f8f5268f67f612474b68613eb5ff2941cb607))
+    - Remove needless raw string hashes (clippy::needless_raw_string_hashes) ([`6e2ae15`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/6e2ae15a167e3622993d7a96ca87619b48751281))
+    - Use semicolons if nothing returned (clippy::semicolon_if_nothing_returned) ([`8f9d4bf`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/8f9d4bff7ca827b61ab1ca4ab7ca08d98721244f))
+    - Merge pull request #80 from danieleades/msrv ([`08ffcb8`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/08ffcb896f605eb94d05fc07bd921efbd1b18666))
+    - Add MSRV check to CI ([`66b9ed2`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/66b9ed28d08fd622f411ce0c9e8720443bda1e0e))
+</details>
+
 ## 16.0.0 (2024-08-20)
 
 Add support for `pulldown-cmark` v0.12, and an understanding of markdown Definition Lists.
@@ -13,7 +57,7 @@ Add support for `pulldown-cmark` v0.12, and an understanding of markdown Definit
 
 <csr-read-only-do-not-edit/>
 
- - 7 commits contributed to the release.
+ - 8 commits contributed to the release.
  - 64 days passed between releases.
  - 0 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
@@ -25,6 +69,7 @@ Add support for `pulldown-cmark` v0.12, and an understanding of markdown Definit
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release pulldown-cmark-to-cmark v16.0.0 ([`4dd27c5`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/4dd27c5620531d157b0002dde42b9a940c29890d))
     - Bump major version to help isolage the `pulldown-cmark` crate at v0.12 ([`17b5308`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/17b5308e2592ef593e84a89cebbb28955024769b))
     - Update changelog prior to release ([`7b74f1b`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/7b74f1b301db131f615b42e7645d413cc6c161cf))
     - Merge branch 'cmark-12' ([`f1f18d4`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/f1f18d44147dfcffee8caf9f46d870f1e651b208))
