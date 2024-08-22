@@ -25,6 +25,12 @@ cargo add pulldown-cmark-to-cmark
 [sc-example]: https://github.com/Byron/pulldown-cmark-to-cmark/blob/76667725b61be24890fbdfed5e7ecdb4c1ad1dc8/examples/stupicat.rs#L21
 [api]: https://docs.rs/crate/pulldown-cmark-to-cmark
 
+### Supported Rust Versions
+
+`pulldown-cmark-to-cmark` follows the MSRV (minimum supported rust version) policy of [`pulldown-cmark`]. The current MSRV is 1.71.1.
+
+[`pulldown-cmark`]: https://github.com/pulldown-cmark/pulldown-cmark
+
 ### Friends of this project
 
  * [**termbook**](https://github.com/Byron/termbook)

@@ -19,6 +19,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: taiki-e/install-action@cargo-no-dev-deps
-      - uses: dtolnay/rust-toolchain@1.79.0
-      - run: cargo no-dev-deps check
+      - uses: taiki-e/install-action@cargo-hack
+      - run: cargo hack --rust-version --no-dev-deps check
