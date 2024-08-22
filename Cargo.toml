@@ -16,6 +16,7 @@ documentation = "https://docs.rs/crate/pulldown-cmark-to-cmark"
 readme = "README.md"
 edition = "2018"
 include = ["src/*.rs", "LICENSE-APACHE", "README.md", "CHANGELOG.md"]
+# This follows the MSRV of `pulldown-cmark`
 rust-version = "1.71.1"
 
 [dependencies]
