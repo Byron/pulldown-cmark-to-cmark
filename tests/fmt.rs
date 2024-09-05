@@ -215,7 +215,21 @@ mod inline_elements {
         assert_eq!(
             fmts_both("![a](b)\n![c][d]\n\n[d]: e"),
             (
-                "![a](b)\n![c](e)".into(),
+                "![a](b)\n![c][d]\n\n[d]: e".into(),
+                State {
+                    newlines_before_start: 2,
+                    ..Default::default()
+                }
+            )
+        );
+    }
+
+    #[test]
+    fn image_collapsed() {
+        assert_eq!(
+            fmts_both("![c][d]\n\n![c][]![c][]\n\n[d]: e\n[c]: f"),
+            (
+                "![c][d]\n\n![c][]![c][]\n\n[d]: e\n[c]: f".into(),
                 State {
                     newlines_before_start: 2,
                     ..Default::default()
@@ -256,7 +270,21 @@ mod inline_elements {
         assert_eq!(
             fmts_both("[a](b)\n[c][d]\n\n[d]: e"),
             (
-                "[a](b)\n[c](e)".into(),
+                "[a](b)\n[c][d]\n\n[d]: e".into(),
+                State {
+                    newlines_before_start: 2,
+                    ..Default::default()
+                }
+            )
+        );
+    }
+
+    #[test]
+    fn links_collapsed() {
+        assert_eq!(
+            fmts_both("[c][d]\n\n[c][][c][]\n\n[d]: e\n[c]: f"),
+            (
+                "[c][d]\n\n[c][][c][]\n\n[d]: e\n[c]: f".into(),
                 State {
                     newlines_before_start: 2,
                     ..Default::default()

@@ -84,14 +84,18 @@ pub struct State<'a> {
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum LinkCategory<'a> {
     AngleBracketed,
+    Reference { uri: Cow<'a, str>, title: Cow<'a, str>, id: Cow<'a, str> },
+    Collapsed { uri: Cow<'a, str>, title: Cow<'a, str> },
     Shortcut { uri: Cow<'a, str>, title: Cow<'a, str> },
     Other { uri: Cow<'a, str>, title: Cow<'a, str> },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct ImageLink<'a> {
-    uri: Cow<'a, str>,
-    title: Cow<'a, str>,
+pub enum ImageLink<'a> {
+    Reference { uri: Cow<'a, str>, title: Cow<'a, str>, id: Cow<'a, str> },
+    Collapsed { uri: Cow<'a, str>, title: Cow<'a, str> },
+    Shortcut { uri: Cow<'a, str>, title: Cow<'a, str> },
+    Other { uri: Cow<'a, str>, title: Cow<'a, str> },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -301,12 +305,28 @@ where
                     link_type,
                     dest_url,
                     title,
-                    id: _,
+                    id,
                 } => {
                     state.link_stack.push(match link_type {
                         LinkType::Autolink | LinkType::Email => {
                             formatter.write_char('<')?;
                             LinkCategory::AngleBracketed
+                        }
+                        LinkType::Reference => {
+                            formatter.write_char('[')?;
+                            LinkCategory::Reference {
+                                uri: dest_url.clone().into(),
+                                title: title.clone().into(),
+                                id: id.clone().into(),
+                            }
+                        }
+                        LinkType::Collapsed => {
+                            state.current_shortcut_text = Some(String::new());
+                            formatter.write_char('[')?;
+                            LinkCategory::Collapsed {
+                                uri: dest_url.clone().into(),
+                                title: title.clone().into(),
+                            }
                         }
                         LinkType::Shortcut => {
                             state.current_shortcut_text = Some(String::new());
@@ -327,14 +347,35 @@ where
                     Ok(())
                 }
                 Image {
-                    link_type: _,
+                    link_type,
                     dest_url,
                     title,
-                    id: _,
+                    id,
                 } => {
-                    state.image_stack.push(ImageLink {
-                        uri: dest_url.clone().into(),
-                        title: title.clone().into(),
+                    state.image_stack.push(match link_type {
+                        LinkType::Reference => ImageLink::Reference {
+                            uri: dest_url.clone().into(),
+                            title: title.clone().into(),
+                            id: id.clone().into(),
+                        },
+                        LinkType::Collapsed => {
+                            state.current_shortcut_text = Some(String::new());
+                            ImageLink::Collapsed {
+                                uri: dest_url.clone().into(),
+                                title: title.clone().into(),
+                            }
+                        },
+                        LinkType::Shortcut => {
+                            state.current_shortcut_text = Some(String::new());
+                            ImageLink::Shortcut {
+                                uri: dest_url.clone().into(),
+                                title: title.clone().into(),
+                            }
+                        },
+                        _ => ImageLink::Other {
+                            uri: dest_url.clone().into(),
+                            title: title.clone().into(),
+                        },
                     });
                     formatter.write_str("![")
                 }
@@ -434,6 +475,22 @@ where
         End(tag) => match tag {
             TagEnd::Link => match state.link_stack.pop().unwrap() {
                 LinkCategory::AngleBracketed => formatter.write_char('>'),
+                LinkCategory::Reference { uri, title, id } => {
+                    state
+                        .shortcuts
+                        .push((id.to_string(), uri.to_string(), title.to_string()));
+                    formatter.write_str("][")?;
+                    formatter.write_str(&id)?;
+                    formatter.write_char(']')
+                }
+                LinkCategory::Collapsed { uri, title } => {
+                    if let Some(shortcut_text) = state.current_shortcut_text.take() {
+                        state
+                            .shortcuts
+                            .push((shortcut_text, uri.to_string(), title.to_string()));
+                    }
+                    formatter.write_str("][]")
+                }
                 LinkCategory::Shortcut { uri, title } => {
                     if let Some(shortcut_text) = state.current_shortcut_text.take() {
                         state
@@ -445,8 +502,35 @@ where
                 LinkCategory::Other { uri, title } => close_link(&uri, &title, formatter, LinkType::Inline),
             },
             TagEnd::Image => {
-                let ImageLink { uri, title } = state.image_stack.pop().unwrap();
-                close_link(uri.as_ref(), title.as_ref(), formatter, LinkType::Inline)
+                match state.image_stack.pop().unwrap() {
+                    ImageLink::Reference { uri, title, id } => {
+                        state
+                            .shortcuts
+                            .push((id.to_string(), uri.to_string(), title.to_string()));
+                        formatter.write_str("][")?;
+                        formatter.write_str(&id)?;
+                        formatter.write_char(']')
+                    }
+                    ImageLink::Collapsed { uri, title } => {
+                        if let Some(shortcut_text) = state.current_shortcut_text.take() {
+                            state
+                                .shortcuts
+                                .push((shortcut_text, uri.to_string(), title.to_string()));
+                        }
+                        formatter.write_str("][]")
+                    }
+                    ImageLink::Shortcut { uri, title } => {
+                        if let Some(shortcut_text) = state.current_shortcut_text.take() {
+                            state
+                                .shortcuts
+                                .push((shortcut_text, uri.to_string(), title.to_string()));
+                        }
+                        formatter.write_char(']')
+                    }
+                    ImageLink::Other { uri, title } => {
+                        close_link(uri.as_ref(), title.as_ref(), formatter, LinkType::Inline)
+                    }
+                }
             }
             TagEnd::Emphasis => formatter.write_char(options.emphasis_token),
             TagEnd::Strong => formatter.write_str(options.strong_token),
