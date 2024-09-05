@@ -1131,6 +1131,13 @@ mod escapes {
             );
         });
     }
+
+    #[test]
+    fn entity_escape_is_not_code_block_indent() {
+        source_range_fmt::assert_events_eq("&#9;foo");
+        source_range_fmt::assert_events_eq("&#32;   foo");
+        source_range_fmt::assert_events_eq(" * &#32;   foo\n * &#9;foo");
+    }
 }
 
 mod list {
