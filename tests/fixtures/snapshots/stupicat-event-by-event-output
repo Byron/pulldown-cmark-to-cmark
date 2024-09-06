@@ -25,7 +25,7 @@ tempor invidunt ut labore et dolore magna aliquyam erat
 Lorem ipsum dolor sit amet, [consetetur
 sadipscing](http://www.example.com/inline) elitr, sed diam nonumy eirmod tempor
 invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos
-et accusam et [justo duo dolores](http://www.example.com/reference) et ea rebum. Stet clita kasd gubergren, no
+et accusam et [justo duo dolores][1] et ea rebum. Stet clita kasd gubergren, no
 sea [takimata sanctus](./showcase.md) est Lorem ipsum dolor sit amet.
 
 Ask to <user@example.com>.
@@ -216,7 +216,7 @@ What about \*this\* or \*\*that\*\*?
 
 \[disabled named link\]: target
 
-[named-link](bah)
+[named-link][enabled]
 
 \[disabled named link\]\[disabled\]
 
@@ -255,4 +255,6 @@ foo
 [Links]: http://www.example.com/shortcut
 [`diam`]: http://www.example.com/shortcut_code_diam
 [`voluptua`]: http://www.example.com/shortcut_code_voluptua
+[1]: http://www.example.com/reference
 [Images]: http://www.example.com/another_shortcut
+[enabled]: bah
