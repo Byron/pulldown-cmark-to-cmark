@@ -23,10 +23,10 @@ where
 
 pub fn escape_leading_special_characters<'a>(
     t: &'a str,
-    is_in_block_quote: bool,
+    is_in_code_block: bool,
     options: &Options<'a>,
 ) -> Cow<'a, str> {
-    if is_in_block_quote || t.is_empty() {
+    if is_in_code_block || t.is_empty() {
         return Cow::Borrowed(t);
     }
 

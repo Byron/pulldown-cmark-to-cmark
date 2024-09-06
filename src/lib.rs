@@ -63,6 +63,8 @@ pub struct State<'a> {
     pub is_in_code_block: bool,
     /// True if the last event was text and the text does not have trailing newline. Used to inject additional newlines before code block end fence.
     pub last_was_text_without_trailing_newline: bool,
+    /// True if the last event was a paragraph start. Used to escape spaces at start of line (prevent spurrious indented code).
+    pub last_was_paragraph_start: bool,
     /// Currently open links
     pub link_stack: Vec<LinkCategory<'a>>,
     /// Currently open images
@@ -230,6 +232,8 @@ where
 
     let last_was_text_without_trailing_newline = state.last_was_text_without_trailing_newline;
     state.last_was_text_without_trailing_newline = false;
+    let last_was_paragraph_start = state.last_was_paragraph_start;
+    state.last_was_paragraph_start = false;
     match event.borrow() {
         Rule => {
             consume_newlines(formatter, state)?;
@@ -271,21 +275,25 @@ where
             let consumed_newlines = state.newlines_before_start != 0;
             consume_newlines(formatter, state)?;
             match tag {
-                Item => match state.list_stack.last_mut() {
-                    Some(inner) => {
-                        state.padding.push(padding_of(*inner));
-                        match inner {
-                            Some(n) => {
-                                let bullet_number = *n;
-                                if options.increment_ordered_list_bullets {
-                                    *n += 1;
+                Item => {
+                    // lazy lists act like paragraphs with no event
+                    state.last_was_paragraph_start = true;
+                    match state.list_stack.last_mut() {
+                        Some(inner) => {
+                            state.padding.push(padding_of(*inner));
+                            match inner {
+                                Some(n) => {
+                                    let bullet_number = *n;
+                                    if options.increment_ordered_list_bullets {
+                                        *n += 1;
+                                    }
+                                    write!(formatter, "{}{} ", bullet_number, options.ordered_list_token)
                                 }
-                                write!(formatter, "{}{} ", bullet_number, options.ordered_list_token)
+                                None => write!(formatter, "{} ", options.list_token),
                             }
-                            None => write!(formatter, "{} ", options.list_token),
                         }
+                        None => Ok(()),
                     }
-                    None => Ok(()),
                 },
                 Table(alignments) => {
                     state.table_alignments = alignments.iter().map(From::from).collect();
@@ -344,7 +352,10 @@ where
                     state.padding.push("    ".into());
                     write!(formatter, "[^{name}]: ")
                 }
-                Paragraph => Ok(()),
+                Paragraph => {
+                    state.last_was_paragraph_start = true;
+                    Ok(())
+                },
                 Heading {
                     level,
                     id,
@@ -614,6 +625,7 @@ where
         HardBreak => formatter.write_str("  \n").and(padding(formatter, &state.padding)),
         SoftBreak => formatter.write_char('\n').and(padding(formatter, &state.padding)),
         Text(text) => {
+            let mut text = &text[..];
             if let Some(shortcut_text) = state.current_shortcut_text.as_mut() {
                 shortcut_text.push_str(text);
             }
@@ -621,6 +633,15 @@ where
                 text_for_header.push_str(text);
             }
             consume_newlines(formatter, state)?;
+            if last_was_paragraph_start {
+                if text.starts_with('\t') {
+                    formatter.write_str("&#9;")?;
+                    text = &text[1..];
+                } else if text.starts_with(' ') {
+                    formatter.write_str("&#32;")?;
+                    text = &text[1..];
+                }
+            }
             state.last_was_text_without_trailing_newline = !text.ends_with('\n');
             print_text_without_trailing_newline(
                 &escape_leading_special_characters(text, state.is_in_code_block, options),

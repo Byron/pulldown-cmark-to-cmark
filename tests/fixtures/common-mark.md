@@ -238,6 +238,16 @@ foo
 * | < > # 
 ````
 
+### Entity escapes
+
+&copy; 2280 one world government, inc
+
+&#9;paragraph starts with a literal tab.
+
+&#32;&#32;&#32;&#32;I'm using markdown like a typewriter,
+&#32;&#32;&#32;&#32;probably because this document started life in a WYSIWYG
+&#32;&#32;&#32;&#32;editor and got converted...
+
 [Links]: http://www.example.com/shortcut
 [`diam`]: http://www.example.com/shortcut_code_diam
 [`voluptua`]: http://www.example.com/shortcut_code_voluptua
