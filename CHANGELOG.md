@@ -5,7 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 17.0.0 (2024-09-06)
+
+### New Features (BREAKING)
+
+ - <csr-id-3170061202dcdbb291abbb467fbee1de970d78bd/> retain more details on reference links
+   This raises the number of passing spec tests from 436 to 459.
+
+### Bug Fixes (BREAKING)
+
+ - <csr-id-c3a0f322dfc3450e1973ea3ed79e55a8c3b8b718/> spurrious code blocks when char escapes start text
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 5 commits contributed to the release.
+ - 14 days passed between releases.
+ - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Merge branch 'notriddle/reference-links' ([`98818fa`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/98818faf31c0137d95fd8edfb3bb9158f3a1cb13))
+    - Merge branch 'notriddle/main' ([`ed4ff6f`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/ed4ff6fd871277d354867570163a73369b835d7a))
+    - Retain more details on reference links ([`3170061`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/3170061202dcdbb291abbb467fbee1de970d78bd))
+    - Spurrious code blocks when char escapes start text ([`c3a0f32`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/c3a0f322dfc3450e1973ea3ed79e55a8c3b8b718))
+    - Fix incorrect variable name ([`210a0be`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/210a0be86892446caa2cda11d0f712d6d0ff5078))
+</details>
+
 ## 16.0.1 (2024-08-22)
+
+<csr-id-21a7f26a611e7a5b99ab33e9386acd30f0188960/>
 
 ### Other
 
@@ -20,7 +56,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 15 commits contributed to the release over the course of 2 calendar days.
+ - 16 commits contributed to the release.
  - 2 days passed between releases.
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
@@ -32,6 +68,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release pulldown-cmark-to-cmark v16.0.1 ([`ab22a57`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/ab22a57249aa03f73c4fbd09d4b2fb42572a326f))
     - Merge pull request #81 from caspermeijn/msrv ([`85ca9d4`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/85ca9d4d63aab14b3193a2438959baa7fc6e4b05))
     - Make clear that the rust-version field follows `pulldown-cmark`'s MSRV. ([`7269c4f`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/7269c4f8aabb8ca3fdb63f4ba95b207899f9f845))
     - Lower MSRV to 1.71.1 ([`21a7f26`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/21a7f26a611e7a5b99ab33e9386acd30f0188960))
@@ -123,7 +160,7 @@ Add support for `pulldown-cmark` v0.12, and an understanding of markdown Definit
 
 <csr-read-only-do-not-edit/>
 
- - 20 commits contributed to the release over the course of 4 calendar days.
+ - 20 commits contributed to the release.
  - 5 days passed between releases.
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
@@ -202,8 +239,7 @@ to `State`, which isn't used unless you do incremental event serialization.
 
 <csr-read-only-do-not-edit/>
 
- - 17 commits contributed to the release over the course of 16 calendar days.
- - 84 days passed between releases.
+ - 17 commits contributed to the release.
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
@@ -297,7 +333,7 @@ to `State`, which isn't used unless you do incremental event serialization.
 
 <csr-read-only-do-not-edit/>
 
- - 18 commits contributed to the release over the course of 34 calendar days.
+ - 18 commits contributed to the release.
  - 48 days passed between releases.
  - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
@@ -371,7 +407,7 @@ to `State`, which isn't used unless you do incremental event serialization.
 
 <csr-read-only-do-not-edit/>
 
- - 6 commits contributed to the release over the course of 59 calendar days.
+ - 6 commits contributed to the release.
  - 61 days passed between releases.
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
@@ -432,7 +468,6 @@ to `State`, which isn't used unless you do incremental event serialization.
 <csr-read-only-do-not-edit/>
 
  - 5 commits contributed to the release.
- - 92 days passed between releases.
  - 0 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 1 unique issue was worked on: [#61](https://github.com/Byron/pulldown-cmark-to-cmark/issues/61)
 
@@ -473,8 +508,7 @@ to `State`, which isn't used unless you do incremental event serialization.
 
 <csr-read-only-do-not-edit/>
 
- - 14 commits contributed to the release over the course of 232 calendar days.
- - 342 days passed between releases.
+ - 14 commits contributed to the release.
  - 3 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
@@ -517,7 +551,7 @@ to `State`, which isn't used unless you do incremental event serialization.
 
 <csr-read-only-do-not-edit/>
 
- - 6 commits contributed to the release over the course of 1 calendar day.
+ - 6 commits contributed to the release.
  - 1 day passed between releases.
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 1 unique issue was worked on: [#48](https://github.com/Byron/pulldown-cmark-to-cmark/issues/48)
@@ -587,7 +621,7 @@ to `State`, which isn't used unless you do incremental event serialization.
 
 <csr-read-only-do-not-edit/>
 
- - 4 commits contributed to the release over the course of 2 calendar days.
+ - 4 commits contributed to the release.
  - 108 days passed between releases.
  - 0 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
@@ -808,7 +842,7 @@ This release adds support for `pulldown-cmark v0.9`, [see the tracking issue](ht
     - Shortcut links implementation ([`25cc3d1`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/25cc3d1afd6d6d675d6d29ebcdd40c0d22d992fe))
 </details>
 
-## 7.0.0 (2021-11-17)
+## 7.0.0 (2021-11-18)
 
 The `Options` type was updated in a **breaking** fashion to allow configuring certain tokens, e.g. the `*` list token can now be configured as `-` if desired.
 
@@ -960,7 +994,7 @@ Thanks to the author of [this PR](https://github.com/Byron/pulldown-cmark-to-cma
 
 * also escape ']' characters
 
-## v6.0.0 (2020-10-13)
+## v6.0.0 (2020-10-14)
 
 ### Commit Statistics
 
@@ -1177,8 +1211,7 @@ Thanks to the author of [this PR](https://github.com/Byron/pulldown-cmark-to-cma
 
 <csr-read-only-do-not-edit/>
 
- - 5 commits contributed to the release over the course of 7 calendar days.
- - 34 days passed between releases.
+ - 5 commits contributed to the release.
  - 0 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
@@ -1203,7 +1236,6 @@ Thanks to the author of [this PR](https://github.com/Byron/pulldown-cmark-to-cma
 <csr-read-only-do-not-edit/>
 
  - 3 commits contributed to the release.
- - 117 days passed between releases.
  - 0 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
@@ -1246,8 +1278,7 @@ Thanks to the author of [this PR](https://github.com/Byron/pulldown-cmark-to-cma
 
 <csr-read-only-do-not-edit/>
 
- - 6 commits contributed to the release over the course of 73 calendar days.
- - 194 days passed between releases.
+ - 6 commits contributed to the release.
  - 0 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
