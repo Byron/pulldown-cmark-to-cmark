@@ -463,17 +463,14 @@ where
                 BlockQuote(kind) => {
                     let every_line_padding = " > ";
                     let first_line_padding = kind
-                        .map(|kind| {
-                            let kind = match kind {
-                                BlockQuoteKind::Note => "NOTE",
-                                BlockQuoteKind::Tip => "TIP",
-                                BlockQuoteKind::Important => "IMPORTANT",
-                                BlockQuoteKind::Warning => "WARNING",
-                                BlockQuoteKind::Caution => "CAUTION",
-                            };
-                            Cow::from(format!("{every_line_padding}[!{kind}]"))
+                        .map(|kind| match kind {
+                            BlockQuoteKind::Note => " > [!NOTE]",
+                            BlockQuoteKind::Tip => " > [!TIP]",
+                            BlockQuoteKind::Important => " > [!IMPORTANT]",
+                            BlockQuoteKind::Warning => " > [!WARNING]",
+                            BlockQuoteKind::Caution => " > [!CAUTION]",
                         })
-                        .unwrap_or(every_line_padding.into());
+                        .unwrap_or(every_line_padding);
                     state.newlines_before_start = 1;
 
                     // if we consumed some newlines, we know that we can just write out the next
@@ -482,7 +479,7 @@ where
                     if !consumed_newlines {
                         formatter.write_char('\n').and(padding(formatter, &state.padding))?
                     }
-                    formatter.write_str(&first_line_padding)?;
+                    formatter.write_str(first_line_padding)?;
                     state.padding.push(every_line_padding.into());
                     Ok(())
                 }
