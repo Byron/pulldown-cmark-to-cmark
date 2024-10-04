@@ -610,6 +610,7 @@ where
                 }
                 if last_was_text_without_trailing_newline {
                     formatter.write_char('\n')?;
+                    padding(formatter, &state.padding)?;
                 }
                 match state.code_block {
                     Some(CodeBlockKind::Fenced) => {

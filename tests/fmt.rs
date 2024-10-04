@@ -885,7 +885,7 @@ mod codeblock {
         assert_eq!(
             fmts_both("  <!-- foo -->\n\n    <!-- foo -->"),
             (
-                "  <!-- foo -->\n\n    <!-- foo -->\n".into(),
+                "  <!-- foo -->\n\n    <!-- foo -->\n    ".into(),
                 State {
                     newlines_before_start: 2,
                     ..Default::default()
