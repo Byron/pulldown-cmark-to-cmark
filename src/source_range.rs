@@ -48,17 +48,17 @@ where
                 source.as_bytes().get(range.start.saturating_sub(1)) != Some(&b'\\')
             }
             _ => false,
-        } && !state.is_in_code_block;
+        } && !state.is_in_code_block();
         if prevent_escape_leading_special_characters {
             // Hack to not escape leading special characters.
-            state.is_in_code_block = true;
+            state.code_block = Some(crate::CodeBlockKind::Fenced);
         }
         cmark_resume_one_event(event, &mut formatter, &mut state, &options)?;
         if prevent_escape_leading_special_characters {
             // Assumption: this case only happens when `event` is `Text`,
             // so `state.is_in_code_block` should not be changed to `true`.
             // Also, `state.is_in_code_block` was `false`.
-            state.is_in_code_block = false;
+            state.code_block = None;
         }
 
         if let (true, Some(range)) = (update_event_end_index, range) {

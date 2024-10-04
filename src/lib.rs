@@ -8,7 +8,7 @@ use std::{
 };
 
 use pulldown_cmark::{
-    Alignment as TableAlignment, BlockQuoteKind, Event, HeadingLevel, LinkType, MetadataBlockKind, Tag, TagEnd,
+    Alignment as TableAlignment, BlockQuoteKind, Event, HeadingLevel, LinkType, MetadataBlockKind, Tag, TagEnd
 };
 
 mod source_range;
@@ -41,6 +41,12 @@ impl<'a> From<&'a TableAlignment> for Alignment {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum CodeBlockKind {
+    Indented,
+    Fenced,
+}
+
 /// The state of the [`cmark_resume()`] and [`cmark_resume_with_options()`] functions.
 /// This does not only allow introspection, but enables the user
 /// to halt the serialization at any time, and resume it later.
@@ -60,7 +66,7 @@ pub struct State<'a> {
     /// The last seen text when serializing a header
     pub text_for_header: Option<String>,
     /// Is set while we are handling text in a code block
-    pub is_in_code_block: bool,
+    pub code_block: Option<CodeBlockKind>,
     /// True if the last event was text and the text does not have trailing newline. Used to inject additional newlines before code block end fence.
     pub last_was_text_without_trailing_newline: bool,
     /// True if the last event was a paragraph start. Used to escape spaces at start of line (prevent spurrious indented code).
@@ -81,6 +87,12 @@ pub struct State<'a> {
     /// It's used to see if the current event didn't capture some bytes because of a
     /// skipped-over backslash.
     pub last_event_end_index: usize,
+}
+
+impl State<'_> {
+    pub fn is_in_code_block(&self) -> bool {
+        self.code_block.is_some()
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -232,7 +244,7 @@ where
     E: Borrow<Event<'a>>,
     F: fmt::Write,
 {
-    use pulldown_cmark::{CodeBlockKind, Event::*, Tag::*};
+    use pulldown_cmark::{Event::*, Tag::*};
 
     let last_was_text_without_trailing_newline = state.last_was_text_without_trailing_newline;
     state.last_was_text_without_trailing_newline = false;
@@ -446,15 +458,19 @@ where
                         formatter.write_char('\n').and(padding(formatter, &state.padding))
                     }
                 }
-                CodeBlock(CodeBlockKind::Indented) => {
-                    state.is_in_code_block = true;
-                    for _ in 0..options.code_block_token_count {
-                        formatter.write_char(options.code_block_token)?;
+                CodeBlock(pulldown_cmark::CodeBlockKind::Indented) => {
+                    state.code_block = Some(CodeBlockKind::Indented);
+                    state.padding.push("    ".into());
+                    if consumed_newlines {
+                        formatter.write_str("    ")
+                    } else {
+                        formatter
+                            .write_char('\n')
+                            .and_then(|()| padding(formatter, &state.padding))
                     }
-                    formatter.write_char('\n').and(padding(formatter, &state.padding))
                 }
-                CodeBlock(CodeBlockKind::Fenced(info)) => {
-                    state.is_in_code_block = true;
+                CodeBlock(pulldown_cmark::CodeBlockKind::Fenced(info)) => {
+                    state.code_block = Some(CodeBlockKind::Fenced);
                     let s = if consumed_newlines {
                         Ok(())
                     } else {
@@ -592,13 +608,21 @@ where
                 if state.newlines_before_start < options.newlines_after_codeblock {
                     state.newlines_before_start = options.newlines_after_codeblock;
                 }
-                state.is_in_code_block = false;
                 if last_was_text_without_trailing_newline {
                     formatter.write_char('\n')?;
                 }
-                for _ in 0..options.code_block_token_count {
-                    formatter.write_char(options.code_block_token)?;
+                match state.code_block {
+                    Some(CodeBlockKind::Fenced) => {
+                        for _ in 0..options.code_block_token_count {
+                            formatter.write_char(options.code_block_token)?;
+                        }
+                    }
+                    Some(CodeBlockKind::Indented) => {
+                        state.padding.pop();
+                    }
+                    None => {}
                 }
+                state.code_block = None;
                 Ok(())
             }
             TagEnd::HtmlBlock => {
@@ -728,7 +752,7 @@ where
             }
             state.last_was_text_without_trailing_newline = !text.ends_with('\n');
             print_text_without_trailing_newline(
-                &escape_leading_special_characters(text, state.is_in_code_block, options),
+                &escape_leading_special_characters(text, state.is_in_code_block(), options),
                 formatter,
                 &state.padding,
             )

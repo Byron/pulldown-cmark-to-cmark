@@ -791,7 +791,7 @@ mod codeblock {
         assert_eq!(
             fmte(&[Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced("s".into()))),]).1,
             State {
-                is_in_code_block: true,
+                code_block: Some(pulldown_cmark_to_cmark::CodeBlockKind::Fenced),
                 ..Default::default()
             }
         );
@@ -864,6 +864,34 @@ mod codeblock {
         let (s, _) = fmts_with_options(original, custom_options);
 
         assert_eq!(s, "\n~~~~hi\nsome\ntext\n~~~~".to_string());
+    }
+
+    #[test]
+    fn indented() {
+        assert_eq!(
+            fmts_both("    first\n    second\nthird"),
+            (
+                "\n    first\n    second\n    \n\nthird".into(),
+                State {
+                    newlines_before_start: 2,
+                    ..Default::default()
+                }
+            )
+        );
+    }
+
+    #[test]
+    fn html_indented() {
+        assert_eq!(
+            fmts_both("  <!-- foo -->\n\n    <!-- foo -->"),
+            (
+                "  <!-- foo -->\n\n    <!-- foo -->\n".into(),
+                State {
+                    newlines_before_start: 2,
+                    ..Default::default()
+                }
+            )
+        );
     }
 }
 

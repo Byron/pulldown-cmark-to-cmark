@@ -192,7 +192,7 @@ mod start {
 }
 
 mod end {
-    use pulldown_cmark::{Event::*, HeadingLevel, LinkType::*, Tag, TagEnd};
+    use pulldown_cmark::{CodeBlockKind, Event::*, HeadingLevel, LinkType::*, Tag, TagEnd};
 
     use super::{es, s};
 
@@ -216,7 +216,7 @@ mod end {
     }
     #[test]
     fn codeblock() {
-        assert_eq!(s(End(TagEnd::CodeBlock)), "````");
+        assert_eq!(es([Start(Tag::CodeBlock(CodeBlockKind::Fenced("".into()))), End(TagEnd::CodeBlock)]), "\n````\n````");
     }
     #[test]
     fn footnote_definition() {
