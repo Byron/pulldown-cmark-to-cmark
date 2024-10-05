@@ -74,20 +74,14 @@ mod start {
     #[test]
     fn blockquote() {
         assert_eq!(s(Start(BlockQuote(None))), "\n > ");
-        assert_eq!(s(Start(BlockQuote(Some(BlockQuoteKind::Note)))), "\n > [!NOTE]\n > ");
-        assert_eq!(s(Start(BlockQuote(Some(BlockQuoteKind::Tip)))), "\n > [!TIP]\n > ");
+        assert_eq!(s(Start(BlockQuote(Some(BlockQuoteKind::Note)))), "\n > [!NOTE]");
+        assert_eq!(s(Start(BlockQuote(Some(BlockQuoteKind::Tip)))), "\n > [!TIP]");
         assert_eq!(
             s(Start(BlockQuote(Some(BlockQuoteKind::Important)))),
-            "\n > [!IMPORTANT]\n > "
+            "\n > [!IMPORTANT]"
         );
-        assert_eq!(
-            s(Start(BlockQuote(Some(BlockQuoteKind::Warning)))),
-            "\n > [!WARNING]\n > "
-        );
-        assert_eq!(
-            s(Start(BlockQuote(Some(BlockQuoteKind::Caution)))),
-            "\n > [!CAUTION]\n > "
-        );
+        assert_eq!(s(Start(BlockQuote(Some(BlockQuoteKind::Warning)))), "\n > [!WARNING]");
+        assert_eq!(s(Start(BlockQuote(Some(BlockQuoteKind::Caution)))), "\n > [!CAUTION]");
     }
     #[test]
     fn codeblock() {
@@ -192,7 +186,7 @@ mod start {
 }
 
 mod end {
-    use pulldown_cmark::{CodeBlockKind, Event::*, HeadingLevel, LinkType::*, Tag, TagEnd};
+    use pulldown_cmark::{BlockQuoteKind, CodeBlockKind, CowStr, Event::*, HeadingLevel, LinkType::*, Tag, TagEnd};
 
     use super::{es, s};
 
@@ -213,6 +207,14 @@ mod end {
     #[test]
     fn blockquote() {
         assert_eq!(s(End(TagEnd::BlockQuote(None))), "");
+        assert_eq!(
+            es([
+                Start(Tag::BlockQuote(Some(BlockQuoteKind::Note))),
+                Text(CowStr::Borrowed("This is a note")),
+                End(TagEnd::BlockQuote(Some(BlockQuoteKind::Note)))
+            ]),
+            "\n > [!NOTE]\n > This is a note"
+        );
     }
     #[test]
     fn codeblock() {
