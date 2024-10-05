@@ -11,7 +11,7 @@ use super::{cmark_resume_one_event, fmt, Borrow, Event, Options, Range, State};
 ///     * Markdown source from which `event_and_ranges` are created.
 /// 1. **event_and_ranges**
 ///    * An iterator over [`Event`]-range pairs, for example as returned by [`pulldown_cmark::OffsetIter`].
-///     Must match what's provided in `source`.
+///      Must match what's provided in `source`.
 /// 1. **formatter**
 ///    * A format writer, can be a `String`.
 /// 1. **state**
@@ -48,17 +48,17 @@ where
                 source.as_bytes().get(range.start.saturating_sub(1)) != Some(&b'\\')
             }
             _ => false,
-        } && !state.is_in_code_block;
+        } && !state.is_in_code_block();
         if prevent_escape_leading_special_characters {
             // Hack to not escape leading special characters.
-            state.is_in_code_block = true;
+            state.code_block = Some(crate::CodeBlockKind::Fenced);
         }
         cmark_resume_one_event(event, &mut formatter, &mut state, &options)?;
         if prevent_escape_leading_special_characters {
             // Assumption: this case only happens when `event` is `Text`,
             // so `state.is_in_code_block` should not be changed to `true`.
             // Also, `state.is_in_code_block` was `false`.
-            state.is_in_code_block = false;
+            state.code_block = None;
         }
 
         if let (true, Some(range)) = (update_event_end_index, range) {

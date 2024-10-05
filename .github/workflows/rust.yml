@@ -10,10 +10,13 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: tests
-      run: |
-        make tests
+      - uses: actions/checkout@v2
+      - name: cargo fmt
+        run: |
+          cargo fmt --check
+      - name: tests
+        run: |
+          make tests
 
   msrv:
     runs-on: ubuntu-latest
