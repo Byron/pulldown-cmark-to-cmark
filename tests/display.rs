@@ -216,37 +216,49 @@ mod end {
     }
     #[test]
     fn codeblock() {
-        assert_eq!(es([Start(Tag::CodeBlock(CodeBlockKind::Fenced("".into()))), End(TagEnd::CodeBlock)]), "\n````\n````");
+        assert_eq!(
+            es([
+                Start(Tag::CodeBlock(CodeBlockKind::Fenced("".into()))),
+                End(TagEnd::CodeBlock)
+            ]),
+            "\n````\n````"
+        );
     }
     #[test]
     fn codeblock_in_list_item() {
-        assert_eq!(es([
-            Start(Tag::List(None)),
-            Start(Tag::Item),
-            Start(Tag::CodeBlock(CodeBlockKind::Fenced("".into()))),
-            Text("foo".into()),
-            End(TagEnd::CodeBlock),
-            End(TagEnd::Item),
-            End(TagEnd::List(false)),
-            Start(Tag::Paragraph),
-            Text("bar".into()),
-            End(TagEnd::Paragraph),
-        ]), "* \n  ````\n  foo\n  ````\n\nbar");
+        assert_eq!(
+            es([
+                Start(Tag::List(None)),
+                Start(Tag::Item),
+                Start(Tag::CodeBlock(CodeBlockKind::Fenced("".into()))),
+                Text("foo".into()),
+                End(TagEnd::CodeBlock),
+                End(TagEnd::Item),
+                End(TagEnd::List(false)),
+                Start(Tag::Paragraph),
+                Text("bar".into()),
+                End(TagEnd::Paragraph),
+            ]),
+            "* \n  ````\n  foo\n  ````\n\nbar"
+        );
     }
     #[test]
     fn codeblock_indented_in_list_item() {
-        assert_eq!(es([
-            Start(Tag::List(None)),
-            Start(Tag::Item),
-            Start(Tag::CodeBlock(CodeBlockKind::Indented)),
-            Text("foo".into()),
-            End(TagEnd::CodeBlock),
-            End(TagEnd::Item),
-            End(TagEnd::List(false)),
-            Start(Tag::Paragraph),
-            Text("bar".into()),
-            End(TagEnd::Paragraph),
-        ]), "* \n      foo\n      \n\nbar");
+        assert_eq!(
+            es([
+                Start(Tag::List(None)),
+                Start(Tag::Item),
+                Start(Tag::CodeBlock(CodeBlockKind::Indented)),
+                Text("foo".into()),
+                End(TagEnd::CodeBlock),
+                End(TagEnd::Item),
+                End(TagEnd::List(false)),
+                Start(Tag::Paragraph),
+                Text("bar".into()),
+                End(TagEnd::Paragraph),
+            ]),
+            "* \n      foo\n      \n\nbar"
+        );
     }
     #[test]
     fn footnote_definition() {

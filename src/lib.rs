@@ -8,7 +8,7 @@ use std::{
 };
 
 use pulldown_cmark::{
-    Alignment as TableAlignment, BlockQuoteKind, Event, HeadingLevel, LinkType, MetadataBlockKind, Tag, TagEnd
+    Alignment as TableAlignment, BlockQuoteKind, Event, HeadingLevel, LinkType, MetadataBlockKind, Tag, TagEnd,
 };
 
 mod source_range;
@@ -98,18 +98,44 @@ impl State<'_> {
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum LinkCategory<'a> {
     AngleBracketed,
-    Reference { uri: Cow<'a, str>, title: Cow<'a, str>, id: Cow<'a, str> },
-    Collapsed { uri: Cow<'a, str>, title: Cow<'a, str> },
-    Shortcut { uri: Cow<'a, str>, title: Cow<'a, str> },
-    Other { uri: Cow<'a, str>, title: Cow<'a, str> },
+    Reference {
+        uri: Cow<'a, str>,
+        title: Cow<'a, str>,
+        id: Cow<'a, str>,
+    },
+    Collapsed {
+        uri: Cow<'a, str>,
+        title: Cow<'a, str>,
+    },
+    Shortcut {
+        uri: Cow<'a, str>,
+        title: Cow<'a, str>,
+    },
+    Other {
+        uri: Cow<'a, str>,
+        title: Cow<'a, str>,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum ImageLink<'a> {
-    Reference { uri: Cow<'a, str>, title: Cow<'a, str>, id: Cow<'a, str> },
-    Collapsed { uri: Cow<'a, str>, title: Cow<'a, str> },
-    Shortcut { uri: Cow<'a, str>, title: Cow<'a, str> },
-    Other { uri: Cow<'a, str>, title: Cow<'a, str> },
+    Reference {
+        uri: Cow<'a, str>,
+        title: Cow<'a, str>,
+        id: Cow<'a, str>,
+    },
+    Collapsed {
+        uri: Cow<'a, str>,
+        title: Cow<'a, str>,
+    },
+    Shortcut {
+        uri: Cow<'a, str>,
+        title: Cow<'a, str>,
+    },
+    Other {
+        uri: Cow<'a, str>,
+        title: Cow<'a, str>,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -310,7 +336,7 @@ where
                         }
                         None => Ok(()),
                     }
-                },
+                }
                 Table(alignments) => {
                     state.table_alignments = alignments.iter().map(From::from).collect();
                     Ok(())
@@ -384,14 +410,14 @@ where
                                 uri: dest_url.clone().into(),
                                 title: title.clone().into(),
                             }
-                        },
+                        }
                         LinkType::Shortcut => {
                             state.current_shortcut_text = Some(String::new());
                             ImageLink::Shortcut {
                                 uri: dest_url.clone().into(),
                                 title: title.clone().into(),
                             }
-                        },
+                        }
                         _ => ImageLink::Other {
                             uri: dest_url.clone().into(),
                             title: title.clone().into(),
@@ -408,7 +434,7 @@ where
                 Paragraph => {
                     state.last_was_paragraph_start = true;
                     Ok(())
-                },
+                }
                 Heading {
                     level,
                     id,
@@ -528,37 +554,35 @@ where
                 }
                 LinkCategory::Other { uri, title } => close_link(&uri, &title, formatter, LinkType::Inline),
             },
-            TagEnd::Image => {
-                match state.image_stack.pop().unwrap() {
-                    ImageLink::Reference { uri, title, id } => {
+            TagEnd::Image => match state.image_stack.pop().unwrap() {
+                ImageLink::Reference { uri, title, id } => {
+                    state
+                        .shortcuts
+                        .push((id.to_string(), uri.to_string(), title.to_string()));
+                    formatter.write_str("][")?;
+                    formatter.write_str(&id)?;
+                    formatter.write_char(']')
+                }
+                ImageLink::Collapsed { uri, title } => {
+                    if let Some(shortcut_text) = state.current_shortcut_text.take() {
                         state
                             .shortcuts
-                            .push((id.to_string(), uri.to_string(), title.to_string()));
-                        formatter.write_str("][")?;
-                        formatter.write_str(&id)?;
-                        formatter.write_char(']')
+                            .push((shortcut_text, uri.to_string(), title.to_string()));
                     }
-                    ImageLink::Collapsed { uri, title } => {
-                        if let Some(shortcut_text) = state.current_shortcut_text.take() {
-                            state
-                                .shortcuts
-                                .push((shortcut_text, uri.to_string(), title.to_string()));
-                        }
-                        formatter.write_str("][]")
-                    }
-                    ImageLink::Shortcut { uri, title } => {
-                        if let Some(shortcut_text) = state.current_shortcut_text.take() {
-                            state
-                                .shortcuts
-                                .push((shortcut_text, uri.to_string(), title.to_string()));
-                        }
-                        formatter.write_char(']')
-                    }
-                    ImageLink::Other { uri, title } => {
-                        close_link(uri.as_ref(), title.as_ref(), formatter, LinkType::Inline)
-                    }
+                    formatter.write_str("][]")
                 }
-            }
+                ImageLink::Shortcut { uri, title } => {
+                    if let Some(shortcut_text) = state.current_shortcut_text.take() {
+                        state
+                            .shortcuts
+                            .push((shortcut_text, uri.to_string(), title.to_string()));
+                    }
+                    formatter.write_char(']')
+                }
+                ImageLink::Other { uri, title } => {
+                    close_link(uri.as_ref(), title.as_ref(), formatter, LinkType::Inline)
+                }
+            },
             TagEnd::Emphasis => formatter.write_char(options.emphasis_token),
             TagEnd::Strong => formatter.write_str(options.strong_token),
             TagEnd::Heading(_) => {

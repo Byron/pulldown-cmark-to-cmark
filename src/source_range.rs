@@ -11,7 +11,7 @@ use super::{cmark_resume_one_event, fmt, Borrow, Event, Options, Range, State};
 ///     * Markdown source from which `event_and_ranges` are created.
 /// 1. **event_and_ranges**
 ///    * An iterator over [`Event`]-range pairs, for example as returned by [`pulldown_cmark::OffsetIter`].
-///     Must match what's provided in `source`.
+///      Must match what's provided in `source`.
 /// 1. **formatter**
 ///    * A format writer, can be a `String`.
 /// 1. **state**
