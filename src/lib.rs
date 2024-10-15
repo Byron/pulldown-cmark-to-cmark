@@ -821,12 +821,30 @@ fn close_link<F>(uri: &str, title: &str, f: &mut F, link_type: LinkType) -> fmt:
 where
     F: fmt::Write,
 {
+    let needs_brackets = {
+        let mut depth = 0;
+        for b in uri.bytes() {
+            match b {
+                b'(' => depth += 1,
+                b')' => depth -= 1,
+                b' ' => {
+                    depth += 1;
+                    break;
+                }
+                _ => {}
+            }
+            if depth > 3 {
+                break;
+            }
+        }
+        depth != 0
+    };
     let separator = match link_type {
         LinkType::Shortcut => ": ",
         _ => "(",
     };
 
-    if uri.contains(' ') {
+    if needs_brackets {
         write!(f, "]{separator}<{uri}>")?;
     } else {
         write!(f, "]{separator}{uri}")?;
