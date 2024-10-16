@@ -5,6 +5,59 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 18.0.0 (2024-10-16)
+
+### Chore
+
+ - <csr-id-b3d7df263409e2f9ebdaae843e087c714b994367/> use `TextMergeStream` for round-trip tests
+   This increases the amount of passing tests to 578.
+   It doesn't strictly improve the quality of implementation,
+   but since separate text events aren't supposed to be semantic,
+   these failures seem spurrious.
+
+### New Features
+
+ - <csr-id-d8f22c18562ebc50c1ca6960bd745adab706a5b6/> angle brackets if link paren is unbalanced
+   Increases passing spec tests from 473 to 477.
+
+### Bug Fixes
+
+ - <csr-id-2f75de249b1925dad69a43add3a22ace27e42904/> write block quote kind only once
+
+### New Features (BREAKING)
+
+ - <csr-id-db767944612b0e0068d7872ec515e3f0c23865b4/> correctly round-trip code blocks with no trailing newline
+ - <csr-id-8a9573d0b1b6095248ba2869c63da8399d31acfb/> round-trip indented code blocks
+   This raises the number of passing spec tests from 459 to 473.
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 10 commits contributed to the release.
+ - 40 days passed between releases.
+ - 5 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Merge pull request #87 from notriddle/notriddle/link-tweaks ([`81ac29b`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/81ac29bb629c79bc7408cba9d5e91314fc5fe618))
+    - Use `TextMergeStream` for round-trip tests ([`b3d7df2`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/b3d7df263409e2f9ebdaae843e087c714b994367))
+    - Angle brackets if link paren is unbalanced ([`d8f22c1`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/d8f22c18562ebc50c1ca6960bd745adab706a5b6))
+    - Merge branch 'blockquote-kinds' ([`d5323a8`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/d5323a8f490649f74a21f158268abbf56fdc9ae9))
+    - Remove allocation ([`33ce10d`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/33ce10da1ad5fac7d0f87aec1ce3f469ad10c29f))
+    - Write block quote kind only once ([`2f75de2`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/2f75de249b1925dad69a43add3a22ace27e42904))
+    - Merge branch 'notriddle/main' ([`848abc3`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/848abc3cee47d139d44eaa951dbbb0e3d1c26d73))
+    - Run cargo fmt and assure it doesn't regress anymore. ([`3fdf308`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/3fdf308560c7db1046bdca82ccd316cf16082ff5))
+    - Correctly round-trip code blocks with no trailing newline ([`db76794`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/db767944612b0e0068d7872ec515e3f0c23865b4))
+    - Round-trip indented code blocks ([`8a9573d`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/8a9573d0b1b6095248ba2869c63da8399d31acfb))
+</details>
+
 ## 17.0.0 (2024-09-06)
 
 ### New Features (BREAKING)
@@ -20,7 +73,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 5 commits contributed to the release.
+ - 6 commits contributed to the release.
  - 14 days passed between releases.
  - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
@@ -32,6 +85,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release pulldown-cmark-to-cmark v17.0.0 ([`55fe0bc`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/55fe0bc8436b3a9241a2c5a5e6884009e6559218))
     - Merge branch 'notriddle/reference-links' ([`98818fa`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/98818faf31c0137d95fd8edfb3bb9158f3a1cb13))
     - Merge branch 'notriddle/main' ([`ed4ff6f`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/ed4ff6fd871277d354867570163a73369b835d7a))
     - Retain more details on reference links ([`3170061`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/3170061202dcdbb291abbb467fbee1de970d78bd))
