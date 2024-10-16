@@ -41,7 +41,7 @@ mod start {
         Tag::*,
     };
 
-    use super::s;
+    use super::{es, s};
 
     #[test]
     fn paragraph() {
@@ -177,6 +177,18 @@ mod start {
     #[test]
     fn table_cell() {
         assert_eq!(s(Start(TableCell)), "|");
+    }
+    #[test]
+    fn table_pipe() {
+        assert_eq!(
+            es([
+                Start(Table(vec![Left, Center, Right, Alignment::None])),
+                Start(TableHead),
+                Start(TableCell),
+                Text("a|b".into()),
+            ]),
+            r"|a\|b"
+        );
     }
 
     #[test]

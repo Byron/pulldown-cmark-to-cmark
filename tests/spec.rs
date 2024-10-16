@@ -38,9 +38,12 @@ fn collect_test_case<'a>(events: &mut impl Iterator<Item = Event<'a>>) -> Option
 
 fn test_roundtrip(original: &str, expected: &str) -> bool {
     let opts = Options::empty();
-    let event_list = TextMergeStream::new(Parser::new_ext(original, opts)).collect::<Vec<_>>();
+    let event_list = Parser::new_ext(original, opts).collect::<Vec<_>>();
     let mut regen_str = String::new();
     cmark(event_list.iter().cloned(), &mut regen_str).expect("Regeneration failure");
+    // text events should be merged before comparing two event lists for equivalence.
+    // you don't need to merge them before feeding them into `cmark`.
+    let event_list: Vec<Event<'_>> = TextMergeStream::new(event_list.into_iter()).collect();
     let event_list_2 = TextMergeStream::new(Parser::new_ext(&regen_str, opts)).collect::<Vec<_>>();
     let event_count = event_list.len();
     let event_count_2 = event_list_2.len();

@@ -1,6 +1,6 @@
 // Copied from `fmt.rs`.
 
-use pulldown_cmark::{Options, Parser};
+use pulldown_cmark::{utils::TextMergeStream, Options, Parser};
 use pulldown_cmark_to_cmark::{
     cmark_resume_with_source_range_and_options, cmark_with_source_range, Options as CmarkToCmarkOptions, State,
 };
@@ -50,7 +50,7 @@ pub fn assert_events_eq(s: &str) {
     )
     .unwrap();
 
-    let before_events = Parser::new_ext(s, Options::all());
-    let after_events = Parser::new_ext(&buf, Options::all());
+    let before_events = TextMergeStream::new(Parser::new_ext(s, Options::all()));
+    let after_events = TextMergeStream::new(Parser::new_ext(&buf, Options::all()));
     assert_eq!(before_events.collect::<Vec<_>>(), after_events.collect::<Vec<_>>());
 }
