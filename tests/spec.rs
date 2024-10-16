@@ -1,3 +1,4 @@
+use pulldown_cmark::utils::TextMergeStream;
 use pulldown_cmark::{CodeBlockKind, Event, Options, Parser, Tag, TagEnd};
 use pulldown_cmark_to_cmark::cmark;
 
@@ -37,10 +38,10 @@ fn collect_test_case<'a>(events: &mut impl Iterator<Item = Event<'a>>) -> Option
 
 fn test_roundtrip(original: &str, expected: &str) -> bool {
     let opts = Options::empty();
-    let event_list = Parser::new_ext(original, opts).collect::<Vec<_>>();
+    let event_list = TextMergeStream::new(Parser::new_ext(original, opts)).collect::<Vec<_>>();
     let mut regen_str = String::new();
     cmark(event_list.iter().cloned(), &mut regen_str).expect("Regeneration failure");
-    let event_list_2 = Parser::new_ext(&regen_str, opts).collect::<Vec<_>>();
+    let event_list_2 = TextMergeStream::new(Parser::new_ext(&regen_str, opts)).collect::<Vec<_>>();
     let event_count = event_list.len();
     let event_count_2 = event_list_2.len();
     let same_event_count = event_list
