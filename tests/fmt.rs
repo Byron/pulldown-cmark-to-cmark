@@ -1,4 +1,4 @@
-use pulldown_cmark::{Alignment, CodeBlockKind, Event, LinkType, Options, Parser, Tag, TagEnd};
+use pulldown_cmark::{utils::TextMergeStream, Alignment, CodeBlockKind, Event, LinkType, Options, Parser, Tag, TagEnd};
 use pulldown_cmark_to_cmark::{cmark, cmark_resume, cmark_resume_with_options, Options as CmarkToCmarkOptions, State};
 
 mod source_range_fmt;
@@ -60,8 +60,8 @@ fn assert_events_eq(s: &str) {
     let mut buf = String::new();
     cmark(before_events, &mut buf).unwrap();
 
-    let before_events = Parser::new_ext(s, Options::all());
-    let after_events = Parser::new_ext(&buf, Options::all());
+    let before_events = TextMergeStream::new(Parser::new_ext(s, Options::all()));
+    let after_events = TextMergeStream::new(Parser::new_ext(&buf, Options::all()));
     println!("{buf}");
     assert_eq!(before_events.collect::<Vec<_>>(), after_events.collect::<Vec<_>>());
 }
@@ -1012,6 +1012,36 @@ mod table {
 
         assert_eq!(original_events, generated_events);
     }
+    #[test]
+    fn table_with_pipe_in_column() {
+        use pulldown_cmark::{Options, Parser};
+
+        let original_table_markdown = indoc!(
+            r"
+            | \| | a\|b |
+            |----|------|
+            | \| | a\|b |"
+        );
+        let p = Parser::new_ext(original_table_markdown, Options::all());
+        let original_events: Vec<_> = p.into_iter().collect();
+
+        let (generated_markdown, _) = fmte(&original_events);
+
+        assert_eq!(
+            generated_markdown,
+            indoc!(
+                r"
+                |\||a\|b|
+                |-|---|
+                |\||a\|b|"
+            )
+        );
+
+        let p = Parser::new_ext(&generated_markdown, Options::all());
+        let generated_events: Vec<_> = p.into_iter().collect();
+
+        assert_eq!(original_events, generated_events);
+    }
 }
 
 mod escapes {
@@ -1451,6 +1481,12 @@ mod heading {
     fn heading_with_classes_and_attrs() {
         assert_events_eq_both("# Heading { #id .class1 key1=val1 .class2 }");
         assert_events_eq_both("# Heading { #id .class1 .class2 key1=val1 key2 }");
+    }
+    #[test]
+    fn heading_with_hashes_at_end() {
+        assert_events_eq_both("Heading #\n====");
+        assert_events_eq_both("Heading \\#\n====");
+        assert_events_eq_both("# Heading \\#");
     }
 }
 

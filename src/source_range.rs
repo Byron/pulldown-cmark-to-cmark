@@ -39,6 +39,9 @@ where
     for (event, range) in event_and_ranges {
         let update_event_end_index = !matches!(*event.borrow(), Event::Start(_));
         let prevent_escape_leading_special_characters = match (&range, event.borrow()) {
+            // Headers and tables can have special characters that aren't at the start
+            // of the line, because headers end with `#` and tables have pipes in the middle.
+            _ if state.current_heading.is_some() || !state.table_alignments.is_empty() => false,
             // IMPORTANT: Any changes that allow anything other than `Text`
             // breaks the assumption below.
             (Some(range), Event::Text(_)) => {

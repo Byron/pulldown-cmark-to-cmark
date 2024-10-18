@@ -71,6 +71,8 @@ pub struct State<'a> {
     pub last_was_text_without_trailing_newline: bool,
     /// True if the last event was a paragraph start. Used to escape spaces at start of line (prevent spurrious indented code).
     pub last_was_paragraph_start: bool,
+    /// True if the next event is a link, image, or footnote.
+    pub next_is_link_like: bool,
     /// Currently open links
     pub link_stack: Vec<LinkCategory<'a>>,
     /// Currently open images
@@ -254,7 +256,15 @@ where
     F: fmt::Write,
 {
     let mut state = state.unwrap_or_default();
-    for event in events {
+    let mut events = events.peekable();
+    while let Some(event) = events.next() {
+        state.next_is_link_like = matches!(
+            events.peek().map(Borrow::borrow),
+            Some(
+                Event::Start(Tag::Link { .. } | Tag::Image { .. } | Tag::FootnoteDefinition(..))
+                    | Event::FootnoteReference(..)
+            )
+        );
         cmark_resume_one_event(event, &mut formatter, &mut state, &options)?;
     }
     Ok(state)
@@ -776,7 +786,7 @@ where
             }
             state.last_was_text_without_trailing_newline = !text.ends_with('\n');
             print_text_without_trailing_newline(
-                &escape_leading_special_characters(text, state.is_in_code_block(), options),
+                &escape_special_characters(text, &state, options),
                 formatter,
                 &state.padding,
             )
