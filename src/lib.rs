@@ -79,6 +79,8 @@ pub struct State<'a> {
     pub image_stack: Vec<ImageLink<'a>>,
     /// Keeps track of the last seen heading's id, classes, and attributes
     pub current_heading: Option<Heading<'a>>,
+    /// True whenever between `Start(TableCell)` and `End(TableCell)`
+    pub in_table_cell: bool,
 
     /// Keeps track of the last seen shortcut/link
     pub current_shortcut_text: Option<String>,
@@ -305,10 +307,26 @@ where
                 text_for_header.push_str(text);
                 text_for_header.push('`');
             }
+
+            // (re)-escape `|` when it appears as part of inline code in the
+            // body of a table. NOTES:
+            // - This is always *safe*, but may not be *necessary*: more recent
+            //   versions of `pulldown-cmark` do not require this because they
+            //   correctly handle unescaped pipes in this position.
+            // - This does not do *general* escaped-character handling because
+            //   the only character which *requires* this handling in this spot
+            //   in earlier versions of `pulldown-cmark` is a pipe character in
+            //   inline code in a table. Other escaping is handled when `Text`
+            //   events are emitted.
+            let text = if state.in_table_cell {
+                text.replace('|', "\\|")
+            } else {
+                text.to_string()
+            };
             if text.chars().all(|ch| ch == ' ') {
                 write!(formatter, "`{text}`")
             } else {
-                let backticks = "`".repeat(count_consecutive(text, '`') + 1);
+                let backticks = "`".repeat(count_consecutive(&text, '`') + 1);
                 let space = match text.as_bytes() {
                     &[b'`', ..] | &[.., b'`'] => " ", // Space needed to separate backtick.
                     &[b' ', .., b' '] => " ",         // Space needed to escape inner space.
@@ -355,6 +373,7 @@ where
                 TableRow => Ok(()),
                 TableCell => {
                     state.text_for_header = Some(String::new());
+                    state.in_table_cell = true;
                     formatter.write_char('|')
                 }
                 Link {
@@ -689,6 +708,7 @@ where
                 state
                     .table_headers
                     .push(state.text_for_header.take().unwrap_or_default());
+                state.in_table_cell = false;
                 Ok(())
             }
             t @ (TagEnd::TableRow | TagEnd::TableHead) => {
