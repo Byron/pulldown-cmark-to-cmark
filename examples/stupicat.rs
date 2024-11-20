@@ -1,8 +1,6 @@
 use std::{
     env,
-    ffi::OsString,
-    fs::File,
-    io::{stdout, Read, Write},
+    io::{stdout, Write},
 };
 
 use pulldown_cmark::{Options, Parser};
@@ -14,7 +12,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .expect("First argument is markdown file to display");
     let event_by_event = env::var_os("STUPICAT_STATE_TEST").is_some();
 
-    let md = read_to_string(path);
+    let md = std::fs::read_to_string(&path)?;
     let mut buf = String::with_capacity(md.len() + 128);
     let mut options = Options::all();
     options.remove(Options::ENABLE_SMART_PUNCTUATION);
@@ -33,11 +31,4 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     stdout().write_all(buf.as_bytes())?;
     Ok(())
-}
-
-fn read_to_string(path: OsString) -> String {
-    let mut file = File::open(path).expect("file to exist for reading");
-    let mut buf = String::new();
-    file.read_to_string(&mut buf).expect("file to be readable");
-    buf
 }

@@ -786,7 +786,7 @@ where
             }
             state.last_was_text_without_trailing_newline = !text.ends_with('\n');
             print_text_without_trailing_newline(
-                &escape_special_characters(text, &state, options),
+                &escape_special_characters(text, state, options),
                 formatter,
                 &state.padding,
             )
