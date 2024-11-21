@@ -310,15 +310,13 @@ where
             }
 
             // (re)-escape `|` when it appears as part of inline code in the
-            // body of a table. NOTES:
-            // - This is always *safe*, but may not be *necessary*: more recent
-            //   versions of `pulldown-cmark` do not require this because they
-            //   correctly handle unescaped pipes in this position.
-            // - This does not do *general* escaped-character handling because
-            //   the only character which *requires* this handling in this spot
-            //   in earlier versions of `pulldown-cmark` is a pipe character in
-            //   inline code in a table. Other escaping is handled when `Text`
-            //   events are emitted.
+            // body of a table.
+            //
+            // NOTE: This does not do *general* escaped-character handling
+            // because the only character which *requires* this handling in this
+            // spot in earlier versions of `pulldown-cmark` is a pipe character
+            // in inline code in a table. Other escaping is handled when `Text`
+            // events are emitted.
             let text = if state.in_table_cell {
                 text.replace('|', "\\|")
             } else {
