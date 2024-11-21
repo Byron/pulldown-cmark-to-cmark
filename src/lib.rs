@@ -51,6 +51,7 @@ pub enum CodeBlockKind {
 /// This does not only allow introspection, but enables the user
 /// to halt the serialization at any time, and resume it later.
 #[derive(Clone, Default, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
 pub struct State<'a> {
     /// The amount of newlines to insert after `Event::Start(...)`
     pub newlines_before_start: usize,
