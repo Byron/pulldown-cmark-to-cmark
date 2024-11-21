@@ -318,10 +318,11 @@ where
             // in inline code in a table. Other escaping is handled when `Text`
             // events are emitted.
             let text = if state.in_table_cell {
-                text.replace('|', "\\|")
+                Cow::Owned(text.replace('|', "\\|"))
             } else {
-                text.to_string()
+                Cow::Borrowed(text.as_ref())
             };
+
             if text.chars().all(|ch| ch == ' ') {
                 write!(formatter, "`{text}`")
             } else {
