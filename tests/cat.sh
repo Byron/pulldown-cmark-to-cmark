@@ -99,3 +99,9 @@ title "stupicat"
     WITH_SNAPSHOT="$snapshot/stupicat-toml-frontmatter-output" \
     expect_run_sh $SUCCESSFULLY "${exe[*]} $fixture/toml-frontmatter.md 2>/dev/null"
 )
+
+(with "table with escaped characters in cells"
+  it "succeeds in reproducing the escapes" && \
+    WITH_SNAPSHOT="$snapshot/stupicat-table-with-escapes-output" \
+    expect_run_sh $SUCCESSFULLY "${exe[*]} $fixture/table-with-escapes.md 2>/dev/null"
+)
