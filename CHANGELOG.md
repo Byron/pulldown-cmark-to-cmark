@@ -5,7 +5,57 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 19.0.0 (2024-11-22)
+
+### New Features (BREAKING)
+
+ - <csr-id-13785fe11cc8851f6f939b1763ae99d655a2d5dc/> Make `State` struct non-exhaustive
+   That way, future additions to the rather internal state won't be a reason for breaking changes anymore.
+
+### Bug Fixes (BREAKING)
+
+ - <csr-id-76c24a16cf34d1675bef52aa8b4c58edebefbfa8/> drasticly improve escaping `!`, `#`, and `|`
+   Raises spec tests from 578 to 580. It handles cases that look like these
+   
+       Link, not image: \![a](b)
+   
+       This header ends with hashes, not an ATX trailer ###
+       ====================================================
+   
+       | a \| b | a \| c |
+       |--------|--------|
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 11 commits contributed to the release.
+ - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Merge pull request #90 from chriskrycho/escape-code-in-tables ([`daef56b`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/daef56bba9c244c2e08ef28ec09e99fa7b8c309d))
+    - Add fixtures for pipes-in-code which should *not* be escaped ([`a85fe39`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/a85fe394d52c236e25cec640e69df83228041fe1))
+    - Use `Cow<'a, str>` to minimize allocations for pipe escaping ([`022fa11`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/022fa11e3a39c6b6bc0b2dcd9728bf205f00d5d1))
+    - Correct comment/note on when pipe characters are/not escaped ([`c9ecdd2`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/c9ecdd24024c0807ceb424f9dfae3b1b22072336))
+    - Make `State` struct non-exhaustive ([`13785fe`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/13785fe11cc8851f6f939b1763ae99d655a2d5dc))
+    - Improve test expectations for escaping pipes in inline code ([`e7f0784`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/e7f078461e94c621e817a7f25eece571a0ae90de))
+    - Escape special characters in inline code in tables ([`37e8dcb`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/37e8dcbf9af753542c39bd077d62e6799fac1f83))
+    - Add fixture for tables with escaped characters ([`edcac27`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/edcac270a3d6cc92db9098aa2ce10ea88e52d235))
+    - Minor improvements ([`f6fba5f`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/f6fba5f43d29fa5a617124dbfcba7fad12bcecbc))
+    - Merge branch 'notriddle/main' ([`4690885`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/469088549b3ff9c665a1e4143498aaf2ebf55414))
+    - Drasticly improve escaping `!`, `#`, and `|` ([`76c24a1`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/76c24a16cf34d1675bef52aa8b4c58edebefbfa8))
+</details>
+
 ## 18.0.0 (2024-10-16)
+
+<csr-id-b3d7df263409e2f9ebdaae843e087c714b994367/>
 
 ### Chore
 
@@ -34,7 +84,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 10 commits contributed to the release.
+ - 11 commits contributed to the release.
  - 40 days passed between releases.
  - 5 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
@@ -46,6 +96,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release pulldown-cmark-to-cmark v18.0.0 ([`6c8bc4d`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/6c8bc4d0e44aeee768d3a4ee8e2b4d500a3c0aeb))
     - Merge pull request #87 from notriddle/notriddle/link-tweaks ([`81ac29b`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/81ac29bb629c79bc7408cba9d5e91314fc5fe618))
     - Use `TextMergeStream` for round-trip tests ([`b3d7df2`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/b3d7df263409e2f9ebdaae843e087c714b994367))
     - Angle brackets if link paren is unbalanced ([`d8f22c1`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/d8f22c18562ebc50c1ca6960bd745adab706a5b6))
