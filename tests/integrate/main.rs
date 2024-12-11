@@ -1,3 +1,33 @@
+mod display;
+mod fmt;
+mod spec;
+mod fuzzed {
+    use pulldown_cmark::{Event, HeadingLevel, Tag, TagEnd};
+    use pulldown_cmark_to_cmark::cmark_resume;
+
+    #[test]
+    fn cmark_resume_with_options_does_not_panic() {
+        let events = [
+            Event::Start(Tag::Heading {
+                level: HeadingLevel::H2,
+                id: None,
+                classes: vec![],
+                attrs: vec![],
+            }),
+            Event::Start(Tag::Heading {
+                level: HeadingLevel::H2,
+                id: None,
+                classes: vec![],
+                attrs: vec![],
+            }),
+            Event::Text(pulldown_cmark::CowStr::Borrowed("(")),
+            Event::End(TagEnd::Heading(HeadingLevel::H2)),
+            Event::End(TagEnd::Heading(HeadingLevel::H2)),
+        ];
+        let _ = cmark_resume(events.iter(), String::new(), None);
+    }
+}
+
 #[cfg(test)]
 mod calculate_code_block_token_count {
     use pulldown_cmark::{CodeBlockKind, CowStr, Event, Tag, TagEnd};

@@ -1,7 +1,7 @@
 use pulldown_cmark::{utils::TextMergeStream, Alignment, CodeBlockKind, Event, LinkType, Options, Parser, Tag, TagEnd};
-use pulldown_cmark_to_cmark::{cmark, cmark_resume, cmark_resume_with_options, Options as CmarkToCmarkOptions, State};
-
-mod source_range_fmt;
+pub use pulldown_cmark_to_cmark::{
+    cmark, cmark_resume, cmark_resume_with_options, Options as CmarkToCmarkOptions, State,
+};
 
 fn assert_output_and_states_eq(output0: &str, state0: &State, output1: &str, state1: &State) {
     assert_eq!(
@@ -16,7 +16,7 @@ fn assert_output_and_states_eq(output0: &str, state0: &State, output1: &str, sta
 
 fn fmts_both(s: &str) -> (String, State<'_>) {
     let (buf0, s0) = fmts(s);
-    let (buf1, s1) = source_range_fmt::fmts(s);
+    let (buf1, s1) = source_range::fmts(s);
     assert_output_and_states_eq(&buf0, &s0, &buf1, &s1);
     (buf0, s0)
 }
@@ -28,7 +28,7 @@ fn fmts(s: &str) -> (String, State<'_>) {
 }
 
 fn fmts_with_options<'a>(s: &'a str, options: CmarkToCmarkOptions<'a>) -> (String, State<'a>) {
-    let (buf1, s1) = source_range_fmt::fmts_with_options(s, options.clone());
+    let (buf1, s1) = source_range::fmts_with_options(s, options.clone());
     let mut buf = String::new();
     let s = cmark_resume_with_options(Parser::new_ext(s, Options::all()), &mut buf, None, options).unwrap();
     assert_output_and_states_eq(&buf, &s, &buf1, &s1);
@@ -49,7 +49,7 @@ fn fmte<'a>(e: impl AsRef<[Event<'a>]>) -> (String, State<'a>) {
 
 fn assert_events_eq_both(s: &str) {
     assert_events_eq(s);
-    source_range_fmt::assert_events_eq(s);
+    source_range::assert_events_eq(s);
 }
 
 /// Asserts that if we parse our `str` s into a series of events, then serialize them with `cmark`
@@ -170,8 +170,9 @@ mod padding {
 }
 
 mod inline_elements {
-    use crate::{fmts_with_options, source_range_fmt};
+    use crate::fmt::fmts_with_options;
 
+    use super::source_range;
     use super::{fmts_both, CmarkToCmarkOptions, State};
 
     #[test]
@@ -389,7 +390,7 @@ println!("Hello, world!");
         {
             let mut state = State::default();
             state.newlines_before_start = 2;
-            assert_eq!(source_range_fmt::fmts("[`Vec`]"), ("[`Vec`]".into(), state));
+            assert_eq!(source_range::fmts("[`Vec`]"), ("[`Vec`]".into(), state));
         }
     }
 
@@ -398,11 +399,11 @@ println!("Hello, world!");
         // `<` is not escaped if not escaped in the source.
         let mut state = State::default();
         state.newlines_before_start = 2;
-        assert_eq!(source_range_fmt::fmts("a < 1"), ("a < 1".into(), state));
+        assert_eq!(source_range::fmts("a < 1"), ("a < 1".into(), state));
         // `<` is escaped if escaped in the source.
         let mut state = State::default();
         state.newlines_before_start = 2;
-        assert_eq!(source_range_fmt::fmts(r"a \< 1"), (r"a \< 1".into(), state));
+        assert_eq!(source_range::fmts(r"a \< 1"), (r"a \< 1".into(), state));
     }
 }
 
@@ -862,7 +863,8 @@ mod table {
 mod escapes {
     use pulldown_cmark::CowStr;
 
-    use crate::{fmts, fmts_both, source_range_fmt, CmarkToCmarkOptions, Event, Parser, Tag, TagEnd};
+    use super::source_range;
+    use crate::{fmt::fmts, fmt::fmts_both, fmt::CmarkToCmarkOptions, fmt::Event, fmt::Parser, fmt::Tag, fmt::TagEnd};
 
     fn run_test_on_each_special_char(f: impl Fn(String, CowStr)) {
         for c in CmarkToCmarkOptions::default().special_characters().chars() {
@@ -881,7 +883,7 @@ mod escapes {
 
     #[test]
     fn it_preserves_underscores_escapes() {
-        assert_eq!(source_range_fmt::fmts("\\_hello_world_").0, "\\_hello_world_");
+        assert_eq!(source_range::fmts("\\_hello_world_").0, "\\_hello_world_");
     }
 
     #[test]
@@ -973,7 +975,7 @@ mod escapes {
     #[test]
     fn it_does_not_escape_lone_square_brackets_in_text_if_the_source_does_not() {
         assert_eq!(
-            source_range_fmt::fmts("] a closing bracket does nothing").0,
+            source_range::fmts("] a closing bracket does nothing").0,
             "] a closing bracket does nothing"
         );
     }
@@ -1035,9 +1037,9 @@ mod escapes {
 
     #[test]
     fn entity_escape_is_not_code_block_indent() {
-        source_range_fmt::assert_events_eq("&#9;foo");
-        source_range_fmt::assert_events_eq("&#32;   foo");
-        source_range_fmt::assert_events_eq(" * &#32;   foo\n * &#9;foo");
+        source_range::assert_events_eq("&#9;foo");
+        source_range::assert_events_eq("&#32;   foo");
+        source_range::assert_events_eq(" * &#32;   foo\n * &#9;foo");
     }
 }
 
@@ -1373,5 +1375,64 @@ Second Term
 : This is another definition of the second term.";
 
         assert_events_eq(input);
+    }
+}
+
+mod source_range {
+    // Copied from `fmt.rs`.
+
+    use pulldown_cmark::{utils::TextMergeStream, Options, Parser};
+    use pulldown_cmark_to_cmark::{
+        cmark_resume_with_source_range_and_options, cmark_with_source_range, Options as CmarkToCmarkOptions, State,
+    };
+
+    pub fn fmts(s: &str) -> (String, State<'_>) {
+        let mut buf = String::new();
+        let mut s = cmark_with_source_range(
+            Parser::new_ext(s, Options::all())
+                .into_offset_iter()
+                .map(|(e, r)| (e, Some(r))),
+            s,
+            &mut buf,
+        )
+        .unwrap();
+        // Not testing this field.
+        s.last_event_end_index = Default::default();
+        (buf, s)
+    }
+
+    pub fn fmts_with_options<'a>(s: &'a str, options: CmarkToCmarkOptions<'a>) -> (String, State<'a>) {
+        let mut buf = String::new();
+        let mut s = cmark_resume_with_source_range_and_options(
+            Parser::new_ext(s, Options::all())
+                .into_offset_iter()
+                .map(|(e, r)| (e, Some(r))),
+            s,
+            &mut buf,
+            None,
+            options,
+        )
+        .unwrap();
+        // Not testing this field.
+        s.last_event_end_index = Default::default();
+        (buf, s)
+    }
+
+    /// Asserts that if we parse our `str` s into a series of events, then serialize them with `cmark`
+    /// that we'll get the same series of events when we parse them again.
+    pub fn assert_events_eq(s: &str) {
+        let mut buf = String::new();
+        cmark_with_source_range(
+            Parser::new_ext(s, Options::all())
+                .into_offset_iter()
+                .map(|(e, r)| (e, Some(r))),
+            s,
+            &mut buf,
+        )
+        .unwrap();
+
+        let before_events = TextMergeStream::new(Parser::new_ext(s, Options::all()));
+        let after_events = TextMergeStream::new(Parser::new_ext(&buf, Options::all()));
+        assert_eq!(before_events.collect::<Vec<_>>(), after_events.collect::<Vec<_>>());
     }
 }

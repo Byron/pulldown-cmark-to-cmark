@@ -2,7 +2,7 @@ use pulldown_cmark::utils::TextMergeStream;
 use pulldown_cmark::{CodeBlockKind, Event, Options, Parser, Tag, TagEnd};
 use pulldown_cmark_to_cmark::cmark;
 
-const COMMONMARK_SPEC_TEXT: &str = include_str!("./spec/CommonMark/spec.txt");
+const COMMONMARK_SPEC_TEXT: &str = include_str!("../spec/CommonMark/spec.txt");
 
 const COMMONMARK_SPEC_EXAMPLE_COUNT: usize = 649;
 
