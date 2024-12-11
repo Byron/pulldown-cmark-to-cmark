@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 19.0.1 (2024-12-11)
+
+### Bug Fixes
+
+ - <csr-id-a368f0f4ddbfeb8728abf92feaf0d4ed0e81b858/> harden again manufactured input which could previously trigger assertion failures.
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 3 commits contributed to the release.
+ - 19 days passed between releases.
+ - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
+ - 1 unique issue was worked on: [#91](https://github.com/Byron/pulldown-cmark-to-cmark/issues/91)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#91](https://github.com/Byron/pulldown-cmark-to-cmark/issues/91)**
+    - Harden again manufactured input which could previously trigger assertion failures. ([`a368f0f`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/a368f0f4ddbfeb8728abf92feaf0d4ed0e81b858))
+ * **Uncategorized**
+    - Merge pull request #92 from Byron/fuzz-test ([`c61fdd4`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/c61fdd4917b8ee41af0bae69d99c721d7d337328))
+    - Refactor tests ([`b526d7c`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/b526d7cf0ad6df2ce8278a5fd634afb2067c484e))
+</details>
+
 ## 19.0.0 (2024-11-22)
 
 ### New Features (BREAKING)
@@ -17,19 +45,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - <csr-id-76c24a16cf34d1675bef52aa8b4c58edebefbfa8/> drasticly improve escaping `!`, `#`, and `|`
    Raises spec tests from 578 to 580. It handles cases that look like these
    
-       Link, not image: \![a](b)
+   Link, not image: \![a](b)
    
-       This header ends with hashes, not an ATX trailer ###
-       ====================================================
+   This header ends with hashes, not an ATX trailer ###
+   ====================================================
    
-       | a \| b | a \| c |
-       |--------|--------|
+   | a \| b | a \| c |
+   |--------|--------|
 
 ### Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
- - 11 commits contributed to the release.
+ - 12 commits contributed to the release.
  - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
@@ -40,6 +68,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release pulldown-cmark-to-cmark v19.0.0 ([`ccc8a52`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/ccc8a522c738fc69eb937c7c0f7e8564741ee584))
     - Merge pull request #90 from chriskrycho/escape-code-in-tables ([`daef56b`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/daef56bba9c244c2e08ef28ec09e99fa7b8c309d))
     - Add fixtures for pipes-in-code which should *not* be escaped ([`a85fe39`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/a85fe394d52c236e25cec640e69df83228041fe1))
     - Use `Cow<'a, str>` to minimize allocations for pipe escaping ([`022fa11`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/022fa11e3a39c6b6bc0b2dcd9728bf205f00d5d1))
