@@ -1,3 +1,7 @@
+mod display;
+mod fmt;
+mod spec;
+
 #[cfg(test)]
 mod calculate_code_block_token_count {
     use pulldown_cmark::{CodeBlockKind, CowStr, Event, Tag, TagEnd};
