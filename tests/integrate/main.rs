@@ -3,6 +3,37 @@ mod fmt;
 mod spec;
 
 #[cfg(test)]
+mod fuzzed {
+    use pulldown_cmark::{Event, HeadingLevel, Tag, TagEnd};
+    use pulldown_cmark_to_cmark::{cmark, Error};
+
+    #[test]
+    fn cmark_with_invalid_event_stream() {
+        let events = [
+            Event::Start(Tag::Heading {
+                level: HeadingLevel::H2,
+                id: None,
+                classes: vec![],
+                attrs: vec![],
+            }),
+            Event::Start(Tag::Heading {
+                level: HeadingLevel::H2,
+                id: None,
+                classes: vec![],
+                attrs: vec![],
+            }),
+            Event::Text(pulldown_cmark::CowStr::Borrowed("hello")),
+            Event::End(TagEnd::Heading(HeadingLevel::H2)),
+            Event::End(TagEnd::Heading(HeadingLevel::H2)),
+        ];
+        assert!(matches!(
+            cmark(events.iter(), String::new()),
+            Err(Error::UnexpectedEvent)
+        ));
+    }
+}
+
+#[cfg(test)]
 mod calculate_code_block_token_count {
     use pulldown_cmark::{CodeBlockKind, CowStr, Event, Tag, TagEnd};
     use pulldown_cmark_to_cmark::calculate_code_block_token_count;
