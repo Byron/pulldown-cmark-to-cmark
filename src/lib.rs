@@ -246,13 +246,16 @@ impl<'a> Options<'a> {
 ///
 /// *Returns* the [`State`] of the serialization on success. You can use it as initial state in the
 /// next call if you are halting event serialization.
-/// *Errors* are only happening if the underlying buffer fails, which is unlikely.
+///
+/// *Errors* if the underlying buffer fails (which is unlikely) or if the [`Event`] stream
+/// cannot ever be produced by deserializing valid Markdown. Each failure mode corresponds to one
+/// of [`Error`]'s variants.
 pub fn cmark_resume_with_options<'a, I, E, F>(
     events: I,
     mut formatter: F,
     state: Option<State<'a>>,
     options: Options<'_>,
-) -> Result<State<'a>, fmt::Error>
+) -> Result<State<'a>, Error>
 where
     I: Iterator<Item = E>,
     E: Borrow<Event<'a>>,
@@ -273,12 +276,37 @@ where
     Ok(state)
 }
 
+/// The error returned by [`cmark_resume_one_event`] and
+/// [`cmark_resume_with_source_range_and_options`].
+#[derive(Debug)]
+pub enum Error {
+    FormatFailed(fmt::Error),
+    UnexpectedEvent,
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::FormatFailed(e) => e.fmt(f),
+            Self::UnexpectedEvent => f.write_str("Unexpected event while reconstructing Markdown"),
+        }
+    }
+}
+
+impl std::error::Error for Error {}
+
+impl From<fmt::Error> for Error {
+    fn from(e: fmt::Error) -> Self {
+        Self::FormatFailed(e)
+    }
+}
+
 fn cmark_resume_one_event<'a, E, F>(
     event: E,
     formatter: &mut F,
     state: &mut State<'a>,
     options: &Options<'_>,
-) -> Result<(), fmt::Error>
+) -> Result<(), Error>
 where
     E: Borrow<Event<'a>>,
     F: fmt::Write,
@@ -289,7 +317,7 @@ where
     state.last_was_text_without_trailing_newline = false;
     let last_was_paragraph_start = state.last_was_paragraph_start;
     state.last_was_paragraph_start = false;
-    match event.borrow() {
+    let res = match event.borrow() {
         Rule => {
             consume_newlines(formatter, state)?;
             if state.newlines_before_start < options.newlines_after_rule {
@@ -470,7 +498,9 @@ where
                     classes,
                     attrs,
                 } => {
-                    assert_eq!(state.current_heading, None);
+                    if state.current_heading.is_some() {
+                        return Err(Error::UnexpectedEvent);
+                    }
                     state.current_heading = Some(self::Heading {
                         id: id.as_ref().map(|id| id.clone().into()),
                         classes: classes.iter().map(|class| class.clone().into()).collect(),
@@ -554,7 +584,11 @@ where
             }
         }
         End(tag) => match tag {
-            TagEnd::Link => match state.link_stack.pop().unwrap() {
+            TagEnd::Link => match if let Some(link_cat) = state.link_stack.pop() {
+                link_cat
+            } else {
+                return Err(Error::UnexpectedEvent);
+            } {
                 LinkCategory::AngleBracketed => formatter.write_char('>'),
                 LinkCategory::Reference { uri, title, id } => {
                     state
@@ -582,7 +616,11 @@ where
                 }
                 LinkCategory::Other { uri, title } => close_link(&uri, &title, formatter, LinkType::Inline),
             },
-            TagEnd::Image => match state.image_stack.pop().unwrap() {
+            TagEnd::Image => match if let Some(img_link) = state.image_stack.pop() {
+                img_link
+            } else {
+                return Err(Error::UnexpectedEvent);
+            } {
                 ImageLink::Reference { uri, title, id } => {
                     state
                         .shortcuts
@@ -614,11 +652,14 @@ where
             TagEnd::Emphasis => formatter.write_char(options.emphasis_token),
             TagEnd::Strong => formatter.write_str(options.strong_token),
             TagEnd::Heading(_) => {
-                let self::Heading {
+                let Some(self::Heading {
                     id,
                     classes,
                     attributes,
-                } = state.current_heading.take().unwrap();
+                }) = state.current_heading.take()
+                else {
+                    return Err(Error::UnexpectedEvent);
+                };
                 let emit_braces = id.is_some() || !classes.is_empty() || !attributes.is_empty();
                 if emit_braces {
                     formatter.write_str(" {")?;
@@ -834,11 +875,13 @@ where
         }
         InlineMath(text) => write!(formatter, "${text}$"),
         DisplayMath(text) => write!(formatter, "$${text}$$"),
-    }
+    };
+
+    Ok(res?)
 }
 
 /// As [`cmark_resume_with_options()`], but with default [`Options`].
-pub fn cmark_resume<'a, I, E, F>(events: I, formatter: F, state: Option<State<'a>>) -> Result<State<'a>, fmt::Error>
+pub fn cmark_resume<'a, I, E, F>(events: I, formatter: F, state: Option<State<'a>>) -> Result<State<'a>, Error>
 where
     I: Iterator<Item = E>,
     E: Borrow<Event<'a>>,
@@ -908,7 +951,7 @@ impl fmt::Display for EscapeLinkTitle<'_> {
 }
 
 impl<'a> State<'a> {
-    pub fn finalize<F>(mut self, mut formatter: F) -> Result<Self, fmt::Error>
+    pub fn finalize<F>(mut self, mut formatter: F) -> Result<Self, Error>
     where
         F: fmt::Write,
     {
@@ -931,11 +974,7 @@ impl<'a> State<'a> {
 }
 
 /// As [`cmark_resume_with_options()`], but with the [`State`] finalized.
-pub fn cmark_with_options<'a, I, E, F>(
-    events: I,
-    mut formatter: F,
-    options: Options<'_>,
-) -> Result<State<'a>, fmt::Error>
+pub fn cmark_with_options<'a, I, E, F>(events: I, mut formatter: F, options: Options<'_>) -> Result<State<'a>, Error>
 where
     I: Iterator<Item = E>,
     E: Borrow<Event<'a>>,
@@ -946,7 +985,7 @@ where
 }
 
 /// As [`cmark_with_options()`], but with default [`Options`].
-pub fn cmark<'a, I, E, F>(events: I, mut formatter: F) -> Result<State<'a>, fmt::Error>
+pub fn cmark<'a, I, E, F>(events: I, mut formatter: F) -> Result<State<'a>, Error>
 where
     I: Iterator<Item = E>,
     E: Borrow<Event<'a>>,
