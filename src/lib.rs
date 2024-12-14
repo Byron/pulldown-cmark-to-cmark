@@ -470,6 +470,7 @@ where
                     classes,
                     attrs,
                 } => {
+                    assert_eq!(state.current_heading, None);
                     state.current_heading = Some(self::Heading {
                         id: id.as_ref().map(|id| id.clone().into()),
                         classes: classes.iter().map(|class| class.clone().into()).collect(),
@@ -553,40 +554,34 @@ where
             }
         }
         End(tag) => match tag {
-            TagEnd::Link => {
-                let Some(category) = state.link_stack.pop() else {
-                    // This should always be present, but people can provide any kind of event stream.
-                    return Ok(());
-                };
-                match category {
-                    LinkCategory::AngleBracketed => formatter.write_char('>'),
-                    LinkCategory::Reference { uri, title, id } => {
+            TagEnd::Link => match state.link_stack.pop().unwrap() {
+                LinkCategory::AngleBracketed => formatter.write_char('>'),
+                LinkCategory::Reference { uri, title, id } => {
+                    state
+                        .shortcuts
+                        .push((id.to_string(), uri.to_string(), title.to_string()));
+                    formatter.write_str("][")?;
+                    formatter.write_str(&id)?;
+                    formatter.write_char(']')
+                }
+                LinkCategory::Collapsed { uri, title } => {
+                    if let Some(shortcut_text) = state.current_shortcut_text.take() {
                         state
                             .shortcuts
-                            .push((id.to_string(), uri.to_string(), title.to_string()));
-                        formatter.write_str("][")?;
-                        formatter.write_str(&id)?;
-                        formatter.write_char(']')
+                            .push((shortcut_text, uri.to_string(), title.to_string()));
                     }
-                    LinkCategory::Collapsed { uri, title } => {
-                        if let Some(shortcut_text) = state.current_shortcut_text.take() {
-                            state
-                                .shortcuts
-                                .push((shortcut_text, uri.to_string(), title.to_string()));
-                        }
-                        formatter.write_str("][]")
-                    }
-                    LinkCategory::Shortcut { uri, title } => {
-                        if let Some(shortcut_text) = state.current_shortcut_text.take() {
-                            state
-                                .shortcuts
-                                .push((shortcut_text, uri.to_string(), title.to_string()));
-                        }
-                        formatter.write_char(']')
-                    }
-                    LinkCategory::Other { uri, title } => close_link(&uri, &title, formatter, LinkType::Inline),
+                    formatter.write_str("][]")
                 }
-            }
+                LinkCategory::Shortcut { uri, title } => {
+                    if let Some(shortcut_text) = state.current_shortcut_text.take() {
+                        state
+                            .shortcuts
+                            .push((shortcut_text, uri.to_string(), title.to_string()));
+                    }
+                    formatter.write_char(']')
+                }
+                LinkCategory::Other { uri, title } => close_link(&uri, &title, formatter, LinkType::Inline),
+            },
             TagEnd::Image => match state.image_stack.pop().unwrap() {
                 ImageLink::Reference { uri, title, id } => {
                     state
@@ -619,15 +614,11 @@ where
             TagEnd::Emphasis => formatter.write_char(options.emphasis_token),
             TagEnd::Strong => formatter.write_str(options.strong_token),
             TagEnd::Heading(_) => {
-                let Some(heading) = state.current_heading.take() else {
-                    // Harden against manufactured input.
-                    return Ok(());
-                };
                 let self::Heading {
                     id,
                     classes,
                     attributes,
-                } = heading;
+                } = state.current_heading.take().unwrap();
                 let emit_braces = id.is_some() || !classes.is_empty() || !attributes.is_empty();
                 if emit_braces {
                     formatter.write_str(" {")?;
