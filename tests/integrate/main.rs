@@ -1,12 +1,14 @@
 mod display;
 mod fmt;
 mod spec;
+
+#[cfg(test)]
 mod fuzzed {
     use pulldown_cmark::{Event, HeadingLevel, Tag, TagEnd};
-    use pulldown_cmark_to_cmark::cmark_resume;
+    use pulldown_cmark_to_cmark::{cmark, Error};
 
     #[test]
-    fn cmark_resume_with_options_does_not_panic() {
+    fn cmark_with_invalid_event_stream() {
         let events = [
             Event::Start(Tag::Heading {
                 level: HeadingLevel::H2,
@@ -20,11 +22,14 @@ mod fuzzed {
                 classes: vec![],
                 attrs: vec![],
             }),
-            Event::Text(pulldown_cmark::CowStr::Borrowed("(")),
+            Event::Text(pulldown_cmark::CowStr::Borrowed("hello")),
             Event::End(TagEnd::Heading(HeadingLevel::H2)),
             Event::End(TagEnd::Heading(HeadingLevel::H2)),
         ];
-        let _ = cmark_resume(events.iter(), String::new(), None);
+        assert!(matches!(
+            cmark(events.iter(), String::new()),
+            Err(Error::UnexpectedEvent)
+        ));
     }
 }
 

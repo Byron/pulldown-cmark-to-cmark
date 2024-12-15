@@ -1,4 +1,4 @@
-use super::{cmark_resume_one_event, fmt, Borrow, Event, Options, Range, State};
+use super::{cmark_resume_one_event, fmt, Borrow, Error, Event, Options, Range, State};
 
 /// Serialize a stream of [pulldown-cmark-Events][Event] while preserving the escape characters in `source`.
 /// Each input [Event] is accompanied by an optional [Range] that maps it back to the `source` string.
@@ -22,14 +22,17 @@ use super::{cmark_resume_one_event, fmt, Borrow, Event, Options, Range, State};
 ///
 /// *Returns* the [`State`] of the serialization on success. You can use it as initial state in the
 /// next call if you are halting event serialization.
-/// *Errors* are only happening if the underlying buffer fails, which is unlikely.
+///
+/// *Errors* if the underlying buffer fails (which is unlikely) or if the [`Event`] stream
+/// iterated over by `event_and_ranges` cannot ever be produced by deserializing valid Markdown.
+/// Each failure mode corresponds to one of [`Error`]'s variants.
 pub fn cmark_resume_with_source_range_and_options<'a, I, E, F>(
     event_and_ranges: I,
     source: &'a str,
     mut formatter: F,
     state: Option<State<'a>>,
     options: Options<'_>,
-) -> Result<State<'a>, fmt::Error>
+) -> Result<State<'a>, Error>
 where
     I: Iterator<Item = (E, Option<Range<usize>>)>,
     E: Borrow<Event<'a>>,
@@ -77,7 +80,7 @@ pub fn cmark_resume_with_source_range<'a, I, E, F>(
     source: &'a str,
     formatter: F,
     state: Option<State<'a>>,
-) -> Result<State<'a>, fmt::Error>
+) -> Result<State<'a>, Error>
 where
     I: Iterator<Item = (E, Option<Range<usize>>)>,
     E: Borrow<Event<'a>>,
@@ -92,7 +95,7 @@ pub fn cmark_with_source_range_and_options<'a, I, E, F>(
     source: &'a str,
     mut formatter: F,
     options: Options<'_>,
-) -> Result<State<'a>, fmt::Error>
+) -> Result<State<'a>, Error>
 where
     I: Iterator<Item = (E, Option<Range<usize>>)>,
     E: Borrow<Event<'a>>,
@@ -113,7 +116,7 @@ pub fn cmark_with_source_range<'a, I, E, F>(
     event_and_ranges: I,
     source: &'a str,
     mut formatter: F,
-) -> Result<State<'a>, fmt::Error>
+) -> Result<State<'a>, Error>
 where
     I: Iterator<Item = (E, Option<Range<usize>>)>,
     E: Borrow<Event<'a>>,

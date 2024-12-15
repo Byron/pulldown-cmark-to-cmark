@@ -50,19 +50,15 @@ pub fn print_text_without_trailing_newline<F>(t: &str, f: &mut F, p: &[Cow<'_, s
 where
     F: fmt::Write,
 {
-    if t.contains('\n') {
-        let line_count = t.split('\n').count();
-        for (tid, token) in t.split('\n').enumerate() {
-            f.write_str(token).and(if tid + 1 == line_count {
-                Ok(())
-            } else {
-                f.write_char('\n').and(padding(f, p))
-            })?;
+    let line_count = t.split('\n').count();
+    for (tid, token) in t.split('\n').enumerate() {
+        f.write_str(token)?;
+        if tid + 1 < line_count {
+            f.write_char('\n')?;
+            padding(f, p)?;
         }
-        Ok(())
-    } else {
-        f.write_str(t)
     }
+    Ok(())
 }
 
 pub fn padding_of(l: Option<u64>) -> Cow<'static, str> {
