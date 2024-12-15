@@ -5,6 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 20.0.0 (2024-12-15)
+
+### Bug Fixes (BREAKING)
+
+ - <csr-id-fdc5859ff9823189c6966d5448468bff1d82d899/> Add structured error handling for cmark(), cmark_resume() etc
+   When `cmark_resume_with_options()`, which serves as basis for the other
+   `cmark*` functions, finds an inconsistent event stream (for example, two
+   consecutive heading start tags), it panics.
+   
+   Introduce a custom error type `Error` in the crate and change the return
+   type of all public functions from `fmt::Result<_>` to `Result<_, Error>`.
+   
+   The next commit adds an integration test.
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 4 commits contributed to the release.
+ - 4 days passed between releases.
+ - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
+ - 1 unique issue was worked on: [#91](https://github.com/Byron/pulldown-cmark-to-cmark/issues/91)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#91](https://github.com/Byron/pulldown-cmark-to-cmark/issues/91)**
+    - Revert "fix: harden again manufactured input which could previously trigger assertion failures." ([`a442910`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/a442910b6e82f17f0e044ceb2069dd4bd76ffa34))
+ * **Uncategorized**
+    - Merge pull request #93 from cip999/resume-error-handling ([`21f0f5d`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/21f0f5d472307f4c8c8403505d90259a922ae624))
+    - Add integration test for CmarkError::UnexpectedEvent ([`4766cc1`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/4766cc1c4dc569841e89068d3292b28d3c57e2e6))
+    - Add structured error handling for cmark(), cmark_resume() etc ([`fdc5859`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/fdc5859ff9823189c6966d5448468bff1d82d899))
+</details>
+
 ## 19.0.1 (2024-12-11)
 
 ### Bug Fixes
@@ -15,7 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 3 commits contributed to the release.
+ - 4 commits contributed to the release.
  - 19 days passed between releases.
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 1 unique issue was worked on: [#91](https://github.com/Byron/pulldown-cmark-to-cmark/issues/91)
@@ -29,6 +66,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#91](https://github.com/Byron/pulldown-cmark-to-cmark/issues/91)**
     - Harden again manufactured input which could previously trigger assertion failures. ([`a368f0f`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/a368f0f4ddbfeb8728abf92feaf0d4ed0e81b858))
  * **Uncategorized**
+    - Release pulldown-cmark-to-cmark v19.0.1 ([`aefd5cb`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/aefd5cbea4b79e21a5a1c2836b41a007e750d7ce))
     - Merge pull request #92 from Byron/fuzz-test ([`c61fdd4`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/c61fdd4917b8ee41af0bae69d99c721d7d337328))
     - Refactor tests ([`b526d7c`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/b526d7cf0ad6df2ce8278a5fd634afb2067c484e))
 </details>
