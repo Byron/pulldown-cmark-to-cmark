@@ -351,17 +351,13 @@ where
                 Cow::Borrowed(text.as_ref())
             };
 
-            if text.chars().all(|ch| ch == ' ') {
-                write!(formatter, "`{text}`")
-            } else {
-                let backticks = "`".repeat(max_consecutive_chars(&text, '`') + 1);
-                let space = match text.as_bytes() {
-                    &[b'`', ..] | &[.., b'`'] => " ", // Space needed to separate backtick.
-                    &[b' ', .., b' '] => " ",         // Space needed to escape inner space.
-                    _ => "",                          // No space needed.
-                };
-                write!(formatter, "{backticks}{space}{text}{space}{backticks}")
-            }
+            let backticks = "`".repeat(max_consecutive_chars(&text, '`') + 1);
+            let space = match text.as_bytes() {
+                &[b'`', ..] | &[.., b'`'] => " ", // Space needed to separate backtick.
+                &[b' ', .., b' '] => " ",         // Space needed to escape inner space.
+                _ => "",                          // No space needed.
+            };
+            write!(formatter, "{backticks}{space}{text}{space}{backticks}")
         }
         Start(tag) => {
             if let List(list_type) = tag {
