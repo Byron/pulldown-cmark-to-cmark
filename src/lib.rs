@@ -351,9 +351,13 @@ where
                 Cow::Borrowed(text.as_ref())
             };
 
+            // When inline code has leading and trailing ' ' characters, additional space is needed
+            // to escape it, unless all characters are space.
             if text.chars().all(|ch| ch == ' ') {
                 write!(formatter, "`{text}`")
             } else {
+                // More backticks are needed to delimit the inline code than the maximum number of
+                // backticks in a consecutive run.
                 let backticks = "`".repeat(max_consecutive_chars(&text, '`') + 1);
                 let space = match text.as_bytes() {
                     &[b'`', ..] | &[.., b'`'] => " ", // Space needed to separate backtick.
