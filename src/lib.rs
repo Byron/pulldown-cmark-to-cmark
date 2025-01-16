@@ -351,10 +351,14 @@ where
                 Cow::Borrowed(text.as_ref())
             };
 
+            // When inline code has leading and trailing ' ' characters, additional space is needed
+            // to escape it, unless all characters are space.
             if text.chars().all(|ch| ch == ' ') {
                 write!(formatter, "`{text}`")
             } else {
-                let backticks = "`".repeat(count_consecutive(&text, '`') + 1);
+                // More backticks are needed to delimit the inline code than the maximum number of
+                // backticks in a consecutive run.
+                let backticks = "`".repeat(max_consecutive_chars(&text, '`') + 1);
                 let space = match text.as_bytes() {
                     &[b'`', ..] | &[.., b'`'] => " ", // Space needed to separate backtick.
                     &[b' ', .., b' '] => " ",         // Space needed to escape inner space.
@@ -1060,35 +1064,39 @@ where
     (max_token_count >= 3).then_some(max_token_count + 1)
 }
 
-fn count_consecutive(text: &str, search: char) -> usize {
-    let mut in_tokens = false;
-    let mut max_backticks = 0;
-    let mut cur_tokens = 0;
+fn max_consecutive_chars(text: &str, search: char) -> usize {
+    let mut in_search_chars = false;
+    let mut max_count = 0;
+    let mut cur_count = 0;
 
     for ch in text.chars() {
         if ch == search {
-            cur_tokens += 1;
-            in_tokens = true;
-        } else if in_tokens {
-            max_backticks = max_backticks.max(cur_tokens);
-            cur_tokens = 0;
-            in_tokens = false;
+            cur_count += 1;
+            in_search_chars = true;
+        } else if in_search_chars {
+            max_count = max_count.max(cur_count);
+            cur_count = 0;
+            in_search_chars = false;
         }
     }
-    max_backticks.max(cur_tokens)
+    max_count.max(cur_count)
 }
 
 #[cfg(test)]
-mod count_consecutive {
-    use super::count_consecutive;
+mod max_consecutive_chars {
+    use super::max_consecutive_chars;
 
     #[test]
     fn happens_in_the_entire_string() {
         assert_eq!(
-            count_consecutive("``a```b``", '`'),
+            max_consecutive_chars("``a```b``", '`'),
             3,
             "the highest seen consecutive segment of backticks counts"
         );
-        assert_eq!(count_consecutive("```a``b`", '`'), 3, "it can't be downgraded later");
+        assert_eq!(
+            max_consecutive_chars("```a``b`", '`'),
+            3,
+            "it can't be downgraded later"
+        );
     }
 }
