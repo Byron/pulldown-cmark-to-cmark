@@ -583,8 +583,20 @@ where
                 List(_) => Ok(()),
                 Strikethrough => formatter.write_str("~~"),
                 DefinitionList => Ok(()),
-                DefinitionListTitle => formatter.write_char('\n'),
-                DefinitionListDefinition => formatter.write_str(": "),
+                DefinitionListTitle => {
+                    if state.newlines_before_start < options.newlines_after_rest {
+                        state.newlines_before_start = options.newlines_after_rest;
+                    }
+                    Ok(())
+                }
+                DefinitionListDefinition => {
+                    let every_line_padding = "  ";
+                    let first_line_padding = ": ";
+
+                    padding(formatter, &state.padding).and(formatter.write_str(first_line_padding))?;
+                    state.padding.push(every_line_padding.into());
+                    Ok(())
+                }
             }
         }
         End(tag) => match tag {
@@ -825,9 +837,17 @@ where
                 Ok(())
             }
             TagEnd::Strikethrough => formatter.write_str("~~"),
-            TagEnd::DefinitionList => Ok(()),
+            TagEnd::DefinitionList => {
+                if state.newlines_before_start < options.newlines_after_list {
+                    state.newlines_before_start = options.newlines_after_list;
+                }
+                Ok(())
+            }
             TagEnd::DefinitionListTitle => formatter.write_char('\n'),
-            TagEnd::DefinitionListDefinition => formatter.write_char('\n'),
+            TagEnd::DefinitionListDefinition => {
+                state.padding.pop();
+                formatter.write_char('\n').and(padding(formatter, &state.padding))
+            }
         },
         HardBreak => formatter.write_str("  \n").and(padding(formatter, &state.padding)),
         SoftBreak => formatter.write_char('\n').and(padding(formatter, &state.padding)),
