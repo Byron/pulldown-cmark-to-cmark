@@ -205,13 +205,13 @@ const DEFAULT_OPTIONS: Options<'_> = Options {
     strong_token: "**",
 };
 
-impl<'a> Default for Options<'a> {
+impl Default for Options<'_> {
     fn default() -> Self {
         DEFAULT_OPTIONS
     }
 }
 
-impl<'a> Options<'a> {
+impl Options<'_> {
     pub fn special_characters(&self) -> Cow<'static, str> {
         // These always need to be escaped, even if reconfigured.
         const BASE: &str = "#\\_*<>`|[]";
@@ -974,7 +974,7 @@ impl fmt::Display for EscapeLinkTitle<'_> {
     }
 }
 
-impl<'a> State<'a> {
+impl State<'_> {
     pub fn finalize<F>(mut self, mut formatter: F) -> Result<Self, Error>
     where
         F: fmt::Write,
