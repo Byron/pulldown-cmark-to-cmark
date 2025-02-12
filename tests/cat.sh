@@ -105,3 +105,9 @@ title "stupicat"
     WITH_SNAPSHOT="$snapshot/stupicat-table-with-escapes-output" \
     expect_run_sh $SUCCESSFULLY "${exe[*]} $fixture/table-with-escapes.md 2>/dev/null"
 )
+
+(with "definition lists"
+  it "succeeds in reproducing definition-list indentation" && \
+    WITH_SNAPSHOT="$snapshot/stupicat-definition-list-output" \
+    expect_run_sh $SUCCESSFULLY "${exe[*]} $fixture/definition-list.md 2>/dev/null"
+)
