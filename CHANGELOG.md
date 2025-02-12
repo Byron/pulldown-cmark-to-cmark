@@ -5,6 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 20.0.1 (2025-02-12)
+
+### Bug Fixes
+
+ - <csr-id-27cbc1635ca77acae37fe4723daf75dd1c8733a0/> definition list block indentation now works correctly.
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 7 commits contributed to the release.
+ - 58 days passed between releases.
+ - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
+ - 1 unique issue was worked on: [#97](https://github.com/Byron/pulldown-cmark-to-cmark/issues/97)
+
+### Thanks Clippy
+
+<csr-read-only-do-not-edit/>
+
+[Clippy](https://github.com/rust-lang/rust-clippy) helped 1 time to make code idiomatic. 
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#97](https://github.com/Byron/pulldown-cmark-to-cmark/issues/97)**
+    - Definition list block indentation now works correctly. ([`27cbc16`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/27cbc1635ca77acae37fe4723daf75dd1c8733a0))
+ * **Uncategorized**
+    - Merge branch 'definition_list' ([`435307d`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/435307d55579296addebb3a4adb9a580728e4148))
+    - Thanks clippy ([`abb85a6`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/abb85a61515b1e9ccb9f40fb6f15b409f9d4602e))
+    - Treat definition list entries as blocks ([`261c23b`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/261c23b18c00a0122bbcc00cb93f16ceb3bd467c))
+    - Merge pull request #96 from mgsloan/improve-naming-in-code-escaping-and-add-comments ([`1ffd7c8`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/1ffd7c86380de1d558d27364168ff2a78de4b4b7))
+    - Add comments explaining inline code escaping ([`60e1854`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/60e185422a15f3d5e33e889e9874bfb44ff25833))
+    - Improve naming in function for counting max consecutive chars ([`32628b3`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/32628b3562225a8bec3e7a9ed54467dad5d7c2ef))
+</details>
+
 ## 20.0.0 (2024-12-15)
 
 ### Bug Fixes (BREAKING)
@@ -23,7 +61,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 4 commits contributed to the release.
+ - 5 commits contributed to the release.
  - 4 days passed between releases.
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 1 unique issue was worked on: [#91](https://github.com/Byron/pulldown-cmark-to-cmark/issues/91)
@@ -37,6 +75,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#91](https://github.com/Byron/pulldown-cmark-to-cmark/issues/91)**
     - Revert "fix: harden again manufactured input which could previously trigger assertion failures." ([`a442910`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/a442910b6e82f17f0e044ceb2069dd4bd76ffa34))
  * **Uncategorized**
+    - Release pulldown-cmark-to-cmark v20.0.0 ([`3c850de`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/3c850de2d3d1d79f19ca5f375e1089a653cf3ff7))
     - Merge pull request #93 from cip999/resume-error-handling ([`21f0f5d`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/21f0f5d472307f4c8c8403505d90259a922ae624))
     - Add integration test for CmarkError::UnexpectedEvent ([`4766cc1`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/4766cc1c4dc569841e89068d3292b28d3c57e2e6))
     - Add structured error handling for cmark(), cmark_resume() etc ([`fdc5859`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/fdc5859ff9823189c6966d5448468bff1d82d899))
