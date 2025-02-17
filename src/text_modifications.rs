@@ -73,7 +73,7 @@ pub fn padding_of(l: Option<u64>) -> Cow<'static, str> {
 ///
 /// [`write_padded_newline()`] takes care of writing both a newline character,
 /// and the appropriate padding characters, abstracting over the need to
-/// carefully pair writing of a newline with writing of padding characters.
+/// carefully pair those actions.
 ///
 /// # Purpose
 ///
@@ -84,7 +84,7 @@ pub fn padding_of(l: Option<u64>) -> Cow<'static, str> {
 /// >·A block quote with an embedded list:
 /// >·
 /// >·* This is a list item that itself contains
-/// >···multiple lines and paragraph of content.
+/// >···multiple lines and paragraphs of content.
 /// >···
 /// >···Second paragraph.
 /// ```
@@ -95,7 +95,7 @@ pub fn padding_of(l: Option<u64>) -> Cow<'static, str> {
 /// list item is indented.
 ///
 /// Concretely, a call to [`write_padded_newline()`] after the first line in the
-/// paragraph of the list item would write `">···"`.
+/// paragraph of the list item would write `"\n>···"`.
 pub(crate) fn write_padded_newline(formatter: &mut impl fmt::Write, state: &State<'_>) -> Result<(), fmt::Error> {
     formatter.write_char('\n')?;
     padding(formatter, &state.padding)?;
