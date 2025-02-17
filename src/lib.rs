@@ -868,15 +868,12 @@ where
                 }
             }
             state.last_was_text_without_trailing_newline = !text.ends_with('\n');
-            print_text_without_trailing_newline(
-                &escape_special_characters(text, state, options),
-                formatter,
-                &state.padding,
-            )
+            let escaped_text = escape_special_characters(text, state, options);
+            print_text_without_trailing_newline(&escaped_text, formatter, &state)
         }
         InlineHtml(text) => {
             consume_newlines(formatter, state)?;
-            print_text_without_trailing_newline(text, formatter, &state.padding)
+            print_text_without_trailing_newline(text, formatter, &state)
         }
         Html(text) => {
             let mut lines = text.split('\n');

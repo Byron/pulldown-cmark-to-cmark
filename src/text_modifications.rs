@@ -1,6 +1,6 @@
 use super::{fmt, Cow, Options, State};
 
-pub fn padding<F>(f: &mut F, p: &[Cow<'_, str>]) -> fmt::Result
+pub(crate) fn padding<F>(f: &mut F, p: &[Cow<'_, str>]) -> fmt::Result
 where
     F: fmt::Write,
 {
@@ -9,19 +9,18 @@ where
     }
     Ok(())
 }
-pub fn consume_newlines<F>(f: &mut F, s: &mut State<'_>) -> fmt::Result
+pub(crate) fn consume_newlines<F>(f: &mut F, s: &mut State<'_>) -> fmt::Result
 where
     F: fmt::Write,
 {
     while s.newlines_before_start != 0 {
         s.newlines_before_start -= 1;
-        f.write_char('\n')?;
-        padding(f, &s.padding)?;
+        write_padded_newline(f, s)?;
     }
     Ok(())
 }
 
-pub fn escape_special_characters<'a>(t: &'a str, state: &State<'a>, options: &Options<'a>) -> Cow<'a, str> {
+pub(crate) fn escape_special_characters<'a>(t: &'a str, state: &State<'a>, options: &Options<'a>) -> Cow<'a, str> {
     if state.is_in_code_block() || t.is_empty() {
         return Cow::Borrowed(t);
     }
@@ -46,7 +45,7 @@ pub fn escape_special_characters<'a>(t: &'a str, state: &State<'a>, options: &Op
     }
 }
 
-pub fn print_text_without_trailing_newline<F>(t: &str, f: &mut F, p: &[Cow<'_, str>]) -> fmt::Result
+pub(crate) fn print_text_without_trailing_newline<F>(t: &str, f: &mut F, state: &State<'_>) -> fmt::Result
 where
     F: fmt::Write,
 {
@@ -54,14 +53,13 @@ where
     for (tid, token) in t.split('\n').enumerate() {
         f.write_str(token)?;
         if tid + 1 < line_count {
-            f.write_char('\n')?;
-            padding(f, p)?;
+            write_padded_newline(f, state)?;
         }
     }
     Ok(())
 }
 
-pub fn padding_of(l: Option<u64>) -> Cow<'static, str> {
+pub(crate) fn padding_of(l: Option<u64>) -> Cow<'static, str> {
     match l {
         None => "  ".into(),
         Some(n) => format!("{n}. ").chars().map(|_| ' ').collect::<String>().into(),
