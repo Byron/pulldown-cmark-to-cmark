@@ -5,6 +5,54 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+The breaking release is to avoid side-effects with different `pulldown-cmark` versions.
+This crate now comes with version 13.
+
+### Other
+
+ - <csr-id-05e247e5c7a74ac7bf9a906417724b8a275cabcc/> Adjust wording + typos
+
+### Refactor
+
+ - <csr-id-2252ba1d9cf93256a8bcdd721813ed2397e32464/> Add helper to factor out newline + padding pattern
+   When writing a newline into the generated Markdown content
+   to start a new line of output, it is (almost) always necessary
+   to output the "padding" characters used to indent the content
+   at the current location in the document, based on the hierarchy
+   of block-level elements the output cursor is "inside" of.
+   
+   Since writing a newline and writing the current padding are
+   always paired, factoring them out into a function should help
+   with readability and consistency in performing this minor
+   two-step dance correctly.
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 7 commits contributed to the release.
+ - 5 days passed between releases.
+ - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Bump version to 21 for pulldown-cmark 13 ([`ed16be5`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/ed16be5ad4d32d3d17a5ac86a60f7e0a2cbf2c91))
+    - Merge pull request #99 from danieleades/cmark-13 ([`fb9bbd6`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/fb9bbd6a4201f917041e7ca887e1845463be03df))
+    - Merge pull request #98 from ConnorGray/connorgray/refactor-1 ([`b47d6c9`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/b47d6c936b2d940107103e6bee3b12ab822f2d0f))
+    - Update doc-string so `State::padding` is shown conventionally ([`e10010f`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/e10010f198a9cba9c0691def19978cf444740aa2))
+    - Update to pulldown-cmark 13 ([`efbdd3a`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/efbdd3a712119d1899e54ac69b79830bd5a5a541))
+    - Adjust wording + typos ([`05e247e`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/05e247e5c7a74ac7bf9a906417724b8a275cabcc))
+    - Add helper to factor out newline + padding pattern ([`2252ba1`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/2252ba1d9cf93256a8bcdd721813ed2397e32464))
+</details>
+
 ## 20.0.1 (2025-02-12)
 
 ### Bug Fixes
@@ -15,7 +63,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 7 commits contributed to the release.
+ - 8 commits contributed to the release.
  - 58 days passed between releases.
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 1 unique issue was worked on: [#97](https://github.com/Byron/pulldown-cmark-to-cmark/issues/97)
@@ -35,6 +83,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#97](https://github.com/Byron/pulldown-cmark-to-cmark/issues/97)**
     - Definition list block indentation now works correctly. ([`27cbc16`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/27cbc1635ca77acae37fe4723daf75dd1c8733a0))
  * **Uncategorized**
+    - Release pulldown-cmark-to-cmark v20.0.1 ([`80f82f4`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/80f82f42e82d050859eb466e9bf5715e67915320))
     - Merge branch 'definition_list' ([`435307d`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/435307d55579296addebb3a4adb9a580728e4148))
     - Thanks clippy ([`abb85a6`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/abb85a61515b1e9ccb9f40fb6f15b409f9d4602e))
     - Treat definition list entries as blocks ([`261c23b`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/261c23b18c00a0122bbcc00cb93f16ceb3bd467c))
