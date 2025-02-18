@@ -111,3 +111,9 @@ title "stupicat"
     WITH_SNAPSHOT="$snapshot/stupicat-definition-list-output" \
     expect_run_sh $SUCCESSFULLY "${exe[*]} $fixture/definition-list.md 2>/dev/null"
 )
+
+(with "super and subscript"
+  it "succeeds" && \
+    WITH_SNAPSHOT="$snapshot/stupicat-super-sub-script-output" \
+    expect_run_sh $SUCCESSFULLY "${exe[*]} $fixture/super-sub-script.md 2>/dev/null"
+)

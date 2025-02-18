@@ -592,6 +592,8 @@ where
                     state.padding.push(every_line_padding.into());
                     Ok(())
                 }
+                Superscript => formatter.write_str("<sup>"),
+                Subscript => formatter.write_str("<sub>"),
             }
         }
         End(tag) => match tag {
@@ -842,6 +844,8 @@ where
                 state.padding.pop();
                 write_padded_newline(formatter, &state)
             }
+            TagEnd::Superscript => formatter.write_str("</sup>"),
+            TagEnd::Subscript => formatter.write_str("</sub>"),
         },
         HardBreak => formatter.write_str("  ").and(write_padded_newline(formatter, &state)),
         SoftBreak => write_padded_newline(formatter, &state),
