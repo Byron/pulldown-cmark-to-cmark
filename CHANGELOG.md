@@ -5,7 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 21.0.0 (2025-02-18)
+
+<csr-id-05e247e5c7a74ac7bf9a906417724b8a275cabcc/>
+<csr-id-2252ba1d9cf93256a8bcdd721813ed2397e32464/>
 
 The breaking release is to avoid side-effects with different `pulldown-cmark` versions.
 This crate now comes with version 13.
@@ -32,8 +35,8 @@ This crate now comes with version 13.
 
 <csr-read-only-do-not-edit/>
 
- - 7 commits contributed to the release.
- - 5 days passed between releases.
+ - 8 commits contributed to the release.
+ - 6 days passed between releases.
  - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
@@ -44,6 +47,7 @@ This crate now comes with version 13.
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Update changelog prior to release ([`475478a`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/475478a781fafc42b3e0879d9fe12993c3d89cb4))
     - Bump version to 21 for pulldown-cmark 13 ([`ed16be5`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/ed16be5ad4d32d3d17a5ac86a60f7e0a2cbf2c91))
     - Merge pull request #99 from danieleades/cmark-13 ([`fb9bbd6`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/fb9bbd6a4201f917041e7ca887e1845463be03df))
     - Merge pull request #98 from ConnorGray/connorgray/refactor-1 ([`b47d6c9`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/b47d6c936b2d940107103e6bee3b12ab822f2d0f))
