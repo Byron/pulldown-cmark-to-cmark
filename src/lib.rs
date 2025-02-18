@@ -3,7 +3,7 @@
 use std::{
     borrow::{Borrow, Cow},
     collections::HashSet,
-    fmt::{self, Write},
+    fmt,
     ops::Range,
 };
 
@@ -92,12 +92,6 @@ pub struct State<'a> {
     /// It's used to see if the current event didn't capture some bytes because of a
     /// skipped-over backslash.
     pub last_event_end_index: usize,
-}
-
-impl State<'_> {
-    pub fn is_in_code_block(&self) -> bool {
-        self.code_block.is_some()
-    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -232,6 +226,66 @@ impl Options<'_> {
     }
 }
 
+/// The error returned by [`cmark_resume_one_event`] and
+/// [`cmark_resume_with_source_range_and_options`].
+#[derive(Debug)]
+pub enum Error {
+    FormatFailed(fmt::Error),
+    UnexpectedEvent,
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::FormatFailed(e) => e.fmt(f),
+            Self::UnexpectedEvent => f.write_str("Unexpected event while reconstructing Markdown"),
+        }
+    }
+}
+
+impl std::error::Error for Error {}
+
+impl From<fmt::Error> for Error {
+    fn from(e: fmt::Error) -> Self {
+        Self::FormatFailed(e)
+    }
+}
+
+//======================================
+// Public API Functions
+//======================================
+
+/// As [`cmark_with_options()`], but with default [`Options`].
+pub fn cmark<'a, I, E, F>(events: I, mut formatter: F) -> Result<State<'a>, Error>
+where
+    I: Iterator<Item = E>,
+    E: Borrow<Event<'a>>,
+    F: fmt::Write,
+{
+    cmark_with_options(events, &mut formatter, Default::default())
+}
+
+/// As [`cmark_resume_with_options()`], but with default [`Options`].
+pub fn cmark_resume<'a, I, E, F>(events: I, formatter: F, state: Option<State<'a>>) -> Result<State<'a>, Error>
+where
+    I: Iterator<Item = E>,
+    E: Borrow<Event<'a>>,
+    F: fmt::Write,
+{
+    cmark_resume_with_options(events, formatter, state, Options::default())
+}
+
+/// As [`cmark_resume_with_options()`], but with the [`State`] finalized.
+pub fn cmark_with_options<'a, I, E, F>(events: I, mut formatter: F, options: Options<'_>) -> Result<State<'a>, Error>
+where
+    I: Iterator<Item = E>,
+    E: Borrow<Event<'a>>,
+    F: fmt::Write,
+{
+    let state = cmark_resume_with_options(events, &mut formatter, Default::default(), options)?;
+    state.finalize(formatter)
+}
+
 /// Serialize a stream of [pulldown-cmark-Events][Event] into a string-backed buffer.
 ///
 /// 1. **events**
@@ -276,31 +330,6 @@ where
     Ok(state)
 }
 
-/// The error returned by [`cmark_resume_one_event`] and
-/// [`cmark_resume_with_source_range_and_options`].
-#[derive(Debug)]
-pub enum Error {
-    FormatFailed(fmt::Error),
-    UnexpectedEvent,
-}
-
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::FormatFailed(e) => e.fmt(f),
-            Self::UnexpectedEvent => f.write_str("Unexpected event while reconstructing Markdown"),
-        }
-    }
-}
-
-impl std::error::Error for Error {}
-
-impl From<fmt::Error> for Error {
-    fn from(e: fmt::Error) -> Self {
-        Self::FormatFailed(e)
-    }
-}
-
 fn cmark_resume_one_event<'a, E, F>(
     event: E,
     formatter: &mut F,
@@ -317,6 +346,7 @@ where
     state.last_was_text_without_trailing_newline = false;
     let last_was_paragraph_start = state.last_was_paragraph_start;
     state.last_was_paragraph_start = false;
+
     let res = match event.borrow() {
         Rule => {
             consume_newlines(formatter, state)?;
@@ -380,7 +410,7 @@ where
                     state.last_was_paragraph_start = true;
                     match state.list_stack.last_mut() {
                         Some(inner) => {
-                            state.padding.push(padding_of(*inner));
+                            state.padding.push(list_item_padding_of(*inner));
                             match inner {
                                 Some(n) => {
                                     let bullet_number = *n;
@@ -872,76 +902,6 @@ where
     Ok(res?)
 }
 
-/// As [`cmark_resume_with_options()`], but with default [`Options`].
-pub fn cmark_resume<'a, I, E, F>(events: I, formatter: F, state: Option<State<'a>>) -> Result<State<'a>, Error>
-where
-    I: Iterator<Item = E>,
-    E: Borrow<Event<'a>>,
-    F: fmt::Write,
-{
-    cmark_resume_with_options(events, formatter, state, Options::default())
-}
-
-fn close_link<F>(uri: &str, title: &str, f: &mut F, link_type: LinkType) -> fmt::Result
-where
-    F: fmt::Write,
-{
-    let needs_brackets = {
-        let mut depth = 0;
-        for b in uri.bytes() {
-            match b {
-                b'(' => depth += 1,
-                b')' => depth -= 1,
-                b' ' => {
-                    depth += 1;
-                    break;
-                }
-                _ => {}
-            }
-            if depth > 3 {
-                break;
-            }
-        }
-        depth != 0
-    };
-    let separator = match link_type {
-        LinkType::Shortcut => ": ",
-        _ => "(",
-    };
-
-    if needs_brackets {
-        write!(f, "]{separator}<{uri}>")?;
-    } else {
-        write!(f, "]{separator}{uri}")?;
-    }
-    if !title.is_empty() {
-        write!(f, " \"{title}\"", title = EscapeLinkTitle(title))?;
-    }
-    if link_type != LinkType::Shortcut {
-        f.write_char(')')?;
-    }
-
-    Ok(())
-}
-
-struct EscapeLinkTitle<'a>(&'a str);
-
-/// Writes a link title with double quotes escaped.
-/// See https://spec.commonmark.org/0.30/#link-title for the rules around
-/// link titles and the characters they may contain.
-impl fmt::Display for EscapeLinkTitle<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for c in self.0.chars() {
-            match c {
-                '"' => f.write_str(r#"\""#)?,
-                '\\' => f.write_str(r"\\")?,
-                c => f.write_char(c)?,
-            }
-        }
-        Ok(())
-    }
-}
-
 impl State<'_> {
     pub fn finalize<F>(mut self, mut formatter: F) -> Result<Self, Error>
     where
@@ -964,6 +924,10 @@ impl State<'_> {
         Ok(self)
     }
 
+    pub fn is_in_code_block(&self) -> bool {
+        self.code_block.is_some()
+    }
+
     /// Ensure that [`State::newlines_before_start`] is at least as large as
     /// the provided option value.
     fn set_minimum_newlines_before_start(&mut self, option_value: usize) {
@@ -971,27 +935,6 @@ impl State<'_> {
             self.newlines_before_start = option_value
         }
     }
-}
-
-/// As [`cmark_resume_with_options()`], but with the [`State`] finalized.
-pub fn cmark_with_options<'a, I, E, F>(events: I, mut formatter: F, options: Options<'_>) -> Result<State<'a>, Error>
-where
-    I: Iterator<Item = E>,
-    E: Borrow<Event<'a>>,
-    F: fmt::Write,
-{
-    let state = cmark_resume_with_options(events, &mut formatter, Default::default(), options)?;
-    state.finalize(formatter)
-}
-
-/// As [`cmark_with_options()`], but with default [`Options`].
-pub fn cmark<'a, I, E, F>(events: I, mut formatter: F) -> Result<State<'a>, Error>
-where
-    I: Iterator<Item = E>,
-    E: Borrow<Event<'a>>,
-    F: fmt::Write,
-{
-    cmark_with_options(events, &mut formatter, Default::default())
 }
 
 /// Return the `<seen amount of consecutive fenced code-block tokens> + 1` that occur *within* a
@@ -1058,41 +1001,4 @@ where
 
     max_token_count = max_token_count.max(token_count);
     (max_token_count >= 3).then_some(max_token_count + 1)
-}
-
-fn max_consecutive_chars(text: &str, search: char) -> usize {
-    let mut in_search_chars = false;
-    let mut max_count = 0;
-    let mut cur_count = 0;
-
-    for ch in text.chars() {
-        if ch == search {
-            cur_count += 1;
-            in_search_chars = true;
-        } else if in_search_chars {
-            max_count = max_count.max(cur_count);
-            cur_count = 0;
-            in_search_chars = false;
-        }
-    }
-    max_count.max(cur_count)
-}
-
-#[cfg(test)]
-mod max_consecutive_chars {
-    use super::max_consecutive_chars;
-
-    #[test]
-    fn happens_in_the_entire_string() {
-        assert_eq!(
-            max_consecutive_chars("``a```b``", '`'),
-            3,
-            "the highest seen consecutive segment of backticks counts"
-        );
-        assert_eq!(
-            max_consecutive_chars("```a``b`", '`'),
-            3,
-            "it can't be downgraded later"
-        );
-    }
 }
