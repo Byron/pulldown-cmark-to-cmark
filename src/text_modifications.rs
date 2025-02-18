@@ -67,3 +67,37 @@ pub fn padding_of(l: Option<u64>) -> Cow<'static, str> {
         Some(n) => format!("{n}. ").chars().map(|_| ' ').collect::<String>().into(),
     }
 }
+
+/// Write a newline followed by the current [`State::padding`]
+/// text that indents the current nested content.
+///
+/// [`write_padded_newline()`] takes care of writing both a newline character,
+/// and the appropriate padding characters, abstracting over the need to
+/// carefully pair those actions.
+///
+/// # Purpose
+///
+/// Consider a scenario where we're trying to write out the following Markdown
+/// (space indents visualized as '·'):
+///
+/// ```markdown
+/// >·A block quote with an embedded list:
+/// >·
+/// >·* This is a list item that itself contains
+/// >···multiple lines and paragraphs of content.
+/// >···
+/// >···Second paragraph.
+/// ```
+///
+/// Each line of output within the block quote needs to include the text `">·"`
+/// at the beginning of the line. Additionally, within the list, each line
+/// _also_ needs to start with `"··"` spaces so that the content of the
+/// list item is indented.
+///
+/// Concretely, a call to [`write_padded_newline()`] after the first line in the
+/// paragraph of the list item would write `"\n>···"`.
+pub(crate) fn write_padded_newline(formatter: &mut impl fmt::Write, state: &State<'_>) -> Result<(), fmt::Error> {
+    formatter.write_char('\n')?;
+    padding(formatter, &state.padding)?;
+    Ok(())
+}

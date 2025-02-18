@@ -540,7 +540,7 @@ where
                     // level in our blockquote. This should work regardless if we have other
                     // padding or if we're in a list
                     if !consumed_newlines {
-                        formatter.write_char('\n').and(padding(formatter, &state.padding))?
+                        write_padded_newline(formatter, state)?;
                     }
                     formatter.write_str(first_line_padding)?;
                     state.padding.push(every_line_padding.into());
@@ -552,9 +552,7 @@ where
                     if consumed_newlines {
                         formatter.write_str("    ")
                     } else {
-                        formatter
-                            .write_char('\n')
-                            .and_then(|()| padding(formatter, &state.padding))
+                        write_padded_newline(formatter, &state)
                     }
                 }
                 CodeBlock(pulldown_cmark::CodeBlockKind::Fenced(info)) => {
@@ -562,9 +560,7 @@ where
                     let s = if consumed_newlines {
                         Ok(())
                     } else {
-                        formatter
-                            .write_char('\n')
-                            .and_then(|()| padding(formatter, &state.padding))
+                        write_padded_newline(formatter, &state)
                     };
 
                     s.and_then(|()| {
@@ -573,9 +569,8 @@ where
                         }
                         Ok(())
                     })
-                    .and_then(|()| formatter.write_str(info))
-                    .and_then(|()| formatter.write_char('\n'))
-                    .and_then(|()| padding(formatter, &state.padding))
+                    .and_then(|()| formatter.write_str(info))?;
+                    write_padded_newline(formatter, &state)
                 }
                 HtmlBlock => Ok(()),
                 MetadataBlock(MetadataBlockKind::YamlStyle) => formatter.write_str("---\n"),
@@ -718,8 +713,7 @@ where
                     state.newlines_before_start = options.newlines_after_codeblock;
                 }
                 if last_was_text_without_trailing_newline {
-                    formatter.write_char('\n')?;
-                    padding(formatter, &state.padding)?;
+                    write_padded_newline(formatter, &state)?;
                 }
                 match state.code_block {
                     Some(CodeBlockKind::Fenced) => {
@@ -775,7 +769,7 @@ where
                 formatter.write_char('|')?;
 
                 if let TagEnd::TableHead = t {
-                    formatter.write_char('\n').and(padding(formatter, &state.padding))?;
+                    write_padded_newline(formatter, &state)?;
                     for (alignment, name) in state.table_alignments.iter().zip(state.table_headers.iter()) {
                         formatter.write_char('|')?;
                         // NOTE: For perfect counting, count grapheme clusters.
@@ -846,11 +840,11 @@ where
             TagEnd::DefinitionListTitle => formatter.write_char('\n'),
             TagEnd::DefinitionListDefinition => {
                 state.padding.pop();
-                formatter.write_char('\n').and(padding(formatter, &state.padding))
+                write_padded_newline(formatter, &state)
             }
         },
-        HardBreak => formatter.write_str("  \n").and(padding(formatter, &state.padding)),
-        SoftBreak => formatter.write_char('\n').and(padding(formatter, &state.padding)),
+        HardBreak => formatter.write_str("  ").and(write_padded_newline(formatter, &state)),
+        SoftBreak => write_padded_newline(formatter, &state),
         Text(text) => {
             let mut text = &text[..];
             if let Some(shortcut_text) = state.current_shortcut_text.as_mut() {
@@ -886,8 +880,7 @@ where
                 formatter.write_str(line)?;
             }
             for line in lines {
-                formatter.write_char('\n')?;
-                padding(formatter, &state.padding)?;
+                write_padded_newline(formatter, &state)?;
                 formatter.write_str(line)?;
             }
             Ok(())
