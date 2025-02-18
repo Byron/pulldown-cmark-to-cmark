@@ -199,3 +199,22 @@ mod max_consecutive_chars {
         );
     }
 }
+
+//=====================================
+// General-purpose formatting utilities
+//=====================================
+
+/// `Repeated(content, count` formats as `content` repeated `count` times.
+#[derive(Debug)]
+pub(crate) struct Repeated<T>(pub T, pub usize);
+
+impl<T: fmt::Display> fmt::Display for Repeated<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let Repeated(content, count) = self;
+
+        for _ in 0..*count {
+            T::fmt(content, f)?;
+        }
+        Ok(())
+    }
+}
