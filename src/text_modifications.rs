@@ -68,7 +68,7 @@ pub fn padding_of(l: Option<u64>) -> Cow<'static, str> {
     }
 }
 
-/// Write a newline followed by the current [`State.padding`][State::padding]
+/// Write a newline followed by the current [`State::padding`]
 /// text that indents the current nested content.
 ///
 /// [`write_padded_newline()`] takes care of writing both a newline character,
