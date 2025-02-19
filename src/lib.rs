@@ -320,9 +320,7 @@ where
     let res = match event.borrow() {
         Rule => {
             consume_newlines(formatter, state)?;
-            if state.newlines_before_start < options.newlines_after_rule {
-                state.newlines_before_start = options.newlines_after_rule;
-            }
+            state.set_minimum_newlines_before_start(options.newlines_after_rule);
             formatter.write_str("---")
         }
         Code(text) => {
@@ -370,8 +368,8 @@ where
         Start(tag) => {
             if let List(list_type) = tag {
                 state.list_stack.push(*list_type);
-                if state.list_stack.len() > 1 && state.newlines_before_start < options.newlines_after_rest {
-                    state.newlines_before_start = options.newlines_after_rest;
+                if state.list_stack.len() > 1 {
+                    state.set_minimum_newlines_before_start(options.newlines_after_rest);
                 }
             }
             let consumed_newlines = state.newlines_before_start != 0;
@@ -579,9 +577,7 @@ where
                 Strikethrough => formatter.write_str("~~"),
                 DefinitionList => Ok(()),
                 DefinitionListTitle => {
-                    if state.newlines_before_start < options.newlines_after_rest {
-                        state.newlines_before_start = options.newlines_after_rest;
-                    }
+                    state.set_minimum_newlines_before_start(options.newlines_after_rest);
                     Ok(())
                 }
                 DefinitionListDefinition => {
@@ -699,21 +695,15 @@ where
                     formatter.write_char(' ')?;
                     formatter.write_char('}')?;
                 }
-                if state.newlines_before_start < options.newlines_after_headline {
-                    state.newlines_before_start = options.newlines_after_headline;
-                }
+                state.set_minimum_newlines_before_start(options.newlines_after_headline);
                 Ok(())
             }
             TagEnd::Paragraph => {
-                if state.newlines_before_start < options.newlines_after_paragraph {
-                    state.newlines_before_start = options.newlines_after_paragraph;
-                }
+                state.set_minimum_newlines_before_start(options.newlines_after_paragraph);
                 Ok(())
             }
             TagEnd::CodeBlock => {
-                if state.newlines_before_start < options.newlines_after_codeblock {
-                    state.newlines_before_start = options.newlines_after_codeblock;
-                }
+                state.set_minimum_newlines_before_start(options.newlines_after_codeblock);
                 if last_was_text_without_trailing_newline {
                     write_padded_newline(formatter, &state)?;
                 }
@@ -732,27 +722,19 @@ where
                 Ok(())
             }
             TagEnd::HtmlBlock => {
-                if state.newlines_before_start < options.newlines_after_htmlblock {
-                    state.newlines_before_start = options.newlines_after_htmlblock;
-                }
+                state.set_minimum_newlines_before_start(options.newlines_after_htmlblock);
                 Ok(())
             }
             TagEnd::MetadataBlock(MetadataBlockKind::PlusesStyle) => {
-                if state.newlines_before_start < options.newlines_after_metadata {
-                    state.newlines_before_start = options.newlines_after_metadata;
-                }
+                state.set_minimum_newlines_before_start(options.newlines_after_metadata);
                 formatter.write_str("+++\n")
             }
             TagEnd::MetadataBlock(MetadataBlockKind::YamlStyle) => {
-                if state.newlines_before_start < options.newlines_after_metadata {
-                    state.newlines_before_start = options.newlines_after_metadata;
-                }
+                state.set_minimum_newlines_before_start(options.newlines_after_metadata);
                 formatter.write_str("---\n")
             }
             TagEnd::Table => {
-                if state.newlines_before_start < options.newlines_after_table {
-                    state.newlines_before_start = options.newlines_after_table;
-                }
+                state.set_minimum_newlines_before_start(options.newlines_after_table);
                 state.table_alignments.clear();
                 state.table_headers.clear();
                 Ok(())
@@ -765,9 +747,7 @@ where
                 Ok(())
             }
             t @ (TagEnd::TableRow | TagEnd::TableHead) => {
-                if state.newlines_before_start < options.newlines_after_rest {
-                    state.newlines_before_start = options.newlines_after_rest;
-                }
+                state.set_minimum_newlines_before_start(options.newlines_after_rest);
                 formatter.write_char('|')?;
 
                 if let TagEnd::TableHead = t {
@@ -807,24 +787,20 @@ where
             }
             TagEnd::Item => {
                 state.padding.pop();
-                if state.newlines_before_start < options.newlines_after_rest {
-                    state.newlines_before_start = options.newlines_after_rest;
-                }
+                state.set_minimum_newlines_before_start(options.newlines_after_rest);
                 Ok(())
             }
             TagEnd::List(_) => {
                 state.list_stack.pop();
-                if state.list_stack.is_empty() && state.newlines_before_start < options.newlines_after_list {
-                    state.newlines_before_start = options.newlines_after_list;
+                if state.list_stack.is_empty() {
+                    state.set_minimum_newlines_before_start(options.newlines_after_list);
                 }
                 Ok(())
             }
             TagEnd::BlockQuote(_) => {
                 state.padding.pop();
 
-                if state.newlines_before_start < options.newlines_after_blockquote {
-                    state.newlines_before_start = options.newlines_after_blockquote;
-                }
+                state.set_minimum_newlines_before_start(options.newlines_after_blockquote);
 
                 Ok(())
             }
@@ -834,9 +810,7 @@ where
             }
             TagEnd::Strikethrough => formatter.write_str("~~"),
             TagEnd::DefinitionList => {
-                if state.newlines_before_start < options.newlines_after_list {
-                    state.newlines_before_start = options.newlines_after_list;
-                }
+                state.set_minimum_newlines_before_start(options.newlines_after_list);
                 Ok(())
             }
             TagEnd::DefinitionListTitle => formatter.write_char('\n'),
@@ -988,6 +962,14 @@ impl State<'_> {
             written_shortcuts.insert(shortcut);
         }
         Ok(self)
+    }
+
+    /// Ensure that [`State::newlines_before_start`] is at least as large as
+    /// the provided option value.
+    fn set_minimum_newlines_before_start(&mut self, option_value: usize) {
+        if self.newlines_before_start < option_value {
+            self.newlines_before_start = option_value
+        }
     }
 }
 
