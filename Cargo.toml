@@ -26,3 +26,4 @@ pulldown-cmark = { version = "0.13.0", default-features = false }
 [dev-dependencies]
 indoc = "2.0.5"
 pretty_assertions = "1.4.0"
+yansi = "1.0.1"
