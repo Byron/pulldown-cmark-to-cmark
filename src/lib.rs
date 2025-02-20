@@ -251,10 +251,6 @@ impl From<fmt::Error> for Error {
     }
 }
 
-//======================================
-// Public API Functions
-//======================================
-
 /// As [`cmark_with_options()`], but with default [`Options`].
 pub fn cmark<'a, I, E, F>(events: I, mut formatter: F) -> Result<State<'a>, Error>
 where

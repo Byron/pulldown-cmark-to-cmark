@@ -3,10 +3,6 @@ use super::{
     Cow, LinkType, Options, State,
 };
 
-//======================================
-// Padding and newlines
-//======================================
-
 /// Write a newline followed by the current [`State::padding`]
 /// text that indents the current nested content.
 ///
@@ -75,20 +71,12 @@ where
     Ok(())
 }
 
-//======================================
-// Special Markdown element helpers
-//======================================
-
 pub(crate) fn list_item_padding_of(l: Option<u64>) -> Cow<'static, str> {
     match l {
         None => "  ".into(),
         Some(n) => format!("{n}. ").chars().map(|_| ' ').collect::<String>().into(),
     }
 }
-
-//
-// Links
-//
 
 pub(crate) fn close_link<F>(uri: &str, title: &str, f: &mut F, link_type: LinkType) -> fmt::Result
 where
@@ -150,10 +138,6 @@ impl fmt::Display for EscapeLinkTitle<'_> {
     }
 }
 
-//======================================
-// Escaping
-//======================================
-
 pub(crate) fn escape_special_characters<'a>(t: &'a str, state: &State<'a>, options: &Options<'a>) -> Cow<'a, str> {
     if state.is_in_code_block() || t.is_empty() {
         return Cow::Borrowed(t);
@@ -178,10 +162,6 @@ pub(crate) fn escape_special_characters<'a>(t: &'a str, state: &State<'a>, optio
         Cow::Borrowed(t)
     }
 }
-
-//======================================
-// General-purpose string utilities
-//======================================
 
 pub(crate) fn max_consecutive_chars(text: &str, search: char) -> usize {
     let mut in_search_chars = false;
