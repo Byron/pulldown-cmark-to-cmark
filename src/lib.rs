@@ -7,9 +7,7 @@ use std::{
     ops::Range,
 };
 
-use pulldown_cmark::{
-    Alignment as TableAlignment, BlockQuoteKind, Event, HeadingLevel, LinkType, MetadataBlockKind, Tag, TagEnd,
-};
+use pulldown_cmark::{Alignment as TableAlignment, BlockQuoteKind, Event, LinkType, MetadataBlockKind, Tag, TagEnd};
 
 mod source_range;
 mod text_modifications;
@@ -382,7 +380,7 @@ where
             } else {
                 // More backticks are needed to delimit the inline code than the maximum number of
                 // backticks in a consecutive run.
-                let backticks = "`".repeat(max_consecutive_chars(&text, '`') + 1);
+                let backticks = Repeated('`', max_consecutive_chars(&text, '`') + 1);
                 let space = match text.as_bytes() {
                     &[b'`', ..] | &[.., b'`'] => " ", // Space needed to separate backtick.
                     &[b' ', .., b' '] => " ",         // Space needed to escape inner space.
@@ -537,15 +535,8 @@ where
                             .map(|(k, v)| (k.clone().into(), v.as_ref().map(|val| val.clone().into())))
                             .collect(),
                     });
-                    match level {
-                        HeadingLevel::H1 => formatter.write_str("#"),
-                        HeadingLevel::H2 => formatter.write_str("##"),
-                        HeadingLevel::H3 => formatter.write_str("###"),
-                        HeadingLevel::H4 => formatter.write_str("####"),
-                        HeadingLevel::H5 => formatter.write_str("#####"),
-                        HeadingLevel::H6 => formatter.write_str("######"),
-                    }?;
-                    formatter.write_char(' ')
+                    // Write '#', '##', '###', etc. based on the heading level.
+                    write!(formatter, "{} ", Repeated('#', *level as usize))
                 }
                 BlockQuote(kind) => {
                     let every_line_padding = " > ";
@@ -581,19 +572,12 @@ where
                 }
                 CodeBlock(pulldown_cmark::CodeBlockKind::Fenced(info)) => {
                     state.code_block = Some(CodeBlockKind::Fenced);
-                    let s = if consumed_newlines {
-                        Ok(())
-                    } else {
-                        write_padded_newline(formatter, &state)
-                    };
+                    if !consumed_newlines {
+                        write_padded_newline(formatter, &state)?;
+                    }
 
-                    s.and_then(|()| {
-                        for _ in 0..options.code_block_token_count {
-                            formatter.write_char(options.code_block_token)?;
-                        }
-                        Ok(())
-                    })
-                    .and_then(|()| formatter.write_str(info))?;
+                    let fence = Repeated(options.code_block_token, options.code_block_token_count);
+                    write!(formatter, "{fence}{info}")?;
                     write_padded_newline(formatter, &state)
                 }
                 HtmlBlock => Ok(()),
@@ -735,9 +719,8 @@ where
                 }
                 match state.code_block {
                     Some(CodeBlockKind::Fenced) => {
-                        for _ in 0..options.code_block_token_count {
-                            formatter.write_char(options.code_block_token)?;
-                        }
+                        let fence = Repeated(options.code_block_token, options.code_block_token_count);
+                        write!(formatter, "{fence}")?;
                     }
                     Some(CodeBlockKind::Indented) => {
                         state.padding.pop();
