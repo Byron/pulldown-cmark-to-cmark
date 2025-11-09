@@ -5,13 +5,97 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## 21.0.0 (2025-02-18)
+## 21.0.0 (2025-11-09)
 
 <csr-id-05e247e5c7a74ac7bf9a906417724b8a275cabcc/>
 <csr-id-2252ba1d9cf93256a8bcdd721813ed2397e32464/>
 
 The breaking release is to avoid side-effects with different `pulldown-cmark` versions.
 This crate now comes with version 13.
+
+### Refactor
+
+ - <csr-id-942c42ba6fc517b595130603e9fd4aa1309ee755/> Add Repeated utility to simplify writing repeated content
+ - <csr-id-30b706b719fd2554b664bc7d2c40bcb7e7095a8c/> Move and group related code
+   My impression reading through the code in this project is that
+   top-level statements have gotten a bit intertangled over time;
+   this tries to reorder things to have a clearer flow and
+   structure, grouping related things together.
+   
+   For example, this moves the recently added Error enum up above
+   all of the API functions, instead of leaving it somewhat
+   arbitrarily nestled between `cmark_resume_with_options()` and
+   `cmark_resume_one_event()`.
+   
+   No code changes were made to the body of functions or types.
+   This also does not change any of the public APIs, only where
+   code is located.
+   
+   * Group padded newline logic at top of text_modifications.rs
+   
+   * Rename `padding_of()` to `list_item_padding_of()`
+   
+   * Add 'Public API Functions' header in lib.rs
+   
+   * Consolidate public enum and struct types at the
+     top of lib.rs, instead of leaving them scattered
+     amongst the `cmark*()` public functions.
+   
+   * Consolidate the two `impl State<'_>` statements
+   
+   * Move `cmark_resume()`, `cmark()` and `cmark_with_options()`
+     from the bottom of lib.rs up to the top, before the ~600
+     implementation of `cmark_resume_one_event()` that makes up
+     the bulk of lib.rs
+ - <csr-id-31a49d0d45c1c32bfcf1c653121ee3ca0a1d4fe8/> Add State::set_minimum_newlines_before_start()
+   This should help with readability. As an example, I didn't realize
+   initially that all of the `if` statements updated in this PR
+   were actually modifying the same field.
+   
+   But once I started doing the more generic refactoring of adding
+   a `set_option_minimum()` method, I looked at every line and
+   realized they were all the same.
+   
+   Factoring this to a method should clarify to future readers that
+   updating newlines_before_start specifically is a recurring operation.
+ - <csr-id-3ab278b9db5546f405bcd13bdf5c3f0d59d2fb8a/> Use `write_padded_string()` in a couple additional places
+   Additionally, while in the neighhborhood, add `pub(crate)` to the other
+   text_modifications.rs private helpers
+   
+   These being marked as `pub` is misleading since the `text_modifications`
+   module is not actually externally public, and these functions
+   are never re-exported publicly.
+
+### Other
+
+ - <csr-id-5b93e7e7b51000632bfecf6d7a49e48d9fb3bc19/> Drop comment headers
+
+### New Features
+
+ - <csr-id-91ffc9508b129cd603b870d38fd9bd88240d07fe/> Improve CommonMark conformance testing output
+   This is a major improvement to the rendering of the failing
+   CommonMark conformance test output, that should make it easier
+   to read and understand when pulldown-cmark-to-cmark is producing
+   erroneous output.
+   
+   Additionally, this introduces a way to force the printing of the
+   CommonMark failure report from the command line:
+   
+       $ FULL_CMARK_RESULTS=true cargo test
+   
+   and documents in CONTRIBUTING.md that new contributors may want
+   to start with trying to improve conformance.
+   
+   This removes `#[should_panic]` from the main CommonMark test. Instead,
+   we now hard-code in how many of the CommonMark tests are known to pass.
+   
+   If the number that actually passes increases or decreases, this test
+   will fail, informing the user either that they have introduced a bug
+   (decrease), or that they've successfully improved conformance (increase).
+   
+   Previously, if a change accidentally reduce the conformance, there was
+   no easy way to know, since that information was not stored/tracked
+   in any way.
 
 ### Other
 
@@ -35,9 +119,9 @@ This crate now comes with version 13.
 
 <csr-read-only-do-not-edit/>
 
- - 8 commits contributed to the release.
- - 6 days passed between releases.
- - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 11 commits contributed to the release.
+ - 3 days passed between releases.
+ - 6 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
 ### Commit Details
@@ -47,14 +131,17 @@ This crate now comes with version 13.
 <details><summary>view details</summary>
 
  * **Uncategorized**
-    - Update changelog prior to release ([`475478a`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/475478a781fafc42b3e0879d9fe12993c3d89cb4))
-    - Bump version to 21 for pulldown-cmark 13 ([`ed16be5`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/ed16be5ad4d32d3d17a5ac86a60f7e0a2cbf2c91))
-    - Merge pull request #99 from danieleades/cmark-13 ([`fb9bbd6`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/fb9bbd6a4201f917041e7ca887e1845463be03df))
-    - Merge pull request #98 from ConnorGray/connorgray/refactor-1 ([`b47d6c9`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/b47d6c936b2d940107103e6bee3b12ab822f2d0f))
-    - Update doc-string so `State::padding` is shown conventionally ([`e10010f`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/e10010f198a9cba9c0691def19978cf444740aa2))
-    - Update to pulldown-cmark 13 ([`efbdd3a`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/efbdd3a712119d1899e54ac69b79830bd5a5a541))
-    - Adjust wording + typos ([`05e247e`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/05e247e5c7a74ac7bf9a906417724b8a275cabcc))
-    - Add helper to factor out newline + padding pattern ([`2252ba1`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/2252ba1d9cf93256a8bcdd721813ed2397e32464))
+    - Merge pull request #104 from ConnorGray/connorgray/refactor-5 ([`bf34a3c`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/bf34a3cac68e6f82a24ee3d44224a9e2ef2bcd0d))
+    - Add Repeated utility to simplify writing repeated content ([`942c42b`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/942c42ba6fc517b595130603e9fd4aa1309ee755))
+    - Merge pull request #103 from ConnorGray/connorgray/refactor-4 ([`3005f1b`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/3005f1b10548a08a412086ecddc22b907ad0b60d))
+    - Drop comment headers ([`5b93e7e`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/5b93e7e7b51000632bfecf6d7a49e48d9fb3bc19))
+    - Move and group related code ([`30b706b`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/30b706b719fd2554b664bc7d2c40bcb7e7095a8c))
+    - Merge pull request #102 from ConnorGray/connorgray/revamp-conformance-testing ([`3169307`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/3169307f9dba2683eaa0f425177b2905669cd705))
+    - Merge pull request #101 from ConnorGray/connorgray/refactor-3 ([`ac3aaec`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/ac3aaec506e3eb5bdd85ff3a2bc9b1f2cee0f5c9))
+    - Merge pull request #100 from ConnorGray/connorgray/refactor-2 ([`29c8c20`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/29c8c20bb8632e70d6ed10eb43fa68f673988748))
+    - Improve CommonMark conformance testing output ([`91ffc95`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/91ffc9508b129cd603b870d38fd9bd88240d07fe))
+    - Add State::set_minimum_newlines_before_start() ([`31a49d0`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/31a49d0d45c1c32bfcf1c653121ee3ca0a1d4fe8))
+    - Use `write_padded_string()` in a couple additional places ([`3ab278b`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/3ab278b9db5546f405bcd13bdf5c3f0d59d2fb8a))
 </details>
 
 ## 20.0.1 (2025-02-12)
