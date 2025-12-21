@@ -248,6 +248,13 @@ pub struct Options<'a> {
     pub emphasis_token: char,
     /// The string to use for strong emphasis (bold)
     pub strong_token: &'a str,
+    /// Whether or not to use HTML tags `<sup>` and `<sub>`, or the Markdown
+    /// symbols `^` and `~` when rendering superscript and subscript.
+    /// If you use [`ENABLE_SUPERSCRIPT`][`pulldown_cmark::Options::ENABLE_SUPERSCRIPT`] and
+    /// [`ENABLE_SUBSCRIPT`][`pulldown_cmark::Options::ENABLE_SUBSCRIPT`] when parsing, then
+    /// you might need this in order to round-trip markdown byte-for-byte rather than simply
+    /// event-for-event.
+    pub use_html_for_super_sub_script: bool,
 }
 
 const DEFAULT_OPTIONS: Options<'_> = Options {
@@ -268,6 +275,7 @@ const DEFAULT_OPTIONS: Options<'_> = Options {
     increment_ordered_list_bullets: false,
     emphasis_token: '*',
     strong_token: "**",
+    use_html_for_super_sub_script: true,
 };
 
 impl Default for Options<'_> {
@@ -674,8 +682,16 @@ where
                     state.padding.push(every_line_padding.into());
                     Ok(())
                 }
-                Superscript => formatter.write_str("<sup>"),
-                Subscript => formatter.write_str("<sub>"),
+                Superscript => formatter.write_str(if options.use_html_for_super_sub_script {
+                    "<sup>"
+                } else {
+                    "^"
+                }),
+                Subscript => formatter.write_str(if options.use_html_for_super_sub_script {
+                    "<sub>"
+                } else {
+                    "~"
+                }),
             }
         }
         End(tag) => match tag {
@@ -903,8 +919,16 @@ where
                 state.padding.pop();
                 write_padded_newline(formatter, &state)
             }
-            TagEnd::Superscript => formatter.write_str("</sup>"),
-            TagEnd::Subscript => formatter.write_str("</sub>"),
+            TagEnd::Superscript => formatter.write_str(if options.use_html_for_super_sub_script {
+                "</sup>"
+            } else {
+                "^"
+            }),
+            TagEnd::Subscript => formatter.write_str(if options.use_html_for_super_sub_script {
+                "</sub>"
+            } else {
+                "~"
+            }),
         },
         HardBreak => formatter.write_str("  ").and(write_padded_newline(formatter, &state)),
         SoftBreak => write_padded_newline(formatter, &state),
