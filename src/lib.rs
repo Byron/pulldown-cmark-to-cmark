@@ -1,7 +1,6 @@
-//! Convert pulldown-cmark `Event`s back to the string they were parsed from.
+//! Convert `pulldown-cmark` `Event`s back to the string they were parsed from.
 //!
-//! This crate provides functions to serialize markdown events back into markdown text format,
-//! allowing for round-tripping of markdown documents through the pulldown-cmark parser.
+//! This crate provides functions to serialize markdown events back into markdown text format.
 //!
 //! # Examples
 //!
@@ -9,10 +8,11 @@
 //! use pulldown_cmark::Parser;
 //! use pulldown_cmark_to_cmark::cmark;
 //!
-//! let markdown = "# Hello\n\nWorld!";
-//! let events = Parser::new(markdown).collect::<Vec<_>>();
-//! let mut output = String::new();
-//! cmark(events.iter(), &mut output).unwrap();
+//! let input_markdown = "# Hello\n\nWorld!";
+//! let events = Parser::new(input_markdown);
+//! let mut output_markdown = String::new();
+//! cmark(events, &mut output_markdown).unwrap();
+//! assert_eq!(output_markdown, input_markdown);
 //! ```
 
 #![deny(rust_2018_idioms)]
