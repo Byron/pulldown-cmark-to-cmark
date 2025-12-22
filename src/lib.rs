@@ -1,4 +1,22 @@
+//! Convert `pulldown-cmark` `Event`s back to the string they were parsed from.
+//!
+//! This crate provides functions to serialize markdown events back into markdown text format.
+//!
+//! # Examples
+//!
+//! ```rust
+//! use pulldown_cmark::Parser;
+//! use pulldown_cmark_to_cmark::cmark;
+//!
+//! let input_markdown = "# Hello\n\nWorld!";
+//! let events = Parser::new(input_markdown);
+//! let mut output_markdown = String::new();
+//! cmark(events, &mut output_markdown).unwrap();
+//! assert_eq!(output_markdown, input_markdown);
+//! ```
+
 #![deny(rust_2018_idioms)]
+#![deny(missing_docs)]
 
 use std::{
     borrow::{Borrow, Cow},
@@ -22,9 +40,13 @@ use text_modifications::*;
 /// traits for comparison to allow testing.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Alignment {
+    /// No alignment specified
     None,
+    /// Left-aligned
     Left,
+    /// Center-aligned
     Center,
+    /// Right-aligned
     Right,
 }
 
@@ -39,9 +61,12 @@ impl<'a> From<&'a TableAlignment> for Alignment {
     }
 }
 
+/// The kind of code block being serialized.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum CodeBlockKind {
+    /// An indented code block (4 spaces or 1 tab)
     Indented,
+    /// A fenced code block (delimited by backticks or tildes)
     Fenced,
 }
 
@@ -92,53 +117,86 @@ pub struct State<'a> {
     pub last_event_end_index: usize,
 }
 
+/// The category of link being serialized.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum LinkCategory<'a> {
+    /// An autolink (e.g., `<http://example.com>`)
     AngleBracketed,
+    /// A reference link with an explicit label (e.g., `[text][label]`)
     Reference {
+        /// The destination URI
         uri: Cow<'a, str>,
+        /// The link title
         title: Cow<'a, str>,
+        /// The reference identifier
         id: Cow<'a, str>,
     },
+    /// A collapsed reference link (e.g., `[text][]`)
     Collapsed {
+        /// The destination URI
         uri: Cow<'a, str>,
+        /// The link title
         title: Cow<'a, str>,
     },
+    /// A shortcut reference link (e.g., `[text]`)
     Shortcut {
+        /// The destination URI
         uri: Cow<'a, str>,
+        /// The link title
         title: Cow<'a, str>,
     },
+    /// An inline link or other link type
     Other {
+        /// The destination URI
         uri: Cow<'a, str>,
+        /// The link title
         title: Cow<'a, str>,
     },
 }
 
+/// The category of image link being serialized.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum ImageLink<'a> {
+    /// A reference image with an explicit label (e.g., `![alt][label]`)
     Reference {
+        /// The destination URI
         uri: Cow<'a, str>,
+        /// The image title
         title: Cow<'a, str>,
+        /// The reference identifier
         id: Cow<'a, str>,
     },
+    /// A collapsed reference image (e.g., `![alt][]`)
     Collapsed {
+        /// The destination URI
         uri: Cow<'a, str>,
+        /// The image title
         title: Cow<'a, str>,
     },
+    /// A shortcut reference image (e.g., `![alt]`)
     Shortcut {
+        /// The destination URI
         uri: Cow<'a, str>,
+        /// The image title
         title: Cow<'a, str>,
     },
+    /// An inline image or other image type
     Other {
+        /// The destination URI
         uri: Cow<'a, str>,
+        /// The image title
         title: Cow<'a, str>,
     },
 }
 
+/// Information about a heading's attributes (id, classes, and other attributes).
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Heading<'a> {
+    /// The heading's id attribute, or `None` if no id is specified
     id: Option<Cow<'a, str>>,
+    /// The heading's CSS class attributes; empty if no classes are specified
     classes: Vec<Cow<'a, str>>,
+    /// Other attributes as key-value pairs in the form (attribute_name, optional_value)
     attributes: Vec<(Cow<'a, str>, Option<Cow<'a, str>>)>,
 }
 
@@ -153,14 +211,23 @@ pub const DEFAULT_CODE_BLOCK_TOKEN_COUNT: usize = 3;
 /// It's best used with its `Options::default()` implementation.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Options<'a> {
+    /// The number of newlines to insert after a headline
     pub newlines_after_headline: usize,
+    /// The number of newlines to insert after a paragraph
     pub newlines_after_paragraph: usize,
+    /// The number of newlines to insert after a code block
     pub newlines_after_codeblock: usize,
+    /// The number of newlines to insert after an HTML block
     pub newlines_after_htmlblock: usize,
+    /// The number of newlines to insert after a table
     pub newlines_after_table: usize,
+    /// The number of newlines to insert after a horizontal rule
     pub newlines_after_rule: usize,
+    /// The number of newlines to insert after a list
     pub newlines_after_list: usize,
+    /// The number of newlines to insert after a block quote
     pub newlines_after_blockquote: usize,
+    /// The number of newlines to insert after other elements
     pub newlines_after_rest: usize,
     /// The amount of newlines placed after TOML or YAML metadata blocks at the beginning of a document.
     pub newlines_after_metadata: usize,
@@ -169,11 +236,17 @@ pub struct Options<'a> {
     /// Note that the default value is `4` which allows for one level of nested code-blocks,
     /// which is typically a safe value for common kinds of markdown documents.
     pub code_block_token_count: usize,
+    /// The character to use for code block fences (backtick or tilde)
     pub code_block_token: char,
+    /// The character to use for unordered list items
     pub list_token: char,
+    /// The character to use after ordered list numbers (e.g., '.' for `1.`)
     pub ordered_list_token: char,
+    /// Whether to increment the number for each ordered list item
     pub increment_ordered_list_bullets: bool,
+    /// The character to use for emphasis (italic)
     pub emphasis_token: char,
+    /// The string to use for strong emphasis (bold)
     pub strong_token: &'a str,
 }
 
@@ -204,6 +277,7 @@ impl Default for Options<'_> {
 }
 
 impl Options<'_> {
+    /// Returns the set of special characters that need escaping based on the current options.
     pub fn special_characters(&self) -> Cow<'static, str> {
         // These always need to be escaped, even if reconfigured.
         const BASE: &str = "#\\_*<>`|[]";
@@ -224,11 +298,13 @@ impl Options<'_> {
     }
 }
 
-/// The error returned by [`cmark_resume_one_event`] and
-/// [`cmark_resume_with_source_range_and_options`].
+/// The error returned by [`cmark_resume_with_options()`] and
+/// [`cmark_resume_with_source_range_and_options()`].
 #[derive(Debug)]
 pub enum Error {
+    /// Formatting to the output writer failed
     FormatFailed(fmt::Error),
+    /// An event was encountered that cannot be produced by valid markdown
     UnexpectedEvent,
 }
 
@@ -882,6 +958,10 @@ where
 }
 
 impl State<'_> {
+    /// Finalize the serialization state by writing any remaining shortcuts.
+    ///
+    /// This should be called after all events have been processed to ensure
+    /// reference-style links are written at the end of the document.
     pub fn finalize<F>(mut self, mut formatter: F) -> Result<Self, Error>
     where
         F: fmt::Write,
@@ -903,6 +983,7 @@ impl State<'_> {
         Ok(self)
     }
 
+    /// Returns `true` if currently serializing content inside a code block.
     pub fn is_in_code_block(&self) -> bool {
         self.code_block.is_some()
     }
