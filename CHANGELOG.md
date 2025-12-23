@@ -5,7 +5,54 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 22.0.0 (2025-12-23)
+
+### New Features
+
+ - <csr-id-9b55c822ae8c824954452d1414e1dc33eadc5b73/> Add #![deny(missing_docs)] attribute to enable missing documentation checks and add comprehensive documentation for all public items
+
+### New Features (BREAKING)
+
+ - <csr-id-ffa22b3e25ef79aad66774f1c08b1a4a1b1bc4f4/> Add support for super/subscript without html
+   Superscript and subscript can be presented in markdown as:
+   ^superscript^ and ~subscript~ respectively. This is not always turned on,
+   and many people prefer the HTML tag form, however in order to round-trip
+   markdown which uses the symbolic form we need an option to enable that.
+   
+   This feature is enabled via a new field in the `Options` struct.
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 7 commits contributed to the release.
+ - 43 days passed between releases.
+ - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Merge pull request #107 from kinnison/super-sub-not-html ([`15e7a74`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/15e7a74364cf05e437029d84ec6b78a6662fd137))
+    - Refactor ([`aba929c`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/aba929c5068f69de5ae2e92b397fd901922f2c0d))
+    - Add testing support for symbolic super/subscript ([`463b65a`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/463b65a0ede1c99d921862645931c8ecc117c159))
+    - Add support for super/subscript without html ([`ffa22b3`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/ffa22b3e25ef79aad66774f1c08b1a4a1b1bc4f4))
+    - Merge pull request #108 from Byron/copilot/add-documentation-and-deny-attrs ([`077d5d0`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/077d5d0f7b464d4fdd251bc4adfe5679fb6a2736))
+    - Refactor ([`6d09f44`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/6d09f445a72555fbd70812b21a38ba65bba0e42b))
+    - Add #![deny(missing_docs)] attribute to enable missing documentation checks and add comprehensive documentation for all public items ([`9b55c82`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/9b55c822ae8c824954452d1414e1dc33eadc5b73))
+</details>
+
 ## 21.1.0 (2025-11-09)
+
+<csr-id-5b93e7e7b51000632bfecf6d7a49e48d9fb3bc19/>
+<csr-id-942c42ba6fc517b595130603e9fd4aa1309ee755/>
+<csr-id-30b706b719fd2554b664bc7d2c40bcb7e7095a8c/>
+<csr-id-31a49d0d45c1c32bfcf1c653121ee3ca0a1d4fe8/>
+<csr-id-3ab278b9db5546f405bcd13bdf5c3f0d59d2fb8a/>
 
 ### New Features
 
@@ -18,7 +65,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    Additionally, this introduces a way to force the printing of the
    CommonMark failure report from the command line:
    
-       $ FULL_CMARK_RESULTS=true cargo test
+   $ FULL_CMARK_RESULTS=true cargo test
    
    and documents in CONTRIBUTING.md that new contributors may want
    to start with trying to improve conformance.
@@ -95,7 +142,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 12 commits contributed to the release.
+ - 13 commits contributed to the release.
  - 264 days passed between releases.
  - 6 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
@@ -107,6 +154,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release pulldown-cmark-to-cmark v21.1.0 ([`4fa1f9e`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/4fa1f9eab4754267e2d6580fe7e64f8aa4c113fa))
     - Release pulldown-cmark-to-cmark v21.0.0 ([`d69f748`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/d69f748198d26828f74c0e1a0faed6a986cb4b97))
     - Merge pull request #104 from ConnorGray/connorgray/refactor-5 ([`bf34a3c`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/bf34a3cac68e6f82a24ee3d44224a9e2ef2bcd0d))
     - Add Repeated utility to simplify writing repeated content ([`942c42b`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/942c42ba6fc517b595130603e9fd4aa1309ee755))
