@@ -248,12 +248,13 @@ pub struct Options<'a> {
     pub emphasis_token: char,
     /// The string to use for strong emphasis (bold)
     pub strong_token: &'a str,
-    /// Whether or not to use HTML tags `<sup>` and `<sub>`, or the Markdown
-    /// symbols `^` and `~` when rendering superscript and subscript.
-    /// If you use [`ENABLE_SUPERSCRIPT`][`pulldown_cmark::Options::ENABLE_SUPERSCRIPT`] and
-    /// [`ENABLE_SUBSCRIPT`][`pulldown_cmark::Options::ENABLE_SUBSCRIPT`] when parsing, then
-    /// you might need this in order to round-trip markdown byte-for-byte rather than simply
-    /// event-for-event.
+    /// If `true` (default) then use HTML tags `<sup>` and `<sub>`.
+    /// If `false`, use the Markdown symbols `^` and `~` instead.
+    ///
+    /// If you use [`ENABLE_SUPERSCRIPT`](pulldown_cmark::Options::ENABLE_SUPERSCRIPT) and
+    /// [`ENABLE_SUBSCRIPT`](pulldown_cmark::Options::ENABLE_SUBSCRIPT) when parsing, then
+    /// you might need this in order to round-trip Markdown byte-for-byte, with knowledge
+    /// of whether the parsed documents use `<sub>`/`<sup>` or `^`/`~` instead.
     pub use_html_for_super_sub_script: bool,
 }
 
