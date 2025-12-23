@@ -117,3 +117,10 @@ title "stupicat"
     WITH_SNAPSHOT="$snapshot/stupicat-super-sub-script-output" \
     expect_run_sh $SUCCESSFULLY "${exe[*]} $fixture/super-sub-script.md 2>/dev/null"
 )
+
+(with "symbolic super and subscript"
+  it "succeeds" && \
+    WITH_SNAPSHOT="$snapshot/stupicat-symbolic-super-sub-script-output" \
+    STUPICAT_SUB_SUPER_SYMBOLIC="1" \
+    expect_run_sh $SUCCESSFULLY "${exe[*]} $fixture/symbolic-super-sub-script.md 2>/dev/null"
+)
