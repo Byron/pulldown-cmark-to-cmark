@@ -13,7 +13,7 @@ const COMMONMARK_SPEC_TEXT: &str = include_str!("../spec/CommonMark/spec.txt");
 const COMMONMARK_SPEC_EXAMPLE_COUNT: usize = 649;
 
 // At the time of writing, ~90% of tests pass. This needs some additional work.
-const EXPECTED_SUCCESS_EXAMPLE_COUNT: usize = 585;
+const EXPECTED_SUCCESS_EXAMPLE_COUNT: usize = 586;
 
 const FULL_CMARK_RESULTS_VAR: &str = "FULL_CMARK_RESULTS";
 

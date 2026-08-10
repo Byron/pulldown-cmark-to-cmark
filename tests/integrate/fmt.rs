@@ -250,6 +250,17 @@ mod inline_elements {
     }
 
     #[test]
+    fn brackets_in_link_labels_are_escaped() {
+        for markdown in [
+            "[ref\\[\\]]\n\n[ref\\[\\]]: https://github.com/",
+            "[text][ref\\[\\]]\n\n[ref\\[\\]]: https://github.com/",
+            "![ref\\[\\]]\n\n[ref\\[\\]]: https://github.com/",
+        ] {
+            assert_eq!(fmts_both(markdown).0, markdown);
+        }
+    }
+
+    #[test]
     fn shortcut_code_links() {
         let mut state = State::default();
         state.newlines_before_start = 2;
