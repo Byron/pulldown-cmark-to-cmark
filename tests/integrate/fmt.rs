@@ -1,6 +1,6 @@
 use pulldown_cmark::{utils::TextMergeStream, Alignment, CodeBlockKind, Event, LinkType, Options, Parser, Tag, TagEnd};
 pub use pulldown_cmark_to_cmark::{
-    cmark, cmark_resume, cmark_resume_with_options, Options as CmarkToCmarkOptions, State,
+    cmark, cmark_resume, cmark_resume_with_options, ItemTail, LastEvent, Options as CmarkToCmarkOptions, State,
 };
 
 fn assert_output_and_states_eq(output0: &str, state0: &State, output1: &str, state1: &State) {
@@ -67,43 +67,51 @@ fn assert_events_eq(s: &str) {
 }
 
 mod lazy_newlines {
-    use super::{fmte, fmts_both, Event, LinkType, State, Tag, TagEnd};
+    use super::{fmte, fmts_both, Event, ItemTail, LastEvent, LinkType, State, Tag, TagEnd};
 
     #[test]
     fn after_emphasis_there_is_no_newline() {
-        for t in [
-            Tag::Emphasis,
-            Tag::Strong,
-            Tag::Link {
-                link_type: LinkType::Inline,
-                dest_url: "".into(),
-                title: "".into(),
-                id: "".into(),
-            },
-            Tag::Image {
-                link_type: LinkType::Inline,
-                dest_url: "".into(),
-                title: "".into(),
-                id: "".into(),
-            },
-            Tag::FootnoteDefinition("".into()),
+        for (t, last_event) in [
+            (Tag::Emphasis, LastEvent::InlineContent),
+            (Tag::Strong, LastEvent::InlineContent),
+            (
+                Tag::Link {
+                    link_type: LinkType::Inline,
+                    dest_url: "".into(),
+                    title: "".into(),
+                    id: "".into(),
+                },
+                LastEvent::InlineContent,
+            ),
+            (
+                Tag::Image {
+                    link_type: LinkType::Inline,
+                    dest_url: "".into(),
+                    title: "".into(),
+                    id: "".into(),
+                },
+                LastEvent::InlineContent,
+            ),
+            (Tag::FootnoteDefinition("".into()), LastEvent::Other),
         ] {
             let end = t.to_end();
             let mut state = State::default();
             state.newlines_before_start = 0;
+            state.last_event = last_event;
             assert_eq!(fmte(&[Event::Start(t), Event::End(end)]).1, state);
         }
     }
 
     #[test]
     fn after_anything_else_it_has_one_newline() {
-        for e in &[
-            Event::End(TagEnd::Item),
-            Event::End(TagEnd::TableRow),
-            Event::End(TagEnd::TableHead),
+        for (e, last_event) in &[
+            (Event::End(TagEnd::Item), LastEvent::ItemEnd(ItemTail::ClosedBlock)),
+            (Event::End(TagEnd::TableRow), LastEvent::Other),
+            (Event::End(TagEnd::TableHead), LastEvent::Other),
         ] {
             let mut state = State::default();
             state.newlines_before_start = 1;
+            state.last_event = *last_event;
             assert_eq!(fmte(&[e.clone()]).1, state);
         }
     }
@@ -127,6 +135,7 @@ fn it_applies_newlines_before_start_before_text() {
     let mut second = State::default();
     second.newlines_before_start;
     second.last_was_text_without_trailing_newline = true;
+    second.last_event = LastEvent::InlineContent;
 
     assert_eq!(fmtes(&[Event::Text("t".into())], first), ("\n\nt".into(), second));
 }
@@ -140,6 +149,7 @@ fn it_applies_newlines_before_start_before_any_start_tag() {
     let mut second = State::default();
     second.newlines_before_start = 0;
     second.last_was_text_without_trailing_newline = true;
+    second.last_event = LastEvent::InlineContent;
 
     assert_eq!(
         fmtes(&[Event::Start(Tag::Paragraph), Event::Text("h".into())], first,),
@@ -148,7 +158,7 @@ fn it_applies_newlines_before_start_before_any_start_tag() {
 }
 
 mod padding {
-    use super::{fmtes, Event, State, Tag};
+    use super::{fmtes, Event, LastEvent, State, Tag};
 
     #[test]
     fn is_used_before_newlines() {
@@ -161,6 +171,7 @@ mod padding {
         second.newlines_before_start = 0;
         second.padding = vec!["  ".into()];
         second.last_was_text_without_trailing_newline = true;
+        second.last_event = LastEvent::InlineContent;
 
         assert_eq!(
             fmtes(&[Event::Start(Tag::Paragraph), Event::Text("h".into())], first,),
@@ -1055,18 +1066,191 @@ mod escapes {
 }
 
 mod list {
-    use super::{fmtes, fmts_both, fmts_with_options, CmarkToCmarkOptions, Event, State, TagEnd};
+    use super::{
+        assert_events_eq_both, cmark_resume, fmtes, fmts_both, fmts_with_options, CmarkToCmarkOptions, Event, ItemTail,
+        LastEvent, Options, Parser, State, TagEnd, TextMergeStream,
+    };
     use indoc::indoc;
 
     #[test]
     fn it_pops_one_item_from_the_lists_stack_for_each_end_list() {
         let mut first = State::default();
         first.list_stack = vec![None, None];
+        first.last_event = LastEvent::ItemEnd(ItemTail::OpenParagraph);
 
         let mut second = State::default();
         second.list_stack = vec![None];
+        second.last_event = LastEvent::NestedListEnd(ItemTail::OpenParagraph);
 
         assert_eq!(fmtes(&[Event::End(TagEnd::List(false))], first,).1, second);
+    }
+
+    #[test]
+    fn nested_list_followed_by_paragraph() {
+        let input = indoc!(
+            "
+            1. item
+
+               * a
+               * b
+
+               para"
+        );
+        assert_eq!(fmts_both(input).0, "1. item\n   \n   * a\n   * b\n   \n   para");
+        assert_events_eq_both(input);
+    }
+
+    #[test]
+    fn nested_list_followed_by_table() {
+        assert_events_eq_both(indoc!(
+            "
+            1. item
+
+               * a
+               * b
+
+               | a | b |
+               | - | - |
+               | 1 | 2 |"
+        ));
+    }
+
+    #[test]
+    fn nested_list_followed_by_indented_code() {
+        // The wide marker ("10000.") puts the inner item's content past the
+        // code's indent, so the code is a sibling of the inner list inside the
+        // outer item.
+        assert_events_eq_both(indoc!(
+            "
+            1. item
+
+               10000. a
+
+                   code
+            "
+        ));
+    }
+
+    #[test]
+    fn nested_list_followed_by_fenced_code_in_tight_item() {
+        assert_events_eq_both(indoc!(
+            "
+            1. item
+               * a
+               * b
+               ```
+               code
+               ```"
+        ));
+    }
+
+    #[test]
+    fn nested_list_ending_in_empty_item_followed_by_table_in_tight_item() {
+        assert_events_eq_both(indoc!(
+            "
+            * a
+              * b
+              *
+              | x | y |
+              | - | - |"
+        ));
+        assert_events_eq_both(indoc!(
+            "
+            > * a
+            >   * b
+            >   *
+            >   | x | y |
+            >   | - | - |"
+        ));
+    }
+
+    #[test]
+    fn nested_list_ending_in_empty_item_followed_by_indented_code() {
+        assert_events_eq_both(indoc!(
+            "
+            1. item
+
+               *
+
+                   code
+            "
+        ));
+    }
+
+    #[test]
+    fn nested_list_ending_in_fenced_code_followed_by_table_in_tight_item() {
+        let input = indoc!(
+            "
+            1. item
+               * a
+                 ```
+                 x
+                 ```
+               | a | b |
+               | - | - |
+               | 1 | 2 |"
+        );
+        // The default `newlines_after_codeblock` of 2 already emits a blank
+        // line here, which hides the potential bug this test is trying to
+        // detect. Set it to 1.
+        let options = CmarkToCmarkOptions {
+            newlines_after_codeblock: 1,
+            ..Default::default()
+        };
+        let (output, _) = fmts_with_options(input, options);
+        let before: Vec<_> = TextMergeStream::new(Parser::new_ext(input, Options::all())).collect();
+        let after: Vec<_> = TextMergeStream::new(Parser::new_ext(&output, Options::all())).collect();
+        assert_eq!(before, after, "output:\n{output}");
+    }
+
+    #[test]
+    fn nested_list_followed_by_definition_list() {
+        assert_events_eq_both(indoc!(
+            "
+            1. item
+               * a
+               * b
+
+               term
+               : definition"
+        ));
+    }
+
+    #[test]
+    fn three_level_nested_list_followed_by_table() {
+        assert_events_eq_both(indoc!(
+            "
+            1. one
+               * two
+                 - three
+
+               | x | y |
+               | - | - |"
+        ));
+    }
+
+    #[test]
+    fn nested_list_followed_by_paragraph_across_resume() {
+        let input = indoc!(
+            "
+            1. item
+
+               * a
+               * b
+
+               para"
+        );
+        let events: Vec<_> = Parser::new_ext(input, Options::all()).collect();
+        let split = 1 + events
+            .iter()
+            .position(|event| *event == Event::End(TagEnd::List(false)))
+            .expect("input contains a nested unordered list");
+        let (before, after) = events.split_at(split);
+
+        let mut output = String::new();
+        let state = cmark_resume(before.iter(), &mut output, None).unwrap();
+        cmark_resume(after.iter(), &mut output, Some(state)).unwrap();
+        assert_eq!(output, "1. item\n   \n   * a\n   * b\n   \n   para");
     }
 
     #[test]

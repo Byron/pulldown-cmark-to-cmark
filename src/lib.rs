@@ -70,6 +70,75 @@ pub enum CodeBlockKind {
     Fenced,
 }
 
+/// How a closed list item's content ended.
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum ItemTail {
+    /// The item ended with inline text. An unindented next line would continue it.
+    ///
+    /// For example:
+    ///
+    /// ```md
+    /// 1. item
+    ///    * a
+    ///    * b
+    ///    para
+    /// ```
+    ///
+    /// Here, `* b` ends in `b`, so `para` is attached to the nested item.
+    OpenParagraph,
+    /// The item ended without any content.
+    ///
+    /// If the next line is indented to the column where content would go, it
+    /// would become the item's content.
+    ///
+    /// For example:
+    ///
+    /// ```md
+    /// 1. item
+    ///    * a
+    ///    *
+    ///      code
+    /// ```
+    ///
+    /// The second `*` is empty, so the indented `code` is attached to the
+    /// nested item.
+    Empty,
+    /// The item ended in a closed block (e.g. fenced code, HTML). Nothing can
+    /// continue it.
+    ///
+    /// For example:
+    ///
+    /// ```md
+    /// 1. item
+    ///    * a
+    ///      ```
+    ///      x
+    ///      ```
+    ///    para
+    /// ```
+    ///
+    /// Here, `para` is never attached to the nested list.
+    ClosedBlock,
+}
+
+/// Information about the previous event that the following event cares about.
+#[derive(Copy, Clone, Default, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum LastEvent {
+    /// Any event not covered by another variant.
+    #[default]
+    Other,
+    /// Text or other inline content.
+    InlineContent,
+    /// `Event::Start(Tag::Item)`.
+    ItemStart,
+    /// `Event::End(TagEnd::Item)`.
+    ItemEnd(ItemTail),
+    /// `Event::End(TagEnd::List(_))` for a list nested in another list.
+    NestedListEnd(ItemTail),
+}
+
 /// The state of the [`cmark_resume()`] and [`cmark_resume_with_options()`] functions.
 /// This does not only allow introspection, but enables the user
 /// to halt the serialization at any time, and resume it later.
@@ -115,6 +184,12 @@ pub struct State<'a> {
     /// It's used to see if the current event didn't capture some bytes because of a
     /// skipped-over backslash.
     pub last_event_end_index: usize,
+    /// Information about the previous event.
+    //
+    // It is possible to fold last_was_paragraph_start and
+    // last_was_text_without_trailing_newline into this field -- this should be
+    // done the next time the crate has a breaking change.
+    pub last_event: LastEvent,
 }
 
 /// The category of link being serialized.
@@ -425,6 +500,12 @@ where
     state.last_was_text_without_trailing_newline = false;
     let last_was_paragraph_start = state.last_was_paragraph_start;
     state.last_was_paragraph_start = false;
+    let last_event = std::mem::take(&mut state.last_event);
+    state.last_event = if is_inline_content(event.borrow()) {
+        LastEvent::InlineContent
+    } else {
+        LastEvent::Other
+    };
 
     let res = match event.borrow() {
         Rule => {
@@ -481,12 +562,22 @@ where
                     state.set_minimum_newlines_before_start(options.newlines_after_rest);
                 }
             }
+            let needs_blank_line = match last_event {
+                LastEvent::NestedListEnd(tail) => needs_blank_line_after_nested_list(tag, tail),
+                // In all of these cases, a blank line is either unnecessary or
+                // actively wrong.
+                LastEvent::Other | LastEvent::InlineContent | LastEvent::ItemStart | LastEvent::ItemEnd(_) => false,
+            };
+            if needs_blank_line {
+                state.set_minimum_newlines_before_start(options.newlines_after_list);
+            }
             let consumed_newlines = state.newlines_before_start != 0;
             consume_newlines(formatter, state)?;
             match tag {
                 Item => {
                     // lazy lists act like paragraphs with no event
                     state.last_was_paragraph_start = true;
+                    state.last_event = LastEvent::ItemStart;
                     match state.list_stack.last_mut() {
                         Some(inner) => {
                             state.padding.push(list_item_padding_of(*inner));
@@ -890,12 +981,56 @@ where
             TagEnd::Item => {
                 state.padding.pop();
                 state.set_minimum_newlines_before_start(options.newlines_after_rest);
+                let tail = match last_event {
+                    LastEvent::InlineContent => ItemTail::OpenParagraph,
+                    LastEvent::ItemStart => ItemTail::Empty,
+                    // Inherit the tail from the nested list's last item.
+                    //
+                    // For example, consider:
+                    //
+                    // 1. one
+                    //    * two
+                    //      - three
+                    //
+                    //    para
+                    //
+                    // The events end with:
+                    //
+                    // Text("three")  End(Item)  End(List)  End(Item)  End(List)  Start(Paragraph) …
+                    //                ^ three    ^ - list   ^ two      ^ * list
+                    //
+                    // We must insert a blank line here -- without it, `para`
+                    // would be a lazy continuation of `three`, which is two
+                    // levels down. So we continue to keep track of the tail for
+                    // that purpose instead of setting it to
+                    // `ItemTail::ClosedBlock`.
+                    LastEvent::NestedListEnd(tail) => tail,
+                    LastEvent::Other | LastEvent::ItemEnd(_) => ItemTail::ClosedBlock,
+                };
+                state.last_event = LastEvent::ItemEnd(tail);
                 Ok(())
             }
             TagEnd::List(_) => {
                 state.list_stack.pop();
                 if state.list_stack.is_empty() {
                     state.set_minimum_newlines_before_start(options.newlines_after_list);
+                } else {
+                    // Putting a blank line directly here would turn a tight
+                    // parent list into a loose one. Instead, record how the
+                    // nested list ended, which allows the next block to insert
+                    // a blank line if needed.
+                    let tail = match last_event {
+                        LastEvent::ItemEnd(tail) => tail,
+                        // Parsers always emit End(Item) before End(List), so
+                        // these cases should never be hit in normal use. But a
+                        // hand-written event stream could be malformed -- fall
+                        // back to ItemTail::ClosedBlock.
+                        LastEvent::Other
+                        | LastEvent::InlineContent
+                        | LastEvent::ItemStart
+                        | LastEvent::NestedListEnd(_) => ItemTail::ClosedBlock,
+                    };
+                    state.last_event = LastEvent::NestedListEnd(tail);
                 }
                 Ok(())
             }
@@ -980,6 +1115,253 @@ where
     };
 
     Ok(res?)
+}
+
+fn is_inline_content(event: &Event<'_>) -> bool {
+    match event {
+        Event::Text(_)
+        | Event::Code(_)
+        | Event::InlineHtml(_)
+        | Event::InlineMath(_)
+        | Event::DisplayMath(_)
+        | Event::FootnoteReference(_)
+        | Event::SoftBreak
+        | Event::HardBreak
+        | Event::TaskListMarker(_)
+        | Event::End(
+            TagEnd::Emphasis
+            | TagEnd::Strong
+            | TagEnd::Strikethrough
+            | TagEnd::Superscript
+            | TagEnd::Subscript
+            | TagEnd::Link
+            | TagEnd::Image,
+        ) => true,
+        Event::End(
+            TagEnd::Paragraph
+            | TagEnd::Heading(_)
+            | TagEnd::BlockQuote(_)
+            | TagEnd::CodeBlock
+            | TagEnd::HtmlBlock
+            | TagEnd::List(_)
+            | TagEnd::Item
+            | TagEnd::FootnoteDefinition
+            | TagEnd::DefinitionList
+            | TagEnd::DefinitionListTitle
+            | TagEnd::DefinitionListDefinition
+            | TagEnd::Table
+            | TagEnd::TableHead
+            | TagEnd::TableRow
+            | TagEnd::TableCell
+            | TagEnd::MetadataBlock(_),
+        )
+        | Event::Start(_)
+        | Event::Html(_)
+        | Event::Rule => false,
+    }
+}
+
+fn needs_blank_line_after_nested_list(tag: &Tag<'_>, tail: ItemTail) -> bool {
+    // Consider a standard list:
+    //
+    // 1. item
+    //
+    //    * a
+    //    * b
+    //
+    //    para
+    //
+    // After the nested list ends, we must insert a blank line before `para`. If
+    // we don't do that, the CommonMark rules say that `para` becomes a
+    // continuation of the last item (`b`).
+    //
+    // Now, consider a tight list:
+    //
+    // 1. item
+    //    * a
+    //    * b
+    //    ```
+    //    code
+    //    ```
+    //
+    // In this case, we must _not_ insert a blank line before the fenced `code`
+    // block. If we do that, then the list will become loose.
+    //
+    // The rule we follow is: add a blank line if leaving it out would change
+    // how the Markdown parses. That happens either when the next line would be
+    // absorbed into the last item, or when a loose list would become tight.
+    // (HTML blocks are a known exception; see below.)
+    match tag {
+        // Paragraph events only appear in loose containers, so a blank line is
+        // either required or harmless.
+        Tag::Paragraph => true,
+        // Tables can't interrupt a paragraph, so only an open paragraph (lazy
+        // continuation) can absorb it.
+        Tag::Table(_) => match tail {
+            // 1. item
+            //    * a
+            //    * b
+            //
+            //    | x | y |
+            //    | - | - |
+            //
+            // If we don't insert a blank line, the table will be glued onto the
+            // `b` item, producing garbled text.
+            ItemTail::OpenParagraph => true,
+            // The Empty case:
+            //
+            // * a
+            //   * b
+            //   *
+            //   | x | y |
+            //   | - | - |
+            //
+            // If we insert a blank line, then the list will become loose. The
+            // ClosedBlock case is similar.
+            ItemTail::Empty | ItemTail::ClosedBlock => false,
+        },
+        // Like tables, indented code blocks can't interrupt a paragraph, so an
+        // open paragraph can absorb them. But unlike tables, they're written
+        // four columns past the parent's content, which is far enough to reach
+        // the content column of an empty item.
+        Tag::CodeBlock(pulldown_cmark::CodeBlockKind::Indented) => match tail {
+            // The OpenParagraph case:
+            //
+            // 1. item
+            //
+            //    10000. a
+            //
+            //        code
+            //
+            // If we don't insert a blank line, `code` will be glued onto the `a`
+            // item. (The wide `10000.` marker is what keeps `code` out of the
+            // `a` item in the first place.)
+            //
+            // The Empty case:
+            //
+            // 1. item
+            //    * a
+            //    *
+            //
+            //        code
+            //
+            // If we don't insert a blank line, the empty item will take `code`
+            // as its content.
+            ItemTail::OpenParagraph | ItemTail::Empty => true,
+            // As with tables, if we insert a blank line, then the list will
+            // become loose.
+            ItemTail::ClosedBlock => false,
+        },
+        // Like tables, definition lists can't interrupt a paragraph: the title
+        // is plain paragraph text, so an open paragraph would absorb it. For
+        // example:
+        //
+        // 1. item
+        //    * a
+        //    * b
+        //
+        //    term
+        //    : definition
+        //
+        // If there's no blank line before `term`, it will be glued onto the `b`
+        // item. But the `DefinitionListTitle` start always emits an extra
+        // newline, which already produces that blank line. If we returned true
+        // here, we'd get two blank lines.
+        //
+        // The `nested_list_followed_by_definition_list` test checks this.
+        Tag::DefinitionList => false,
+        // There are 7 types of HTML blocks defined in CommonMark: see
+        // https://spec.commonmark.org/0.31.2/#html-blocks. Types 1-6 can
+        // interrupt a paragraph, but type 7 cannot. But pulldown-cmark doesn't
+        // tell us which type an HTML block is.
+        //
+        // We always return false here (assuming types 1-6) in lieu of figuring
+        // out the HTML block's type within this library.
+        Tag::HtmlBlock => false,
+        // These tags can all interrupt a paragraph, so they're never absorbed
+        // into the nested list's last item, even without a blank line before
+        // them. For example:
+        //
+        // 1. item
+        //    * a
+        //    * b
+        //    # heading
+        //
+        // Here, `# heading` is a heading of its own, not part of `b`. If we
+        // insert a blank line, then the list will become loose.
+        Tag::Heading { .. }
+        | Tag::BlockQuote(_)
+        | Tag::CodeBlock(pulldown_cmark::CodeBlockKind::Fenced(_))
+        | Tag::FootnoteDefinition(_) => false,
+        // There are two kinds of lists:
+        //
+        // 1. Those that can interrupt a paragraph, such as a bulleted list,
+        //    or an ordered list starting at `1.` as long as the first item
+        //    isn't empty. In these cases, similar to the heading example above,
+        //    inserting a blank line will make the parent list loose. So
+        //    returning `false` here is correct.
+        //
+        // 2. Those that cannot interrupt a paragraph, such as one starting at
+        //    `2.`, or one whose first item is empty (see
+        //    https://spec.commonmark.org/0.31.2/#list-items). But
+        //    pulldown-cmark only applies that rule when the list marker is
+        //    indented enough to be inside the item holding the paragraph.
+        //
+        //    In the following example, `2. c` is indented to `b`'s content, so
+        //    it can't interrupt `b`'s paragraph and is glued onto it as text:
+        //
+        //    1. item
+        //       * a
+        //       * b
+        //         2. c
+        //
+        //    `2. c` is treated as plain text, so this code path isn't hit.
+        //
+        //    But in the following example, `2. c` is at the parent's
+        //    indentation, outside `b`, so the rule doesn't apply and it starts
+        //    a new ordered list inside `item`, next to the nested one:
+        //
+        //    1. item
+        //       * a
+        //       * b
+        //       2. c
+        //
+        //    Only this second example reaches this code path. We write the new
+        //    list back at the parent's indentation, so it starts a new list
+        //    again. As with the first kind, inserting a blank line will make
+        //    the parent list loose, and returning `false` is correct.
+        Tag::List(_) => false,
+        // List items, table parts, and definition list parts only appear inside
+        // lists, tables, and definition lists respectively. None of those can
+        // directly contain a list, so these tags can't come right after a
+        // nested list ends.
+        Tag::Item
+        | Tag::TableHead
+        | Tag::TableRow
+        | Tag::TableCell
+        | Tag::DefinitionListTitle
+        | Tag::DefinitionListDefinition => false,
+        // Metadata blocks can only appear at the start of a document.
+        Tag::MetadataBlock(_) => false,
+        // Inline content can come right after a nested list ends, but only
+        // directly inside a tight parent item, and only when the nested list's
+        // last item left no paragraph open. For example:
+        //
+        // - a
+        //   - b
+        //     <!-- c -->
+        //   *d* e
+        //
+        // Here, `*d* e` isn't wrapped in a paragraph because the parent list
+        // is tight. Inserting a blank line would make it loose.
+        Tag::Emphasis
+        | Tag::Strong
+        | Tag::Strikethrough
+        | Tag::Superscript
+        | Tag::Subscript
+        | Tag::Link { .. }
+        | Tag::Image { .. } => false,
+    }
 }
 
 impl State<'_> {
