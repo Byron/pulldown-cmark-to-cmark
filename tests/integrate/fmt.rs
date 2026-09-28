@@ -1329,6 +1329,17 @@ mod list {
     }
 
     #[test]
+    fn rule_after_text_in_tight_item() {
+        let input = indoc!(
+            "
+            * item
+              ***"
+        );
+        assert_eq!(fmts_both(input).0, "* item\n  ***");
+        assert_events_eq_both(input);
+    }
+
+    #[test]
     fn html_block_after_text_in_tight_item() {
         assert_events_eq_both(indoc!(
             "

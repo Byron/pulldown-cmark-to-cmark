@@ -507,11 +507,85 @@ where
         LastEvent::Other
     };
 
+    let starts_block = match event.borrow() {
+        Start(tag) => is_block_tag(tag),
+        Rule => true,
+        End(_) | Code(_) | Text(_) | InlineHtml(_) | Html(_) | InlineMath(_) | DisplayMath(_)
+        | FootnoteReference(_) | SoftBreak | HardBreak | TaskListMarker(_) => false,
+    };
+    let needs_line_break = match last_event {
+        // Consider this standard list:
+        //
+        // * item
+        //
+        //   # heading
+        //
+        // Here, `item` is wrapped in a paragraph, and when the paragraph ends,
+        // we write a blank line before the heading.
+        //
+        // Now, consider this tight list:
+        //
+        // * item
+        //   # heading
+        //
+        // Here, `item` isn't wrapped in a paragraph, so nothing starts the
+        // heading on a new line. If we don't add a line break ourselves, we
+        // would write:
+        //
+        // * item# heading
+        //
+        // which parses as a single item with the text `item# heading`.
+        //
+        // Definition lists have the same problem:
+        //
+        // term
+        // : definition
+        //   # heading
+        //
+        // If the last event was inline content and this starts a block, add a
+        // line break. In Markdown, a block can only begin at the start of a
+        // line, so this is always correct.
+        LastEvent::InlineContent => starts_block,
+        LastEvent::Other | LastEvent::ItemStart | LastEvent::ItemEnd(_) | LastEvent::NestedListEnd(_) => false,
+    };
+    if needs_line_break {
+        // Ensure that exactly one newline is set. With for example 2 newlines
+        // (a blank line in between), the tight list above would be written
+        // as:
+        //
+        // * item
+        //
+        //   # heading
+        //
+        // i.e., a loose list, which isn't correct. Definition lists behave the
+        // same way.
+        state.set_minimum_newlines_before_start(1);
+    }
+
     let res = match event.borrow() {
         Rule => {
+            let rule = match last_event {
+                // Consider this tight list:
+                //
+                // * item
+                //   ***
+                //
+                // Producing `---` would be incorrect, because it would be read
+                // as a setext heading underline:
+                //
+                // * item
+                //   ---
+                //
+                // i.e., `item` would become a level 2 heading. Switch to `***`
+                // instead, which is unambiguously not a setext heading.
+                LastEvent::InlineContent => "***",
+                // Continue using "---" elsewhere since it is the more commonly
+                // understood horizontal rule marker.
+                LastEvent::Other | LastEvent::ItemStart | LastEvent::ItemEnd(_) | LastEvent::NestedListEnd(_) => "---",
+            };
             consume_newlines(formatter, state)?;
             state.set_minimum_newlines_before_start(options.newlines_after_rule);
-            formatter.write_str("---")
+            formatter.write_str(rule)
         }
         Code(text) => {
             if let Some(shortcut_text) = state.current_shortcut_text.as_mut() {
@@ -570,54 +644,6 @@ where
             };
             if needs_blank_line {
                 state.set_minimum_newlines_before_start(options.newlines_after_list);
-            }
-            let needs_line_break = match last_event {
-                // Consider this standard list:
-                //
-                // * item
-                //
-                //   # heading
-                //
-                // Here, `item` is wrapped in a paragraph, and when the
-                // paragraph ends, we write a blank line before the heading.
-                //
-                // Now, consider this tight list:
-                //
-                // * item
-                //   # heading
-                //
-                // Here, `item` isn't wrapped in a paragraph, so nothing
-                // starts the heading on a new line. If we don't add a line
-                // break ourselves, we would write:
-                //
-                // * item# heading
-                //
-                // which parses as a single item with the text `item# heading`.
-                //
-                // Definition lists have the same problem:
-                //
-                // term
-                // : definition
-                //   # heading
-                //
-                // If the last event was inline content and this is a block tag,
-                // add a line break. In Markdown, a block can only begin at the
-                // start of a line, so this is always correct.
-                LastEvent::InlineContent => is_block_tag(tag),
-                LastEvent::Other | LastEvent::ItemStart | LastEvent::ItemEnd(_) | LastEvent::NestedListEnd(_) => false,
-            };
-            if needs_line_break {
-                // Ensure that exactly one newline is set. With for example 2
-                // newlines (a blank line in between), the tight list above
-                // would be written as:
-                //
-                // * item
-                //
-                //   # heading
-                //
-                // i.e., a loose list, which isn't correct. Definition lists
-                // behave the same way.
-                state.set_minimum_newlines_before_start(1);
             }
             let consumed_newlines = state.newlines_before_start != 0;
             consume_newlines(formatter, state)?;
