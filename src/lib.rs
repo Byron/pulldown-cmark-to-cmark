@@ -276,6 +276,8 @@ pub struct State<'a> {
     ///   level. The `>` line is only ever needed inside a tight list item.
     /// * after the outermost list item ends.
     pub pending_block_quote_end_line: Option<String>,
+    /// A definition marker waiting for its first child to determine whether it needs a blank line.
+    pub pending_definition_list_marker: bool,
 }
 
 /// The category of link being serialized.
@@ -581,6 +583,14 @@ where
     F: fmt::Write,
 {
     use pulldown_cmark::{Event::*, Tag::*};
+
+    if state.pending_definition_list_marker {
+        if matches!(event.borrow(), Start(Paragraph)) {
+            // Paragraph wrappers distinguish loose definitions from tight ones.
+            write_padded_newline(formatter, state)?;
+        }
+        state.write_pending_definition_list_marker(formatter)?;
+    }
 
     let last_was_text_without_trailing_newline = state.last_was_text_without_trailing_newline;
     state.last_was_text_without_trailing_newline = false;
@@ -949,11 +959,8 @@ where
                     Ok(())
                 }
                 DefinitionListDefinition => {
-                    let every_line_padding = "  ";
-                    let first_line_padding = ": ";
-
-                    padding(formatter, &state.padding).and(formatter.write_str(first_line_padding))?;
-                    state.padding.push(every_line_padding.into());
+                    padding(formatter, &state.padding)?;
+                    state.pending_definition_list_marker = true;
                     Ok(())
                 }
                 Superscript => formatter.write_str(if options.use_html_for_super_sub_script {
@@ -1761,6 +1768,7 @@ impl State<'_> {
     where
         F: fmt::Write,
     {
+        self.write_pending_definition_list_marker(&mut formatter)?;
         if self.shortcuts.is_empty() {
             return Ok(self);
         }
@@ -1781,6 +1789,14 @@ impl State<'_> {
     /// Returns `true` if currently serializing content inside a code block.
     pub fn is_in_code_block(&self) -> bool {
         self.code_block.is_some()
+    }
+
+    fn write_pending_definition_list_marker(&mut self, formatter: &mut impl fmt::Write) -> fmt::Result {
+        if std::mem::take(&mut self.pending_definition_list_marker) {
+            formatter.write_str(": ")?;
+            self.padding.push("  ".into());
+        }
+        Ok(())
     }
 
     /// Ensure that [`State::newlines_before_start`] is at least as large as

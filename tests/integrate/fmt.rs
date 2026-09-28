@@ -1660,10 +1660,12 @@ mod list {
     }
 
     #[test]
-    fn tight_list_output_is_independent_of_resume_points() {
+    fn output_is_independent_of_resume_points() {
         for input in [
             "* item\n  # heading",
             "* <!-- comment -->\n  `code`",
+            "`term`\n\n: def",
+            "* `term`\n\n  : def",
             "* a\n* item\n  # heading\n* c",
             "* a\n  > q\n  >\n  text",
             "* item\n  * a\n    > q\n    >\n  text",
@@ -1988,7 +1990,26 @@ key = value2
 }
 
 mod definition_list {
-    use super::assert_events_eq;
+    use super::{assert_events_eq, assert_events_eq_both};
+
+    #[test]
+    fn loose_definitions_keep_paragraphs() {
+        for term in ["`term`", "term", "*term*", "$term$", "$$term$$", "[term](url)"] {
+            assert_events_eq_both(&format!("{term}\n\n: def"));
+            assert_events_eq_both(&format!("{term}\n: def"));
+        }
+        for input in [
+            "`term`\n\n: first\n: second",
+            "`term`\n: first\n\n  second",
+            "`term`\n: first\n\n`other`\n\n: second",
+            "* `term`\n\n  : def",
+            "> `term`\n>\n> : def",
+            "> term\n> : first\n>\n>   second",
+            "`term`\n:",
+        ] {
+            assert_events_eq_both(input);
+        }
+    }
 
     #[test]
     fn round_trip() {
