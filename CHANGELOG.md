@@ -5,6 +5,58 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 22.0.2 (2026-09-28)
+
+### Bug Fixes
+
+ - <csr-id-b4c3dacd7808a47aa44ff1d0df3fd64cd0426588/> ensure blank lines are emitted after nested lists if necessary
+   Previously, the input:
+   
+   ```
+   1. item
+   
+      * a
+      * b
+   
+      para
+   ```
+   
+   would roundtrip as:
+   
+   ```
+   1. item
+   
+      * a
+      * b
+      para
+   ```
+   
+   This is incorrect, because the CommonMark spec would treat `para` as part of
+   the `b` item.
+   
+   Fix this by tracking the last event, and using that to emit a blank line if
+   necessary. This isn't perfect but it should handle the vast majority of cases.
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 2 commits contributed to the release.
+ - 49 days passed between releases.
+ - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Merge pull request #111 from sunshowers/blank-lines-after-nested-lists ([`a218fb1`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/a218fb19a097f3a08c86b2d13650adec1a93dc0c))
+    - Ensure blank lines are emitted after nested lists if necessary ([`b4c3dac`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/b4c3dacd7808a47aa44ff1d0df3fd64cd0426588))
+</details>
+
 ## 22.0.1 (2026-08-10)
 
 ### Bug Fixes
@@ -24,7 +76,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 2 commits contributed to the release.
+ - 3 commits contributed to the release.
  - 230 days passed between releases.
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 1 unique issue was worked on: [#109](https://github.com/Byron/pulldown-cmark-to-cmark/issues/109)
@@ -38,6 +90,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#109](https://github.com/Byron/pulldown-cmark-to-cmark/issues/109)**
     - Escape brackets in generated link labels ([`e446742`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/e4467422fbb68aff72a96808c3ab62b503897adc))
  * **Uncategorized**
+    - Release pulldown-cmark-to-cmark v22.0.1 ([`66f7c5d`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/66f7c5d4a99bd312eacc876b81dad1c91f623e4f))
     - Merge pull request #110 from Byron/escape-in-links ([`41f854b`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/41f854b001017daa44c8a9f6af3b9ab442a7d13a))
 </details>
 
