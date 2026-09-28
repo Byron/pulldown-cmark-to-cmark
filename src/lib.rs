@@ -71,7 +71,7 @@ mod render;
 use render::Renderer;
 mod text_modifications;
 
-/// Thea mount of code-block tokens one needs to produce a valid fenced code-block.
+/// The minimum number of tokens in a fenced code block.
 pub const DEFAULT_CODE_BLOCK_TOKEN_COUNT: usize = 3;
 
 /// Formatting preferences for [`State`] and [`cmark_with_options()`].
@@ -80,6 +80,7 @@ pub const DEFAULT_CODE_BLOCK_TOKEN_COUNT: usize = 3;
 /// rendering it to HTML.
 ///
 /// It's best used with its `Options::default()` implementation.
+/// Separators and delimiters may be adjusted when needed to preserve Markdown syntax.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Options<'a> {
     /// The number of newlines to insert after a headline
@@ -102,10 +103,10 @@ pub struct Options<'a> {
     pub newlines_after_rest: usize,
     /// The amount of newlines placed after TOML or YAML metadata blocks at the beginning of a document.
     pub newlines_after_metadata: usize,
-    /// Token count for fenced code block. An appropriate value of this field can be decided by
-    /// [`calculate_code_block_token_count()`].
-    /// Note that the default value is `4` which allows for one level of nested code-blocks,
-    /// which is typically a safe value for common kinds of markdown documents.
+    /// Preferred token count for fenced code blocks, defaulting to `4`.
+    /// The serializer increases this to at least three and beyond any matching
+    /// token run in the block's contents. Precomputing a count with
+    /// [`calculate_code_block_token_count()`] is optional.
     pub code_block_token_count: usize,
     /// The character to use for code block fences (backtick or tilde)
     pub code_block_token: char,
@@ -157,9 +158,10 @@ impl Default for Options<'_> {
 }
 
 impl Options<'_> {
-    /// Returns the set of special characters that need escaping based on the current options.
+    /// Returns the baseline punctuation considered for backslash escaping.
+    /// Context can require escaping other characters or writing character references.
     pub fn special_characters(&self) -> Cow<'static, str> {
-        // These always need to be escaped, even if reconfigured.
+        // Reconfiguring delimiter preferences does not remove their Markdown meaning.
         const BASE: &str = "#\\_*<>`|[]";
         if DEFAULT_OPTIONS.code_block_token == self.code_block_token
             && DEFAULT_OPTIONS.list_token == self.list_token
@@ -243,8 +245,8 @@ where
 /// Return the `<seen amount of consecutive fenced code-block tokens> + 1` that occur *within* a
 /// fenced code-block `events`.
 ///
-/// Use this function to obtain the correct value for `code_block_token_count` field of [`Options`]
-/// to assure that the enclosing code-blocks remain functional as such.
+/// This can set a preferred `code_block_token_count` in [`Options`]. The serializer
+/// also sizes each block's fence automatically, so this calculation is optional.
 ///
 /// Returns `None` if `events` didn't include any code-block, or the code-block didn't contain
 /// a nested block. In that case, the correct amount of fenced code-block tokens is

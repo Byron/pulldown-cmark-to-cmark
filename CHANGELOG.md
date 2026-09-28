@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Changed
+
+- **Breaking:** replace `cmark_resume*` and the public `State` fields with an
+  owning `State::new`, `process`, `process_with_source_range`, and `finish` API.
+  Successful calls return event and UTF-8 byte counts. Finishing is idempotent;
+  errors make the state unusable. See the [migration guide](README.md#migrating-to-the-owning-state-api).
+- Preserve merged parser events for all 652 CommonMark 0.31.2 examples, including
+  source-range serialization and arbitrary event splits. Correct fixture tab
+  notation and final newlines, and replace the partial pass-count allowance
+  with strict assertions.
+- Buffer blocks to choose list spacing and boundaries, heading and emphasis
+  delimiters, code fences, and reference labels. Centralize newline and prefix
+  handling, retaining tight HTML lists and loose definition spacing.
+
 ## 22.0.3 (2026-09-28)
 
 ### Bug Fixes
@@ -1901,4 +1917,3 @@ Thanks to the author of [this PR](https://github.com/Byron/pulldown-cmark-to-cma
     - First minor adjustment before all links change. ([`5b4c1ef`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/5b4c1ef9617acc3151a862ed1e536809846f0ed2))
     - Move everything from 'termbook'. ([`7666772`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/76667725b61be24890fbdfed5e7ecdb4c1ad1dc8))
 </details>
-

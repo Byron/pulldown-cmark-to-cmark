@@ -30,6 +30,21 @@ pub(crate) struct BufferedEvent {
 /// its syntax. Always call [`finish`](Self::finish) after the last input event.
 /// Use the same logical output stream for every call. After any error the state
 /// is unusable, since a [`fmt::Write`] failure can leave partial output behind.
+///
+/// ```
+/// use pulldown_cmark::Parser;
+/// use pulldown_cmark_to_cmark::{Options, State};
+///
+/// let events: Vec<_> = Parser::new("a *b*").collect();
+/// let mut state = State::new(Options::default());
+/// let mut output = String::new();
+/// let first = state.process(&events[..2], &mut output)?;
+/// assert_eq!(first.events_consumed, 2);
+/// state.process(&events[2..], &mut output)?;
+/// state.finish(&mut output)?;
+/// assert_eq!(output, "a *b*");
+/// # Ok::<(), pulldown_cmark_to_cmark::Error>(())
+/// ```
 #[derive(Clone, Debug)]
 pub struct State {
     options: Options<'static>,
@@ -83,6 +98,21 @@ impl State {
     /// events. Edited text and missing ranges use the ordinary renderer. Ranges
     /// must be in bounds and on UTF-8 character boundaries. The source and events
     /// need not outlive this call.
+    ///
+    /// ```
+    /// use pulldown_cmark::Parser;
+    /// use pulldown_cmark_to_cmark::State;
+    ///
+    /// let source = "a < b &amp; c";
+    /// let events = Parser::new(source).into_offset_iter()
+    ///     .map(|(event, range)| (event, Some(range)));
+    /// let mut state = State::default();
+    /// let mut output = String::new();
+    /// state.process_with_source_range(events, source, &mut output)?;
+    /// state.finish(&mut output)?;
+    /// assert_eq!(output, source);
+    /// # Ok::<(), pulldown_cmark_to_cmark::Error>(())
+    /// ```
     pub fn process_with_source_range<'a, I, E, F>(
         &mut self,
         events_and_ranges: I,
