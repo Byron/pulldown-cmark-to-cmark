@@ -571,6 +571,54 @@ where
             if needs_blank_line {
                 state.set_minimum_newlines_before_start(options.newlines_after_list);
             }
+            let needs_line_break = match last_event {
+                // Consider this standard list:
+                //
+                // * item
+                //
+                //   # heading
+                //
+                // Here, `item` is wrapped in a paragraph, and when the
+                // paragraph ends, we write a blank line before the heading.
+                //
+                // Now, consider this tight list:
+                //
+                // * item
+                //   # heading
+                //
+                // Here, `item` isn't wrapped in a paragraph, so nothing
+                // starts the heading on a new line. If we don't add a line
+                // break ourselves, we would write:
+                //
+                // * item# heading
+                //
+                // which parses as a single item with the text `item# heading`.
+                //
+                // Definition lists have the same problem:
+                //
+                // term
+                // : definition
+                //   # heading
+                //
+                // If the last event was inline content and this is a block tag,
+                // add a line break. In Markdown, a block can only begin at the
+                // start of a line, so this is always correct.
+                LastEvent::InlineContent => is_block_tag(tag),
+                LastEvent::Other | LastEvent::ItemStart | LastEvent::ItemEnd(_) | LastEvent::NestedListEnd(_) => false,
+            };
+            if needs_line_break {
+                // Ensure that exactly one newline is set. With for example 2
+                // newlines (a blank line in between), the tight list above
+                // would be written as:
+                //
+                // * item
+                //
+                //   # heading
+                //
+                // i.e., a loose list, which isn't correct. Definition lists
+                // behave the same way.
+                state.set_minimum_newlines_before_start(1);
+            }
             let consumed_newlines = state.newlines_before_start != 0;
             consume_newlines(formatter, state)?;
             match tag {
@@ -1127,37 +1175,41 @@ fn is_inline_content(event: &Event<'_>) -> bool {
         | Event::FootnoteReference(_)
         | Event::SoftBreak
         | Event::HardBreak
-        | Event::TaskListMarker(_)
-        | Event::End(
-            TagEnd::Emphasis
-            | TagEnd::Strong
-            | TagEnd::Strikethrough
-            | TagEnd::Superscript
-            | TagEnd::Subscript
-            | TagEnd::Link
-            | TagEnd::Image,
-        ) => true,
-        Event::End(
-            TagEnd::Paragraph
-            | TagEnd::Heading(_)
-            | TagEnd::BlockQuote(_)
-            | TagEnd::CodeBlock
-            | TagEnd::HtmlBlock
-            | TagEnd::List(_)
-            | TagEnd::Item
-            | TagEnd::FootnoteDefinition
-            | TagEnd::DefinitionList
-            | TagEnd::DefinitionListTitle
-            | TagEnd::DefinitionListDefinition
-            | TagEnd::Table
-            | TagEnd::TableHead
-            | TagEnd::TableRow
-            | TagEnd::TableCell
-            | TagEnd::MetadataBlock(_),
-        )
-        | Event::Start(_)
-        | Event::Html(_)
-        | Event::Rule => false,
+        | Event::TaskListMarker(_) => true,
+        Event::End(tag) => !is_block_tag_end(*tag),
+        Event::Start(_) | Event::Html(_) | Event::Rule => false,
+    }
+}
+
+fn is_block_tag(tag: &Tag<'_>) -> bool {
+    is_block_tag_end(tag.to_end())
+}
+
+fn is_block_tag_end(tag: TagEnd) -> bool {
+    match tag {
+        TagEnd::Paragraph
+        | TagEnd::Heading(_)
+        | TagEnd::BlockQuote(_)
+        | TagEnd::CodeBlock
+        | TagEnd::HtmlBlock
+        | TagEnd::List(_)
+        | TagEnd::Item
+        | TagEnd::FootnoteDefinition
+        | TagEnd::DefinitionList
+        | TagEnd::DefinitionListTitle
+        | TagEnd::DefinitionListDefinition
+        | TagEnd::Table
+        | TagEnd::TableHead
+        | TagEnd::TableRow
+        | TagEnd::TableCell
+        | TagEnd::MetadataBlock(_) => true,
+        TagEnd::Emphasis
+        | TagEnd::Strong
+        | TagEnd::Strikethrough
+        | TagEnd::Superscript
+        | TagEnd::Subscript
+        | TagEnd::Link
+        | TagEnd::Image => false,
     }
 }
 

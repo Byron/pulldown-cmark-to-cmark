@@ -1254,6 +1254,115 @@ mod list {
     }
 
     #[test]
+    fn heading_after_text_in_tight_item() {
+        let input = indoc!(
+            "
+            * item
+              # heading"
+        );
+        assert_eq!(fmts_both(input).0, "* item\n  # heading");
+        assert_events_eq_both(input);
+        assert_events_eq_both(indoc!(
+            "
+            1. item
+               # heading"
+        ));
+    }
+
+    #[test]
+    fn heading_after_inline_content_in_tight_item() {
+        assert_events_eq_both(indoc!(
+            "
+            * *item*
+              # heading"
+        ));
+        assert_events_eq_both(indoc!(
+            "
+            * `item`
+              # heading"
+        ));
+        assert_events_eq_both(indoc!(
+            "
+            * [x] item
+              # heading"
+        ));
+        assert_events_eq_both(indoc!(
+            "
+            * item\\
+              # heading"
+        ));
+    }
+
+    #[test]
+    fn heading_after_text_in_nested_tight_item() {
+        assert_events_eq_both(indoc!(
+            "
+            * a
+              * item
+                # heading"
+        ));
+        assert_events_eq_both(indoc!(
+            "
+            > * item
+            >   # heading"
+        ));
+    }
+
+    #[test]
+    fn heading_after_text_in_tight_item_across_resume() {
+        let input = indoc!(
+            "
+            * item
+              # heading"
+        );
+        let events: Vec<_> = Parser::new_ext(input, Options::all()).collect();
+        let split = 1 + events
+            .iter()
+            .position(|event| *event == Event::Text("item".into()))
+            .expect("input contains the item's text");
+        let (before, after) = events.split_at(split);
+
+        let mut output = String::new();
+        let state = cmark_resume(before.iter(), &mut output, None).unwrap();
+        cmark_resume(after.iter(), &mut output, Some(state)).unwrap();
+        assert_eq!(output, "* item\n  # heading");
+    }
+
+    #[test]
+    fn html_block_after_text_in_tight_item() {
+        assert_events_eq_both(indoc!(
+            "
+            * item
+              <div>
+              </div>"
+        ));
+        assert_events_eq_both(indoc!(
+            "
+            * item
+              <!-- comment -->"
+        ));
+    }
+
+    #[test]
+    fn table_after_text_in_tight_item() {
+        assert_events_eq_both(indoc!(
+            "
+            * item
+              | a | b |
+              | - | - |"
+        ));
+    }
+
+    #[test]
+    fn footnote_definition_after_text_in_tight_item() {
+        assert_events_eq_both(indoc!(
+            "
+            * item
+              [^1]: footnote"
+        ));
+    }
+
+    #[test]
     fn ordered_and_unordered_nested_and_ordered() {
         let mut state = State::default();
         state.newlines_before_start = 2;
