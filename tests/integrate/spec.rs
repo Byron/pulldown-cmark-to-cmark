@@ -1,5 +1,5 @@
 use std::cmp::Ordering;
-use std::{convert::TryFrom, ops::Range};
+use std::ops::Range;
 
 use pretty_assertions::Comparison as PrettyComparison;
 use yansi::Paint;
@@ -10,10 +10,10 @@ use pulldown_cmark_to_cmark::cmark;
 
 const COMMONMARK_SPEC_TEXT: &str = include_str!("../spec/CommonMark/spec.txt");
 
-const COMMONMARK_SPEC_EXAMPLE_COUNT: usize = 649;
+const COMMONMARK_SPEC_EXAMPLE_COUNT: usize = 652;
 
 // At the time of writing, ~90% of tests pass. This needs some additional work.
-const EXPECTED_SUCCESS_EXAMPLE_COUNT: usize = 591;
+const EXPECTED_SUCCESS_EXAMPLE_COUNT: usize = 622;
 
 const FULL_CMARK_RESULTS_VAR: &str = "FULL_CMARK_RESULTS";
 
@@ -44,12 +44,10 @@ fn collect_test_case<'a>(events: &mut impl Iterator<Item = (Event<'a>, Range<usi
     if !(is_example_fence(&begin_tag) && end_tag == TagEnd::CodeBlock) {
         return None;
     }
-    let splitted_text = text.split("\n.\n").collect::<Vec<_>>();
-    let Ok([input, output]) = <[_; 2]>::try_from(splitted_text) else {
+    let Some((input, output)) = text.split_once("\n.\n") else {
         panic!("CommonMark spec example code block has unexpected form.");
     };
-    let output = output.trim_end_matches('\n');
-    Some((input.to_string(), output.to_string()))
+    Some((format!("{}\n", input.replace('→', "\t")), output.replace('→', "\t")))
 }
 
 fn parse_common_mark_testsuite() -> Vec<MarkdownTestCase> {
@@ -147,6 +145,15 @@ fn eprint_indented(text_block: &str, indent: &str) {
 //======================================
 // Tests
 //======================================
+
+#[test]
+fn fixture_tabs_and_final_newlines_are_preserved() {
+    let mut events = Parser::new("```example\n#→Foo\n.\n<h1>Foo</h1>\n```\n").into_offset_iter();
+    assert_eq!(
+        collect_test_case(&mut events),
+        Some(("#\tFoo\n".into(), "<h1>Foo</h1>\n".into()))
+    );
+}
 
 #[test]
 fn commonmark_spec() {
