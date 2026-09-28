@@ -599,8 +599,14 @@ where
         End(_) => {
             state.open_tags.pop();
         }
-        Rule | Code(_) | Text(_) | InlineHtml(_) | Html(_) | InlineMath(_) | DisplayMath(_) | FootnoteReference(_)
-        | SoftBreak | HardBreak | TaskListMarker(_) => {}
+        Code(_) | Text(_) | InlineHtml(_) | InlineMath(_) | DisplayMath(_) | FootnoteReference(_)
+        | TaskListMarker(_) => {
+            // For leaf inline events, write pending newlines here. For Start and
+            // Rule, we write them in their own arms, possibly after changing the
+            // number of newlines to be written.
+            consume_newlines(formatter, state)?;
+        }
+        Rule | Html(_) | SoftBreak | HardBreak => {}
     }
 
     let needs_line_break = match last_event {
@@ -1259,7 +1265,6 @@ where
             if let Some(text_for_header) = state.text_for_header.as_mut() {
                 text_for_header.push_str(text);
             }
-            consume_newlines(formatter, state)?;
             if last_was_paragraph_start {
                 if text.starts_with('\t') {
                     formatter.write_str("&#9;")?;
@@ -1273,10 +1278,7 @@ where
             let escaped_text = escape_special_characters(text, state, options);
             print_text_without_trailing_newline(&escaped_text, formatter, &state)
         }
-        InlineHtml(text) => {
-            consume_newlines(formatter, state)?;
-            print_text_without_trailing_newline(text, formatter, &state)
-        }
+        InlineHtml(text) => print_text_without_trailing_newline(text, formatter, &state),
         Html(text) => {
             let mut lines = text.split('\n');
             if let Some(line) = lines.next() {

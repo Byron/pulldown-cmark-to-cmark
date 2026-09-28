@@ -1399,6 +1399,37 @@ mod list {
     }
 
     #[test]
+    fn inline_content_after_heading_in_tight_item() {
+        assert_events_eq_both(indoc!(
+            "
+            * # heading
+              `code`"
+        ));
+        assert_events_eq_both(indoc!(
+            "
+            * # heading
+              $x$"
+        ));
+        assert_events_eq_both(indoc!(
+            "
+            * # heading
+              $$x$$"
+        ));
+        assert_events_eq_both(indoc!(
+            "
+            * # heading
+              *emphasis*"
+        ));
+        assert_events_eq_both(indoc!(
+            "
+            * # heading
+              [^1]
+
+            [^1]: footnote"
+        ));
+    }
+
+    #[test]
     fn fenced_code_in_tight_list() {
         assert_events_eq_both(indoc!(
             "
