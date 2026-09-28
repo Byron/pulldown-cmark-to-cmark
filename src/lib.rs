@@ -275,6 +275,7 @@ pub struct State<'a> {
     /// * when a block quote ends outside a list item, e.g. `> q` at the top
     ///   level. The `>` line is only ever needed inside a tight list item.
     /// * after the outermost list item ends.
+    /// * after a definition ends and writes a newline outside the quote.
     pub pending_block_quote_end_line: Option<String>,
     /// A definition marker waiting for its first child to determine whether it needs a blank line.
     pub pending_definition_list_marker: bool,
@@ -1258,6 +1259,8 @@ where
             TagEnd::DefinitionListTitle => formatter.write_char('\n'),
             TagEnd::DefinitionListDefinition => {
                 state.padding.pop();
+                // This newline leaves the quote; a later `>` would start a new one.
+                state.pending_block_quote_end_line = None;
                 write_padded_newline(formatter, &state)
             }
             TagEnd::Superscript => formatter.write_str(if options.use_html_for_super_sub_script {
@@ -1402,7 +1405,7 @@ where
     F: fmt::Write,
 {
     // End(Item) and End(List) can come between a block quote's end and the
-    // content after it, so End events leave the pending line in place.
+    // content after it, so these End events leave the pending line in place.
     let Some(kind) = kind else {
         return Ok(());
     };

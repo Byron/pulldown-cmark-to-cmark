@@ -1666,6 +1666,7 @@ mod list {
             "* <!-- comment -->\n  `code`",
             "`term`\n\n: def",
             "* `term`\n\n  : def",
+            "* term\n  : > quote\n\n  text",
             "* a\n* item\n  # heading\n* c",
             "* a\n  > q\n  >\n  text",
             "* item\n  * a\n    > q\n    >\n  text",
@@ -1991,6 +1992,14 @@ key = value2
 
 mod definition_list {
     use super::{assert_events_eq, assert_events_eq_both};
+
+    #[test]
+    fn ending_definition_does_not_restart_blockquote() {
+        assert_events_eq_both("* term\n  : > quote\n\n  text");
+        assert_events_eq_both("* outer\n  * term\n    : > quote\n\n  text");
+        assert_events_eq_both("* term\n  : * item\n      > quote\n\n  text");
+        assert_events_eq_both("> * term\n>   : > quote\n>\n>   text");
+    }
 
     #[test]
     fn loose_definitions_keep_paragraphs() {
