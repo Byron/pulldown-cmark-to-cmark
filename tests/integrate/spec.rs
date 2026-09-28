@@ -107,6 +107,11 @@ fn commonmark_spec() {
         .unwrap();
         assert_roundtrip(case, &with_source, index + 1, "source ranges");
     }
+    println!(
+        "CommonMark 0.31.2: {}/{} examples passed (ordinary and source ranges)",
+        cases.len(),
+        COMMONMARK_SPEC_EXAMPLE_COUNT
+    );
 }
 
 fn process(state: &mut State, events: &[(Event<'_>, Range<usize>)], source: Option<&str>, output: &mut String) {
@@ -145,7 +150,9 @@ fn finish(state: &mut State, output: &mut String) {
 
 #[test]
 fn commonmark_spec_at_every_event_boundary() {
-    for (index, case) in parse_common_mark_testsuite().iter().enumerate() {
+    let cases = parse_common_mark_testsuite();
+    assert_eq!(COMMONMARK_SPEC_EXAMPLE_COUNT, cases.len());
+    for (index, case) in cases.iter().enumerate() {
         let events: Vec<_> = Parser::new(&case.markdown).into_offset_iter().collect();
         for source in [None, Some(case.markdown.as_str())] {
             let mut expected = String::new();
@@ -183,4 +190,9 @@ fn commonmark_spec_at_every_event_boundary() {
             );
         }
     }
+    println!(
+        "CommonMark 0.31.2: {}/{} examples passed (incremental, every event split and event by event)",
+        cases.len(),
+        COMMONMARK_SPEC_EXAMPLE_COUNT
+    );
 }
