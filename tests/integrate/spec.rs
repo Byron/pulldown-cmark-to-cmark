@@ -1,21 +1,10 @@
-use std::cmp::Ordering;
 use std::ops::Range;
 
-use pretty_assertions::Comparison as PrettyComparison;
-use yansi::Paint;
-
-use pulldown_cmark::utils::TextMergeStream;
-use pulldown_cmark::{CodeBlockKind, Event, Options, Parser, Tag, TagEnd};
-use pulldown_cmark_to_cmark::cmark;
+use pulldown_cmark::{utils::TextMergeStream, CodeBlockKind, Event, Options, Parser, Tag, TagEnd};
+use pulldown_cmark_to_cmark::{cmark, cmark_with_source_range, Progress, State};
 
 const COMMONMARK_SPEC_TEXT: &str = include_str!("../spec/CommonMark/spec.txt");
-
 const COMMONMARK_SPEC_EXAMPLE_COUNT: usize = 652;
-
-// At the time of writing, ~90% of tests pass. This needs some additional work.
-const EXPECTED_SUCCESS_EXAMPLE_COUNT: usize = 622;
-
-const FULL_CMARK_RESULTS_VAR: &str = "FULL_CMARK_RESULTS";
 
 struct MarkdownTestCase {
     markdown: String,
@@ -79,72 +68,15 @@ fn parse_common_mark_testsuite() -> Vec<MarkdownTestCase> {
     testsuite
 }
 
-fn test_roundtrip(original: &str, expected_html: &str, line_number: usize, show_full_results: bool) -> bool {
-    //
-    // Markdown => [Event, ..] => Markdown
-    // |_________ A _________|
-    //             |__________ B ________|
-    //
-    // A: pulldown-cmark
-    // B: pulldown-cmark-to-cmark
-
-    // Do A
-    let opts = Options::empty();
-    let event_list = Parser::new_ext(original, opts).collect::<Vec<_>>();
-
-    // Do B
-    let mut regen_str = String::new();
-    cmark(event_list.iter().cloned(), &mut regen_str).expect("Regeneration failure");
-
-    // text events should be merged before comparing two event lists for equivalence.
-    // you don't need to merge them before feeding them into `cmark`.
-    let event_list: Vec<Event<'_>> = TextMergeStream::new(event_list.into_iter()).collect();
-    let event_list_2 = TextMergeStream::new(Parser::new_ext(&regen_str, opts)).collect::<Vec<_>>();
-
-    if event_list == event_list_2 {
-        return true;
-    }
-
-    if show_full_results {
-        eprintln!(
-            "{}\n",
-            format!("===== Conformance Test Failure (L{line_number}) =====")
-                .bold()
-                .underline()
-        );
-
-        eprintln!("{}\n", "Original Markdown Example");
-        eprint_indented(original, "    ");
-        eprintln!();
-
-        eprintln!("{}\n", "Regenerated Markdown Example");
-        eprint_indented(&regen_str, "    ");
-        eprintln!();
-
-        eprintln!("{}\n", "Expected HTML");
-        eprint_indented(expected_html, "    ");
-        eprintln!();
-
-        eprintln!("{}\n", "Original vs Regenerated Event Sequence");
-        let comparision = PrettyComparison::new(&event_list, &event_list_2);
-        for line in format!("{comparision}").lines() {
-            eprintln!("    {}", line);
-        }
-        eprintln!();
-    }
-
-    false
+fn assert_roundtrip(case: &MarkdownTestCase, output: &str, example: usize, mode: &str) {
+    let expected = TextMergeStream::new(Parser::new(&case.markdown)).collect::<Vec<_>>();
+    let actual = TextMergeStream::new(Parser::new(output)).collect::<Vec<_>>();
+    assert_eq!(
+        expected, actual,
+        "CommonMark 0.31.2 example {example}, line {}, {mode}\ninput: {:?}\noutput: {output:?}\nHTML: {}",
+        case.line_number, case.markdown, case.expected_html
+    );
 }
-
-fn eprint_indented(text_block: &str, indent: &str) {
-    for line in text_block.lines() {
-        eprintln!("{indent}{line}");
-    }
-}
-
-//======================================
-// Tests
-//======================================
 
 #[test]
 fn fixture_tabs_and_final_newlines_are_preserved() {
@@ -157,63 +89,98 @@ fn fixture_tabs_and_final_newlines_are_preserved() {
 
 #[test]
 fn commonmark_spec() {
-    let testsuite = parse_common_mark_testsuite();
-    assert_eq!(COMMONMARK_SPEC_EXAMPLE_COUNT, testsuite.len());
+    let cases = parse_common_mark_testsuite();
+    assert_eq!(COMMONMARK_SPEC_EXAMPLE_COUNT, cases.len());
+    for (index, case) in cases.iter().enumerate() {
+        let mut ordinary = String::new();
+        cmark(Parser::new(&case.markdown), &mut ordinary).unwrap();
+        assert_roundtrip(case, &ordinary, index + 1, "ordinary");
 
-    let show_full_results = std::env::var(FULL_CMARK_RESULTS_VAR).is_ok();
+        let mut with_source = String::new();
+        cmark_with_source_range(
+            Parser::new(&case.markdown)
+                .into_offset_iter()
+                .map(|(event, range)| (event, Some(range))),
+            &case.markdown,
+            &mut with_source,
+        )
+        .unwrap();
+        assert_roundtrip(case, &with_source, index + 1, "source ranges");
+    }
+}
 
-    let mut success_count = 0usize;
-    for test_case in &testsuite {
-        let MarkdownTestCase {
-            markdown,
-            expected_html,
-            line_number,
-        } = test_case;
+fn process(state: &mut State, events: &[(Event<'_>, Range<usize>)], source: Option<&str>, output: &mut String) {
+    let before = output.len();
+    let progress = if let Some(source) = source {
+        state.process_with_source_range(
+            events.iter().map(|(event, range)| (event, Some(range.clone()))),
+            source,
+            &mut *output,
+        )
+    } else {
+        state.process(events.iter().map(|(event, _)| event), &mut *output)
+    }
+    .unwrap();
+    assert_eq!(
+        progress,
+        Progress {
+            events_consumed: events.len(),
+            bytes_written: output.len() - before
+        }
+    );
+}
 
-        if test_roundtrip(markdown, expected_html, *line_number, show_full_results) {
-            success_count += 1;
+fn finish(state: &mut State, output: &mut String) {
+    let before = output.len();
+    let progress = state.finish(&mut *output).unwrap();
+    assert_eq!(
+        progress,
+        Progress {
+            events_consumed: 0,
+            bytes_written: output.len() - before
+        }
+    );
+    assert_eq!(state.finish(output).unwrap(), Progress::default());
+}
+
+#[test]
+fn commonmark_spec_at_every_event_boundary() {
+    for (index, case) in parse_common_mark_testsuite().iter().enumerate() {
+        let events: Vec<_> = Parser::new(&case.markdown).into_offset_iter().collect();
+        for source in [None, Some(case.markdown.as_str())] {
+            let mut expected = String::new();
+            let mut state = State::default();
+            process(&mut state, &events, source, &mut expected);
+            finish(&mut state, &mut expected);
+            assert_roundtrip(case, &expected, index + 1, "incremental");
+
+            for split in 0..=events.len() {
+                let mut actual = String::new();
+                let mut state = State::default();
+                process(&mut state, &events[..split], source, &mut actual);
+                process(&mut state, &events[split..], source, &mut actual);
+                finish(&mut state, &mut actual);
+                assert_eq!(
+                    actual,
+                    expected,
+                    "example {}, split {split}, source ranges: {}",
+                    index + 1,
+                    source.is_some()
+                );
+            }
+            let mut actual = String::new();
+            let mut state = State::default();
+            for event in &events {
+                process(&mut state, std::slice::from_ref(event), source, &mut actual);
+            }
+            finish(&mut state, &mut actual);
+            assert_eq!(
+                actual,
+                expected,
+                "example {}, event by event, source ranges: {}",
+                index + 1,
+                source.is_some()
+            );
         }
     }
-
-    let expected_percent = EXPECTED_SUCCESS_EXAMPLE_COUNT as f64 / testsuite.len() as f64;
-    let actual_percent = success_count as f64 / testsuite.len() as f64;
-
-    eprintln!();
-
-    let (change, change_icon) = match success_count.cmp(&EXPECTED_SUCCESS_EXAMPLE_COUNT) {
-        // If the user requested the full results, then proceed to printing
-        // the full results and failing the test, even if the test would
-        // have otherwise passed if the user hadn't requested the results.
-        Ordering::Equal if !show_full_results => return,
-        Ordering::Equal => ("Unchanged".blue(), ""),
-        Ordering::Less => ("DECREASED".red(), "🔻"),
-        Ordering::Greater => ("INCREASED".green(), "🟢"),
-    };
-
-    eprintln!("{}: {change}\n", "CommonMark Conformance Test Rate".bold().underline());
-
-    eprintln!(
-        "Expected to pass: {} ({:.1}%)",
-        EXPECTED_SUCCESS_EXAMPLE_COUNT,
-        100. * expected_percent
-    );
-    eprintln!(
-        " Actually passed: {success_count} ({:.1}%) {change_icon}",
-        100. * actual_percent,
-    );
-    eprintln!();
-    eprintln!("CommonMark total: {}", testsuite.len());
-    eprintln!();
-
-    // Only ask the user to update the expected success count if they've managed
-    // to increase it. Note: Some increases could be do to improvements in
-    // pulldown-cmark, not this crate.
-    if success_count > EXPECTED_SUCCESS_EXAMPLE_COUNT {
-        eprintln!("Please update `EXPECTED_SUCCESS_EXAMPLE_COUNT` in {}\n", file!());
-    }
-
-    eprintln!("To see the full results:\n");
-    eprintln!("    $ {}=true cargo test\n", FULL_CMARK_RESULTS_VAR);
-
-    panic!()
 }

@@ -6,7 +6,7 @@ fn s(e: Event) -> String {
 }
 fn es<'a>(es: impl IntoIterator<Item = Event<'a>>) -> String {
     let mut buf = String::new();
-    cmark(es.into_iter(), &mut buf).unwrap();
+    cmark(es, &mut buf).unwrap();
     buf
 }
 mod code {
@@ -31,176 +31,102 @@ mod rule {
     }
 }
 
-mod start {
-    use pulldown_cmark::{
-        Alignment::{self, Center, Left, Right},
-        BlockQuoteKind, CodeBlockKind,
-        Event::*,
-        HeadingLevel,
-        LinkType::*,
-        Tag::*,
-    };
+mod containers {
+    use super::es;
+    use pulldown_cmark::{BlockQuoteKind, CodeBlockKind, Event::*, HeadingLevel, LinkType, Tag};
 
-    use super::{es, s};
-
-    #[test]
-    fn paragraph() {
-        assert_eq!(s(Start(Paragraph)), "");
-    }
-    #[test]
-    fn header1() {
-        assert_eq!(
-            s(Start(Heading {
-                level: HeadingLevel::H1,
-                id: None,
-                classes: vec![],
-                attrs: vec![]
-            })),
-            "# "
-        );
-    }
-    #[test]
-    fn header2() {
-        assert_eq!(
-            s(Start(Heading {
-                level: HeadingLevel::H2,
-                id: None,
-                classes: vec![],
-                attrs: vec![]
-            })),
-            "## "
-        );
-    }
-    #[test]
-    fn blockquote() {
-        assert_eq!(s(Start(BlockQuote(None))), "\n > ");
-        assert_eq!(s(Start(BlockQuote(Some(BlockQuoteKind::Note)))), "\n > [!NOTE]");
-        assert_eq!(s(Start(BlockQuote(Some(BlockQuoteKind::Tip)))), "\n > [!TIP]");
-        assert_eq!(
-            s(Start(BlockQuote(Some(BlockQuoteKind::Important)))),
-            "\n > [!IMPORTANT]"
-        );
-        assert_eq!(s(Start(BlockQuote(Some(BlockQuoteKind::Warning)))), "\n > [!WARNING]");
-        assert_eq!(s(Start(BlockQuote(Some(BlockQuoteKind::Caution)))), "\n > [!CAUTION]");
-    }
-    #[test]
-    fn codeblock() {
-        assert_eq!(
-            s(Start(CodeBlock(CodeBlockKind::Fenced("asdf".into())))),
-            "\n````asdf\n"
-        );
-    }
-    #[test]
-    fn list_unordered() {
-        assert_eq!(s(Start(List(None))), "");
-    }
-    #[test]
-    fn list_ordered() {
-        assert_eq!(s(Start(List(Some(1)))), "");
-    }
-    #[test]
-    fn item() {
-        assert_eq!(s(Start(Item)), "");
-    }
-    #[test]
-    fn footnote_definition() {
-        assert_eq!(s(Start(FootnoteDefinition("asdf".into()))), "[^asdf]: ");
-    }
-    #[test]
-    fn emphasis() {
-        assert_eq!(s(Start(Emphasis)), "*");
-    }
-    #[test]
-    fn strong() {
-        assert_eq!(s(Start(Strong)), "**");
-    }
-    #[test]
-    fn link() {
-        assert_eq!(
-            s(Start(Link {
-                link_type: Inline,
-                dest_url: "uri".into(),
-                title: "title".into(),
-                id: "".into(),
-            })),
-            "["
-        );
-    }
-    #[test]
-    fn link_without_title() {
-        assert_eq!(
-            s(Start(Link {
-                link_type: Inline,
-                dest_url: "uri".into(),
-                title: "".into(),
-                id: "".into()
-            })),
-            "["
-        );
-    }
-    #[test]
-    fn image() {
-        assert_eq!(
-            s(Start(Image {
-                link_type: Inline,
-                dest_url: "uri".into(),
-                title: "title".into(),
-                id: "".into()
-            })),
-            "!["
-        );
-    }
-    #[test]
-    fn image_without_title() {
-        assert_eq!(
-            s(Start(Image {
-                link_type: Inline,
-                dest_url: "uri".into(),
-                title: "".into(),
-                id: "".into()
-            })),
-            "!["
-        );
-    }
-    #[test]
-    fn table() {
-        assert_eq!(s(Start(Table(vec![Left, Center, Right, Alignment::None]))), "");
-    }
-    #[test]
-    fn table_head() {
-        assert_eq!(s(Start(TableHead)), "");
-    }
-    #[test]
-    fn table_row() {
-        assert_eq!(s(Start(TableRow)), "");
-    }
-    #[test]
-    fn table_cell() {
-        assert_eq!(s(Start(TableCell)), "|");
-    }
-    #[test]
-    fn table_pipe() {
-        assert_eq!(
-            es([
-                Start(Table(vec![Left, Center, Right, Alignment::None])),
-                Start(TableHead),
-                Start(TableCell),
-                Text("a|b".into()),
-            ]),
-            r"|a\|b"
-        );
+    fn wrap(tag: Tag<'_>, text: &str) -> String {
+        let end = tag.to_end();
+        es([Start(tag), Text(text.to_owned().into()), End(end)])
     }
 
     #[test]
-    fn definition_list_definition() {
-        assert_eq!(s(Start(DefinitionListDefinition)), ": ");
+    fn inline_and_block_delimiters() {
+        for (tag, expected) in [
+            (Tag::Paragraph, "x"),
+            (Tag::Emphasis, "*x*"),
+            (Tag::Strong, "**x**"),
+            (Tag::Strikethrough, "~~x~~"),
+            (Tag::Superscript, "<sup>x</sup>"),
+            (Tag::Subscript, "<sub>x</sub>"),
+            (Tag::BlockQuote(None), "\n > \n > x"),
+            (
+                Tag::CodeBlock(CodeBlockKind::Fenced("asdf".into())),
+                "\n````asdf\nx\n````",
+            ),
+            (Tag::FootnoteDefinition("asdf".into()), "[^asdf]: x"),
+        ] {
+            assert_eq!(wrap(tag, "x"), expected);
+        }
+    }
+
+    #[test]
+    fn headings() {
+        for (level, expected) in [(HeadingLevel::H1, "# x"), (HeadingLevel::H2, "## x")] {
+            assert_eq!(
+                wrap(
+                    Tag::Heading {
+                        level,
+                        id: None,
+                        classes: vec![],
+                        attrs: vec![]
+                    },
+                    "x"
+                ),
+                expected
+            );
+        }
+    }
+
+    #[test]
+    fn alerts() {
+        for (kind, name) in [
+            (BlockQuoteKind::Note, "NOTE"),
+            (BlockQuoteKind::Tip, "TIP"),
+            (BlockQuoteKind::Important, "IMPORTANT"),
+            (BlockQuoteKind::Warning, "WARNING"),
+            (BlockQuoteKind::Caution, "CAUTION"),
+        ] {
+            assert_eq!(wrap(Tag::BlockQuote(Some(kind)), "x"), format!("\n > [!{name}]\n > x"));
+        }
+    }
+
+    #[test]
+    fn links_and_images() {
+        for title in ["", "title"] {
+            let suffix = if title.is_empty() { "" } else { " \"title\"" };
+            assert_eq!(
+                wrap(
+                    Tag::Link {
+                        link_type: LinkType::Inline,
+                        dest_url: "uri".into(),
+                        title: title.into(),
+                        id: "".into()
+                    },
+                    "x"
+                ),
+                format!("[x](uri{suffix})")
+            );
+            assert_eq!(
+                wrap(
+                    Tag::Image {
+                        link_type: LinkType::Inline,
+                        dest_url: "uri".into(),
+                        title: title.into(),
+                        id: "".into()
+                    },
+                    "x"
+                ),
+                format!("![x](uri{suffix})")
+            );
+        }
     }
 }
 
 mod end {
     use pulldown_cmark::{BlockQuoteKind, CodeBlockKind, CowStr, Event::*, HeadingLevel, LinkType::*, Tag, TagEnd};
 
-    use super::{es, s};
+    use super::es;
 
     #[test]
     fn header() {
@@ -213,12 +139,7 @@ mod end {
         assert_eq!(es([Start(tag.clone()), End(tag.to_end())]), "## ");
     }
     #[test]
-    fn paragraph() {
-        assert_eq!(s(End(TagEnd::Paragraph)), "");
-    }
-    #[test]
     fn blockquote() {
-        assert_eq!(s(End(TagEnd::BlockQuote(None))), "");
         assert_eq!(
             es([
                 Start(Tag::BlockQuote(Some(BlockQuoteKind::Note))),
@@ -271,32 +192,8 @@ mod end {
                 Text("bar".into()),
                 End(TagEnd::Paragraph),
             ]),
-            "* \n      foo\n      \n\nbar"
+            "* \n      foo\n\nbar"
         );
-    }
-    #[test]
-    fn footnote_definition() {
-        assert_eq!(s(End(TagEnd::FootnoteDefinition)), "");
-    }
-    #[test]
-    fn emphasis() {
-        assert_eq!(s(End(TagEnd::Emphasis)), "*");
-    }
-    #[test]
-    fn strong() {
-        assert_eq!(s(End(TagEnd::Strong)), "**");
-    }
-    #[test]
-    fn list_unordered() {
-        assert_eq!(s(End(TagEnd::List(false))), "");
-    }
-    #[test]
-    fn list_ordered() {
-        assert_eq!(s(End(TagEnd::List(true))), "");
-    }
-    #[test]
-    fn item() {
-        assert_eq!(s(End(TagEnd::Item)), "");
     }
     #[test]
     fn link() {
@@ -337,18 +234,6 @@ mod end {
             id: "".into(),
         };
         assert_eq!(es([Start(tag.clone()), End(tag.to_end())]), "![](/uri)");
-    }
-    #[test]
-    fn table() {
-        assert_eq!(s(End(TagEnd::Table)), "");
-    }
-    #[test]
-    fn table_row() {
-        assert_eq!(s(End(TagEnd::TableRow)), "|");
-    }
-    #[test]
-    fn table_cell() {
-        assert_eq!(s(End(TagEnd::TableCell)), "");
     }
 }
 

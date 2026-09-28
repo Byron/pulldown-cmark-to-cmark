@@ -246,8 +246,8 @@ foo
 &#9;paragraph starts with a literal tab.
 
 &#32;   I'm using markdown like a typewriter,
-    probably because this document started life in a WYSIWYG
-    editor and got converted...
+&#32;   probably because this document started life in a WYSIWYG
+&#32;   editor and got converted...
 
 [Links]: http://www.example.com/shortcut
 [`diam`]: http://www.example.com/shortcut_code_diam

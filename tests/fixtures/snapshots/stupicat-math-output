@@ -209,7 +209,7 @@ $$$\text{first $$ second}$$
 This is also display math, but (counterintuitively) it's allowed to be empty
 and expected to be as short as possible:
 
-$$$$\\text{first $$ second}$$
+$$$$\text{first $$ second}$$
 
 Dollar signs must also be backslash-escaped if they occur within math:
 
@@ -241,8 +241,8 @@ Inline and display math in the same list
   ````
   
   $$
-a
-$$
+  a
+  $$
 
 * 
   ````math
@@ -250,8 +250,8 @@ $$
   ````
   
   $$
-b
-$$
+  b
+  $$
 
 Images and math in the same list
 
@@ -305,8 +305,8 @@ a
 $$
 
 * $$
-\text{$b$}
-$$
+  \text{$b$}
+  $$
 
 Backslashes in `$`-math
 

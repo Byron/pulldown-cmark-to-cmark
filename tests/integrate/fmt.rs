@@ -1,50 +1,38 @@
-use pulldown_cmark::{utils::TextMergeStream, Alignment, CodeBlockKind, Event, LinkType, Options, Parser, Tag, TagEnd};
-pub use pulldown_cmark_to_cmark::{
-    cmark, cmark_resume, cmark_resume_with_options, ItemTail, LastEvent, OpenTag, Options as CmarkToCmarkOptions, State,
-};
+use pulldown_cmark::{utils::TextMergeStream, Event, Options, Parser, Tag, TagEnd};
+pub use pulldown_cmark_to_cmark::{cmark, cmark_with_options, Options as CmarkToCmarkOptions, State};
 
-fn assert_output_and_states_eq(output0: &str, state0: &State, output1: &str, state1: &State) {
+fn fmts_both(s: &str) -> String {
+    let output = fmts(s);
+    let with_source = source_range::fmts(s);
     assert_eq!(
-        output0, output1,
-        "Output of formatting without and with source range differs!"
+        TextMergeStream::new(Parser::new_ext(&output, Options::all())).collect::<Vec<_>>(),
+        TextMergeStream::new(Parser::new_ext(&with_source, Options::all())).collect::<Vec<_>>(),
+        "ordinary and source-range output differ for {s:?}",
     );
+    output
+}
+
+fn fmts(s: &str) -> String {
+    let mut output = String::new();
+    cmark(Parser::new_ext(s, Options::all()), &mut output).unwrap();
+    output
+}
+
+fn fmts_with_options(s: &str, options: CmarkToCmarkOptions<'_>) -> String {
+    let with_source = source_range::fmts_with_options(s, options.clone());
+    let mut output = String::new();
+    cmark_with_options(Parser::new_ext(s, Options::all()), &mut output, options).unwrap();
     assert_eq!(
-        state0, state1,
-        "States of formatting without and with source range differs!"
+        TextMergeStream::new(Parser::new_ext(&output, Options::all())).collect::<Vec<_>>(),
+        TextMergeStream::new(Parser::new_ext(&with_source, Options::all())).collect::<Vec<_>>(),
     );
+    output
 }
 
-fn fmts_both(s: &str) -> (String, State<'_>) {
-    let (buf0, s0) = fmts(s);
-    let (buf1, s1) = source_range::fmts(s);
-    assert_output_and_states_eq(&buf0, &s0, &buf1, &s1);
-    (buf0, s0)
-}
-
-fn fmts(s: &str) -> (String, State<'_>) {
-    let mut buf = String::new();
-    let s = cmark(Parser::new_ext(s, Options::all()), &mut buf).unwrap();
-    (buf, s)
-}
-
-fn fmts_with_options<'a>(s: &'a str, options: CmarkToCmarkOptions<'a>) -> (String, State<'a>) {
-    let (buf1, s1) = source_range::fmts_with_options(s, options.clone());
-    let mut buf = String::new();
-    let s = cmark_resume_with_options(Parser::new_ext(s, Options::all()), &mut buf, None, options).unwrap();
-    assert_output_and_states_eq(&buf, &s, &buf1, &s1);
-    (buf, s)
-}
-
-fn fmtes<'a>(e: &'a [Event], s: State<'a>) -> (String, State<'a>) {
-    let mut buf = String::new();
-    let s = cmark_resume(e.iter(), &mut buf, Some(s)).unwrap();
-    (buf, s)
-}
-
-fn fmte<'a>(e: impl AsRef<[Event<'a>]>) -> (String, State<'a>) {
-    let mut buf = String::new();
-    let s = cmark(e.as_ref().iter(), &mut buf).unwrap();
-    (buf, s)
+fn fmte<'a>(events: impl AsRef<[Event<'a>]>) -> String {
+    let mut output = String::new();
+    cmark(events.as_ref(), &mut output).unwrap();
+    output
 }
 
 fn assert_events_eq_both(s: &str) {
@@ -67,118 +55,13 @@ fn assert_events_eq(s: &str) {
 }
 
 mod lazy_newlines {
-    use super::{fmte, fmts_both, Event, ItemTail, LastEvent, LinkType, State, Tag, TagEnd};
-
-    #[test]
-    fn after_emphasis_there_is_no_newline() {
-        for (t, last_event) in [
-            (Tag::Emphasis, LastEvent::InlineContent),
-            (Tag::Strong, LastEvent::InlineContent),
-            (
-                Tag::Link {
-                    link_type: LinkType::Inline,
-                    dest_url: "".into(),
-                    title: "".into(),
-                    id: "".into(),
-                },
-                LastEvent::InlineContent,
-            ),
-            (
-                Tag::Image {
-                    link_type: LinkType::Inline,
-                    dest_url: "".into(),
-                    title: "".into(),
-                    id: "".into(),
-                },
-                LastEvent::InlineContent,
-            ),
-            (Tag::FootnoteDefinition("".into()), LastEvent::Other),
-        ] {
-            let end = t.to_end();
-            let mut state = State::default();
-            state.newlines_before_start = 0;
-            state.last_event = last_event;
-            assert_eq!(fmte(&[Event::Start(t), Event::End(end)]).1, state);
-        }
-    }
-
-    #[test]
-    fn after_anything_else_it_has_one_newline() {
-        for (e, last_event) in &[
-            (Event::End(TagEnd::Item), LastEvent::ItemEnd(ItemTail::ClosedBlock)),
-            (Event::End(TagEnd::TableRow), LastEvent::Other),
-            (Event::End(TagEnd::TableHead), LastEvent::Other),
-        ] {
-            let mut state = State::default();
-            state.newlines_before_start = 1;
-            state.last_event = *last_event;
-            assert_eq!(fmte(&[e.clone()]).1, state);
-        }
-    }
+    use super::fmts_both;
 
     #[test]
     fn after_some_types_it_has_multiple_newlines() {
         for md in &["paragraph", "## headline", "\n````\n````", "---"] {
-            let mut state = State::default();
-            state.newlines_before_start = 2;
-            assert_eq!(fmts_both(md), (String::from(*md), state));
+            assert_eq!(fmts_both(md), String::from(*md));
         }
-    }
-}
-
-#[test]
-fn it_applies_newlines_before_start_before_text() {
-    let mut first = State::default();
-    first.newlines_before_start = 2;
-    first.last_was_text_without_trailing_newline = true;
-
-    let mut second = State::default();
-    second.newlines_before_start;
-    second.last_was_text_without_trailing_newline = true;
-    second.last_event = LastEvent::InlineContent;
-
-    assert_eq!(fmtes(&[Event::Text("t".into())], first), ("\n\nt".into(), second));
-}
-
-#[test]
-fn it_applies_newlines_before_start_before_any_start_tag() {
-    let mut first = State::default();
-    first.newlines_before_start = 2;
-    first.last_was_text_without_trailing_newline = true;
-
-    let mut second = State::default();
-    second.newlines_before_start = 0;
-    second.last_was_text_without_trailing_newline = true;
-    second.last_event = LastEvent::InlineContent;
-    second.open_tags = vec![OpenTag::Other];
-
-    assert_eq!(
-        fmtes(&[Event::Start(Tag::Paragraph), Event::Text("h".into())], first,),
-        ("\n\nh".into(), second)
-    );
-}
-
-mod padding {
-    use super::{fmtes, Event, LastEvent, OpenTag, State, Tag};
-
-    #[test]
-    fn is_used_before_newlines() {
-        let mut first = State::default();
-        first.newlines_before_start = 2;
-        first.padding = vec!["  ".into()];
-        first.last_was_text_without_trailing_newline = true;
-
-        let mut second = State::default();
-        second.newlines_before_start = 0;
-        second.padding = vec!["  ".into()];
-        second.last_was_text_without_trailing_newline = true;
-        second.last_event = LastEvent::InlineContent;
-        second.open_tags = vec![OpenTag::Other];
-
-        assert_eq!(
-            fmtes(&[Event::Start(Tag::Paragraph), Event::Text("h".into())], first,),
-            ("\n  \n  h".into(), second)
-        );
     }
 }
 
@@ -186,79 +69,58 @@ mod inline_elements {
     use crate::fmt::fmts_with_options;
 
     use super::source_range;
-    use super::{fmts_both, CmarkToCmarkOptions, State};
+    use super::{fmts_both, CmarkToCmarkOptions};
 
     #[test]
     fn image() {
-        let mut state = State::default();
-        state.newlines_before_start = 2;
-        assert_eq!(
-            fmts_both("![a](b)\n![c][d]\n\n[d]: e"),
-            ("![a](b)\n![c][d]\n\n[d]: e".into(), state)
-        );
+        assert_eq!(fmts_both("![a](b)\n![c][d]\n\n[d]: e"), "![a](b)\n![c][d]\n\n[d]: e");
     }
 
     #[test]
     fn image_collapsed() {
-        let mut state = State::default();
-        state.newlines_before_start = 2;
         assert_eq!(
             fmts_both("![c][d]\n\n![c][]![c][]\n\n[d]: e\n[c]: f"),
-            ("![c][d]\n\n![c][]![c][]\n\n[d]: e\n[c]: f".into(), state)
+            "![c][d]\n\n![c][]![c][]\n\n[d]: e\n[c]: f"
         );
     }
 
     #[test]
     fn footnote() {
-        let mut state = State::default();
-        state.newlines_before_start = 2;
-        assert_eq!(fmts_both("a [^b]\n\n[^b]: c"), ("a [^b]\n\n[^b]: c".into(), state));
+        assert_eq!(fmts_both("a [^b]\n\n[^b]: c"), "a [^b]\n\n[^b]: c");
     }
 
     #[test]
     fn multiline_footnote() {
         assert_eq!(
-            fmts_both("a [^b]\n\n[^b]: this is\n    one footnote").0,
+            fmts_both("a [^b]\n\n[^b]: this is\n    one footnote"),
             "a [^b]\n\n[^b]: this is\n    one footnote",
         );
     }
 
     #[test]
     fn autolinks_are_fully_resolved() {
-        assert_eq!(fmts_both("<http://a/b>").0, "<http://a/b>",);
+        assert_eq!(fmts_both("<http://a/b>"), "<http://a/b>",);
     }
 
     #[test]
     fn links() {
         {
-            let mut state = State::default();
-            state.newlines_before_start = 2;
-            assert_eq!(
-                fmts_both("[a](b)\n[c][d]\n\n[d]: e"),
-                ("[a](b)\n[c][d]\n\n[d]: e".into(), state)
-            );
+            assert_eq!(fmts_both("[a](b)\n[c][d]\n\n[d]: e"), "[a](b)\n[c][d]\n\n[d]: e");
         }
     }
 
     #[test]
     fn links_collapsed() {
-        let mut state = State::default();
-        state.newlines_before_start = 2;
         assert_eq!(
             fmts_both("[c][d]\n\n[c][][c][]\n\n[d]: e\n[c]: f"),
-            ("[c][d]\n\n[c][][c][]\n\n[d]: e\n[c]: f".into(), state)
+            "[c][d]\n\n[c][][c][]\n\n[d]: e\n[c]: f"
         );
     }
 
     #[test]
     fn shortcut_links() {
         {
-            let mut state = State::default();
-            state.newlines_before_start = 2;
-            assert_eq!(
-                fmts_both("[a](b)\n[c]\n\n[c]: e"),
-                ("[a](b)\n[c]\n\n[c]: e".into(), state)
-            );
+            assert_eq!(fmts_both("[a](b)\n[c]\n\n[c]: e"), "[a](b)\n[c]\n\n[c]: e");
         }
     }
 
@@ -269,37 +131,28 @@ mod inline_elements {
             "[text][ref\\[\\]]\n\n[ref\\[\\]]: https://github.com/",
             "![ref\\[\\]]\n\n[ref\\[\\]]: https://github.com/",
         ] {
-            assert_eq!(fmts_both(markdown).0, markdown);
+            assert_eq!(fmts_both(markdown), markdown);
         }
     }
 
     #[test]
     fn shortcut_code_links() {
-        let mut state = State::default();
-        state.newlines_before_start = 2;
-        assert_eq!(
-            fmts_both("[a](b)\n[`c`]\n\n[`c`]: e"),
-            ("[a](b)\n[`c`]\n\n[`c`]: e".into(), state)
-        );
+        assert_eq!(fmts_both("[a](b)\n[`c`]\n\n[`c`]: e"), "[a](b)\n[`c`]\n\n[`c`]: e");
     }
 
     #[test]
     fn multiple_shortcut_links() {
-        let mut state = State::default();
-        state.newlines_before_start = 2;
         assert_eq!(
             fmts_both("[a](b)\n[c] [d]\n\n[c]: e\n[d]: f"),
-            ("[a](b)\n[c] [d]\n\n[c]: e\n[d]: f".into(), state)
+            "[a](b)\n[c] [d]\n\n[c]: e\n[d]: f"
         );
     }
 
     #[test]
     fn various() {
-        let mut state = State::default();
-        state.newlines_before_start = 2;
         assert_eq!(
             fmts_both("*a* b **c**\n<br>\nd\n\ne `c`"),
-            ("*a* b **c**\n<br>\nd\n\ne `c`".into(), state)
+            "*a* b **c**\n<br>\nd\n\ne `c`"
         );
     }
 
@@ -311,48 +164,39 @@ mod inline_elements {
             ..Default::default()
         };
 
-        let (s, state) = fmts_with_options("_a_ b **c**\n<br>\nd\n\ne `c`", custom_options);
+        let s = fmts_with_options("_a_ b **c**\n<br>\nd\n\ne `c`", custom_options);
 
         assert_eq!(s, "_a_ b **c**\n<br>\nd\n\ne `c`".to_string());
-
-        let mut expected = State::default();
-        expected.newlines_before_start = 2;
-        assert_eq!(state, expected);
     }
 
     #[test]
     fn strikethrough() {
-        assert_eq!(fmts_both("~~strikethrough~~").0, "~~strikethrough~~",);
+        assert_eq!(fmts_both("~~strikethrough~~"), "~~strikethrough~~",);
     }
 
     #[test]
     fn code_double_backtick() {
-        let mut state = State::default();
-        state.newlines_before_start = 2;
         assert_eq!(
             fmts_both("lorem ``ipsum `dolor` sit`` amet"),
-            ("lorem ``ipsum `dolor` sit`` amet".into(), state)
+            "lorem ``ipsum `dolor` sit`` amet"
         );
     }
 
     #[test]
     fn code_triple_backtick() {
-        let mut state = State::default();
-        state.newlines_before_start = 2;
         assert_eq!(
             fmts_both("lorem ```ipsum ``dolor`` sit``` amet"),
-            ("lorem ```ipsum ``dolor`` sit``` amet".into(), state)
+            "lorem ```ipsum ``dolor`` sit``` amet"
         );
     }
 
     #[test]
     fn code_backtick_normalization() {
         // The minimum amount of backticks are inserted.
-        let mut state = State::default();
-        state.newlines_before_start = 2;
+
         assert_eq!(
             fmts_both("lorem ```ipsum ` dolor``` amet"),
-            ("lorem ``ipsum ` dolor`` amet".into(), state)
+            "lorem ``ipsum ` dolor`` amet"
         );
     }
 
@@ -361,12 +205,7 @@ mod inline_elements {
         // Spaces are inserted if the inline code starts or ends with
         // a backtick.
         {
-            let mut state = State::default();
-            state.newlines_before_start = 2;
-            assert_eq!(
-                fmts_both("`` `lorem ``   `` ipsum` ``"),
-                ("`` `lorem ``   `` ipsum` ``".into(), state)
-            );
+            assert_eq!(fmts_both("`` `lorem ``   `` ipsum` ``"), "`` `lorem ``   `` ipsum` ``");
         }
     }
 
@@ -374,9 +213,7 @@ mod inline_elements {
     fn code_spaces_before_backtick() {
         //  No space is inserted if it is not needed.
         {
-            let mut state = State::default();
-            state.newlines_before_start = 2;
-            assert_eq!(fmts_both("` lorem `   ` `"), ("`lorem`   ` `".into(), state));
+            assert_eq!(fmts_both("` lorem `   ` `"), "`lorem`   ` `");
         }
     }
 
@@ -412,49 +249,24 @@ println!("Hello, world!");
     fn rustdoc_link() {
         // Brackets are not escaped if not escaped in the source.
         {
-            let mut state = State::default();
-            state.newlines_before_start = 2;
-            assert_eq!(source_range::fmts("[`Vec`]"), ("[`Vec`]".into(), state));
+            assert_eq!(source_range::fmts("[`Vec`]"), "[`Vec`]");
         }
     }
 
     #[test]
     fn preserve_less_than_sign_escape() {
         // `<` is not escaped if not escaped in the source.
-        let mut state = State::default();
-        state.newlines_before_start = 2;
-        assert_eq!(source_range::fmts("a < 1"), ("a < 1".into(), state));
+
+        assert_eq!(source_range::fmts("a < 1"), "a < 1");
         // `<` is escaped if escaped in the source.
-        let mut state = State::default();
-        state.newlines_before_start = 2;
-        assert_eq!(source_range::fmts(r"a \< 1"), (r"a \< 1".into(), state));
+
+        assert_eq!(source_range::fmts(r"a \< 1"), r"a \< 1");
     }
 }
 
 mod blockquote {
-    use super::{assert_events_eq_both, fmte, fmtes, fmts_both, Event, OpenTag, State, Tag, TagEnd};
+    use super::{assert_events_eq_both, fmts_both};
     use indoc::indoc;
-
-    #[test]
-    fn it_pops_padding_on_quote_end() {
-        let mut first = State::default();
-        first.padding = vec![" > ".into()];
-
-        let mut second = State::default();
-        second.newlines_before_start = 2;
-        second.padding = vec![];
-
-        assert_eq!(fmtes(&[Event::End(TagEnd::BlockQuote(None)),], first,).1, second);
-    }
-
-    #[test]
-    fn it_pushes_padding_on_quote_start() {
-        let mut state = State::default();
-        state.newlines_before_start = 1;
-        state.padding = vec![" > ".into()];
-        state.open_tags = vec![OpenTag::Other];
-        assert_eq!(fmte(&[Event::Start(Tag::BlockQuote(None)),]).1, state);
-    }
 
     #[test]
     fn with_html() {
@@ -467,22 +279,22 @@ mod blockquote {
 
         assert_events_eq_both(s);
 
-        assert_eq!(fmts_both(s).0, "\n > \n > <table>\n > </table>\n > ");
+        assert_eq!(fmts_both(s), "\n > \n > <table>\n > </table>\n");
     }
 
     #[test]
     fn with_inlinehtml() {
-        assert_eq!(fmts_both(" > <br>").0, "\n > \n > <br>");
+        assert_eq!(fmts_both(" > <br>"), "\n > \n > <br>");
     }
 
     #[test]
     fn with_plaintext_in_html() {
-        assert_eq!(fmts_both("<del>\n*foo*\n</del>").0, "<del>\n*foo*\n</del>");
+        assert_eq!(fmts_both("<del>\n*foo*\n</del>"), "<del>\n*foo*\n</del>");
     }
 
     #[test]
     fn with_markdown_nested_in_html() {
-        assert_eq!(fmts_both("<del>\n\n*foo*\n\n</del>").0, "<del>\n\n*foo*\n\n</del>");
+        assert_eq!(fmts_both("<del>\n\n*foo*\n\n</del>"), "<del>\n\n*foo*\n\n</del>");
     }
 
     #[test]
@@ -498,7 +310,7 @@ mod blockquote {
 
         assert_events_eq_both(s);
 
-        assert_eq!(fmts_both(s).0, "\n > \n > ````a\n > t1\n > t2\n > ````",);
+        assert_eq!(fmts_both(s), "\n > \n > ````a\n > t1\n > t2\n > ````",);
     }
 
     #[test]
@@ -515,7 +327,7 @@ mod blockquote {
 
         assert_events_eq_both(s);
 
-        assert_eq!(fmts_both(s).0, "\n > \n > a\n > \n >  > \n >  > b\n > \n > c",);
+        assert_eq!(fmts_both(s), "\n > \n > a\n > \n >  > \n >  > b\n > \n > c",);
     }
 
     #[test]
@@ -530,7 +342,7 @@ mod blockquote {
 
         assert_events_eq_both(s);
 
-        assert_eq!(fmts_both(s).0, "\n > \n >  > \n >  > foo\n >  > bar\n >  > baz",);
+        assert_eq!(fmts_both(s), "\n > \n >  > \n >  > foo\n >  > bar\n >  > baz",);
     }
 
     #[test]
@@ -543,9 +355,7 @@ mod blockquote {
         assert_events_eq_both(s);
 
         {
-            let mut state = State::default();
-            state.newlines_before_start = 2;
-            assert_eq!(fmts_both(s), ("\n > \n > a\n > b  \n > c".into(), state));
+            assert_eq!(fmts_both(s), "\n > \n > a\n > b  \n > c");
         }
     }
 
@@ -556,9 +366,7 @@ mod blockquote {
         assert_events_eq_both(s);
 
         {
-            let mut state = State::default();
-            state.newlines_before_start = 2;
-            assert_eq!(fmts_both(s), ("\n > ".into(), state));
+            assert_eq!(fmts_both(s), "\n > ");
         }
     }
 
@@ -574,9 +382,7 @@ mod blockquote {
 
         assert_events_eq_both(s);
 
-        let mut state = State::default();
-        state.newlines_before_start = 2;
-        assert_eq!(fmts_both(s), ("\n > \n > foo\n\n > \n > bar".into(), state));
+        assert_eq!(fmts_both(s), "\n > \n > foo\n\n > \n > bar");
     }
 
     #[test]
@@ -592,9 +398,7 @@ mod blockquote {
 
         assert_events_eq_both(s);
 
-        let mut state = State::default();
-        state.newlines_before_start = 2;
-        assert_eq!(fmts_both(s), ("\n > \n > foo\n > baz\n\n > \n > bar".into(), state));
+        assert_eq!(fmts_both(s), "\n > \n > foo\n > baz\n\n > \n > bar");
     }
 
     #[test]
@@ -609,14 +413,9 @@ mod blockquote {
 
         assert_events_eq_both(s);
 
-        let mut state = State::default();
-        state.newlines_before_start = 2;
         assert_eq!(
             fmts_both(s),
-            (
-                "* \n   > \n   > * foo\n   >   * baz\n  \n  * \n     > \n     > bar".into(),
-                state
-            )
+            "* \n   > \n   > * foo\n   >   * baz\n   >\n  * \n     > \n     > bar"
         );
     }
 
@@ -659,56 +458,31 @@ mod blockquote {
 }
 
 mod codeblock {
-    use super::{fmte, fmts_both, fmts_with_options, CmarkToCmarkOptions, CodeBlockKind, Event, OpenTag, State, Tag};
-
-    #[test]
-    fn it_keeps_track_of_the_presence_of_a_code_block() {
-        let mut state = State::default();
-        state.code_block = Some(pulldown_cmark_to_cmark::CodeBlockKind::Fenced);
-        state.open_tags = vec![OpenTag::Other];
-        assert_eq!(
-            fmte(&[Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced("s".into()))),]).1,
-            state
-        );
-    }
+    use super::{fmts_both, fmts_with_options, CmarkToCmarkOptions};
 
     #[test]
     fn simple_and_paragraph() {
-        let mut state = State::default();
-        state.newlines_before_start = 2;
         assert_eq!(
             fmts_both("````hi\nsome\ntext\n````\na"),
-            ("\n````hi\nsome\ntext\n````\n\na".into(), state)
+            "\n````hi\nsome\ntext\n````\n\na"
         );
     }
 
     #[test]
     fn empty() {
         {
-            let mut state = State::default();
-            state.newlines_before_start = 2;
-            assert_eq!(fmts_both("```\n```"), ("\n````\n````".into(), state));
+            assert_eq!(fmts_both("```\n```"), "\n````\n````");
         }
     }
 
     #[test]
     fn simple() {
-        let mut state = State::default();
-        state.newlines_before_start = 2;
-        assert_eq!(
-            fmts_both("```hi\nsome\ntext\n```"),
-            ("\n````hi\nsome\ntext\n````".into(), state)
-        );
+        assert_eq!(fmts_both("```hi\nsome\ntext\n```"), "\n````hi\nsome\ntext\n````");
     }
 
     #[test]
     fn simple_other_syntax() {
-        let mut state = State::default();
-        state.newlines_before_start = 2;
-        assert_eq!(
-            fmts_both("~~~hi\nsome\ntext\n~~~"),
-            ("\n````hi\nsome\ntext\n````".into(), state)
-        );
+        assert_eq!(fmts_both("~~~hi\nsome\ntext\n~~~"), "\n````hi\nsome\ntext\n````");
     }
 
     #[test]
@@ -719,28 +493,24 @@ mod codeblock {
         };
 
         let original = "~~~hi\nsome\ntext\n~~~";
-        let (s, _) = fmts_with_options(original, custom_options);
+        let s = fmts_with_options(original, custom_options);
 
         assert_eq!(s, "\n~~~~hi\nsome\ntext\n~~~~".to_string());
     }
 
     #[test]
     fn indented() {
-        let mut state = State::default();
-        state.newlines_before_start = 2;
         assert_eq!(
             fmts_both("    first\n    second\nthird"),
-            ("\n    first\n    second\n    \n\nthird".into(), state)
+            "\n    first\n    second\n\nthird"
         );
     }
 
     #[test]
     fn html_indented() {
-        let mut state = State::default();
-        state.newlines_before_start = 2;
         assert_eq!(
             fmts_both("  <!-- foo -->\n\n    <!-- foo -->"),
-            ("  <!-- foo -->\n\n    <!-- foo -->\n    ".into(), state)
+            "  <!-- foo -->\n\n    <!-- foo -->\n"
         );
     }
 }
@@ -748,43 +518,8 @@ mod codeblock {
 mod table {
     use indoc::indoc;
     use pretty_assertions::assert_eq;
-    use pulldown_cmark_to_cmark::Alignment;
 
-    use super::{fmte, fmtes, Alignment as TableAlignment, Event, OpenTag, State, Tag, TagEnd};
-
-    #[test]
-    fn it_forgets_alignments_and_headers_at_the_end_of_tables() {
-        let mut first = State::default();
-        first.table_alignments = vec![Alignment::None, Alignment::Center];
-        first.table_headers = vec!["a".into(), "b".into()];
-
-        let mut second = State::default();
-        second.newlines_before_start = 2;
-
-        assert_eq!(fmtes(&[Event::End(TagEnd::Table),], first,).1, second);
-    }
-
-    #[test]
-    fn it_keeps_track_of_alignments_and_headers() {
-        let mut state = State::default();
-        state.table_alignments = vec![Alignment::None, Alignment::Center];
-        state.table_headers = vec!["a".into(), "b".into()];
-        state.open_tags = vec![OpenTag::Other, OpenTag::Other];
-        assert_eq!(
-            fmte(&[
-                Event::Start(Tag::Table(vec![TableAlignment::None, TableAlignment::Center])),
-                Event::Start(Tag::TableHead),
-                Event::Start(Tag::TableCell),
-                Event::Text("a".into()),
-                Event::End(TagEnd::TableCell),
-                Event::Start(Tag::TableCell),
-                Event::Text("b".into()),
-                Event::End(TagEnd::TableCell),
-            ])
-            .1,
-            state
-        );
-    }
+    use super::fmte;
 
     #[test]
     fn it_generates_equivalent_table_markdown() {
@@ -801,7 +536,7 @@ mod table {
         let p = Parser::new_ext(original_table_markdown, Options::all());
         let original_events: Vec<_> = p.into_iter().collect();
 
-        let (generated_markdown, _) = fmte(&original_events);
+        let generated_markdown = fmte(&original_events);
 
         assert_eq!(
             generated_markdown,
@@ -836,7 +571,7 @@ mod table {
         let p = Parser::new_ext(original_table_markdown, Options::all());
         let original_events: Vec<_> = p.into_iter().collect();
 
-        let (generated_markdown, _) = fmte(&original_events);
+        let generated_markdown = fmte(&original_events);
 
         assert_eq!(
             generated_markdown,
@@ -868,7 +603,7 @@ mod table {
         let p = Parser::new_ext(original_table_markdown, Options::all());
         let original_events: Vec<_> = p.into_iter().collect();
 
-        let (generated_markdown, _) = fmte(&original_events);
+        let generated_markdown = fmte(&original_events);
 
         assert_eq!(
             generated_markdown,
@@ -903,20 +638,20 @@ mod escapes {
     #[test]
     fn it_does_not_recreate_escapes_for_underscores_in_the_middle_of_a_word() {
         assert_eq!(
-            fmts("\\_hello_world_").0,
+            fmts("\\_hello_world_"),
             "\\_hello_world\\_" // it actually makes mal-formatted markdown better
         );
     }
 
     #[test]
     fn it_preserves_underscores_escapes() {
-        assert_eq!(source_range::fmts("\\_hello_world_").0, "\\_hello_world_");
+        assert_eq!(source_range::fmts("\\_hello_world_"), "\\_hello_world_");
     }
 
     #[test]
     fn it_recreates_escapes_for_known_special_characters_at_the_beginning_of_the_word() {
         run_test_on_each_special_char(|escaped_special_character, _| {
-            assert_eq!(fmts_both(&escaped_special_character).0, escaped_special_character);
+            assert_eq!(fmts_both(&escaped_special_character), escaped_special_character);
         });
     }
 
@@ -952,7 +687,7 @@ mod escapes {
     #[test]
     fn it_escapes_closing_square_brackets() {
         assert_eq!(
-            fmts_both(r"[\[1\]](http://example.com)").0,
+            fmts_both(r"[\[1\]](http://example.com)"),
             r"[\[1\]](http://example.com)"
         );
     }
@@ -962,31 +697,31 @@ mod escapes {
         // See https://spec.commonmark.org/0.30/#link-title for the rules around
         // link titles and the characters they may contain
         assert_eq!(
-            fmts_both(r#"[link](http://example.com "'link title'")"#).0,
+            fmts_both(r#"[link](http://example.com "'link title'")"#),
             r#"[link](http://example.com "'link title'")"#
         );
         assert_eq!(
-            fmts_both(r#"[link](http://example.com "\\\"link \\ title\"")"#).0,
+            fmts_both(r#"[link](http://example.com "\\\"link \\ title\"")"#),
             r#"[link](http://example.com "\\\"link \\ title\"")"#
         );
         assert_eq!(
-            fmts_both(r#"[link](http://example.com "\"link title\"")"#).0,
+            fmts_both(r#"[link](http://example.com "\"link title\"")"#),
             r#"[link](http://example.com "\"link title\"")"#
         );
         assert_eq!(
-            fmts_both(r#"[link](http://example.com '"link title"')"#).0,
+            fmts_both(r#"[link](http://example.com '"link title"')"#),
             r#"[link](http://example.com "\"link title\"")"#
         );
         assert_eq!(
-            fmts_both(r"[link](http://example.com '\'link title\'')").0,
+            fmts_both(r"[link](http://example.com '\'link title\'')"),
             r#"[link](http://example.com "'link title'")"#
         );
         assert_eq!(
-            fmts_both(r"[link](http://example.com (\(link title\)))").0,
+            fmts_both(r"[link](http://example.com (\(link title\)))"),
             r#"[link](http://example.com "(link title)")"#
         );
         assert_eq!(
-            fmts_both(r"[link](http://example.com (你好👋))").0,
+            fmts_both(r"[link](http://example.com (你好👋))"),
             r#"[link](http://example.com "你好👋")"#
         );
     }
@@ -994,7 +729,7 @@ mod escapes {
     #[test]
     fn it_does_esscape_lone_square_brackets_in_text() {
         assert_eq!(
-            fmts("] a closing bracket does nothing").0,
+            fmts("] a closing bracket does nothing"),
             "\\] a closing bracket does nothing"
         );
     }
@@ -1002,7 +737,7 @@ mod escapes {
     #[test]
     fn it_does_not_escape_lone_square_brackets_in_text_if_the_source_does_not() {
         assert_eq!(
-            source_range::fmts("] a closing bracket does nothing").0,
+            source_range::fmts("] a closing bracket does nothing"),
             "] a closing bracket does nothing"
         );
     }
@@ -1072,23 +807,10 @@ mod escapes {
 
 mod list {
     use super::{
-        assert_events_eq_both, cmark_resume, fmtes, fmts_both, fmts_with_options, CmarkToCmarkOptions, Event, ItemTail,
-        LastEvent, Options, Parser, State, TagEnd, TextMergeStream,
+        assert_events_eq_both, cmark, fmts_both, fmts_with_options, CmarkToCmarkOptions, Event, Options, Parser, State,
+        TagEnd, TextMergeStream,
     };
     use indoc::indoc;
-
-    #[test]
-    fn it_pops_one_item_from_the_lists_stack_for_each_end_list() {
-        let mut first = State::default();
-        first.list_stack = vec![None, None];
-        first.last_event = LastEvent::ItemEnd(ItemTail::OpenParagraph);
-
-        let mut second = State::default();
-        second.list_stack = vec![None];
-        second.last_event = LastEvent::NestedListEnd(ItemTail::OpenParagraph);
-
-        assert_eq!(fmtes(&[Event::End(TagEnd::List(false))], first,).1, second);
-    }
 
     #[test]
     fn nested_list_followed_by_paragraph() {
@@ -1101,7 +823,7 @@ mod list {
 
                para"
         );
-        assert_eq!(fmts_both(input).0, "1. item\n   \n   * a\n   * b\n   \n   para");
+        assert_eq!(fmts_both(input), "1. item\n   \n   * a\n   * b\n   \n   para");
         assert_events_eq_both(input);
     }
 
@@ -1202,7 +924,7 @@ mod list {
             newlines_after_codeblock: 1,
             ..Default::default()
         };
-        let (output, _) = fmts_with_options(input, options);
+        let output = fmts_with_options(input, options);
         let before: Vec<_> = TextMergeStream::new(Parser::new_ext(input, Options::all())).collect();
         let after: Vec<_> = TextMergeStream::new(Parser::new_ext(&output, Options::all())).collect();
         assert_eq!(before, after, "output:\n{output}");
@@ -1253,8 +975,10 @@ mod list {
         let (before, after) = events.split_at(split);
 
         let mut output = String::new();
-        let state = cmark_resume(before.iter(), &mut output, None).unwrap();
-        cmark_resume(after.iter(), &mut output, Some(state)).unwrap();
+        let mut state = State::default();
+        state.process(before, &mut output).unwrap();
+        state.process(after, &mut output).unwrap();
+        state.finish(&mut output).unwrap();
         assert_eq!(output, "1. item\n   \n   * a\n   * b\n   \n   para");
     }
 
@@ -1265,7 +989,7 @@ mod list {
             * item
               # heading"
         );
-        assert_eq!(fmts_both(input).0, "* item\n  # heading");
+        assert_eq!(fmts_both(input), "* item\n  # heading");
         assert_events_eq_both(input);
         assert_events_eq_both(indoc!(
             "
@@ -1320,7 +1044,7 @@ mod list {
             * item
               ***"
         );
-        assert_eq!(fmts_both(input).0, "* item\n  ***");
+        assert_eq!(fmts_both(input), "* item\n  ***");
         assert_events_eq_both(input);
     }
 
@@ -1367,7 +1091,7 @@ mod list {
               # heading
             * c"
         );
-        assert_eq!(fmts_both(input).0, "* a\n* item\n  # heading\n* c");
+        assert_eq!(fmts_both(input), "* a\n* item\n  # heading\n* c");
         assert_events_eq_both(input);
     }
 
@@ -1378,7 +1102,7 @@ mod list {
             * # heading
               text"
         );
-        assert_eq!(fmts_both(input).0, "* # heading\n  text");
+        assert_eq!(fmts_both(input), "* # heading\n  text");
         assert_events_eq_both(input);
         assert_events_eq_both(indoc!(
             "
@@ -1511,7 +1235,7 @@ mod list {
         );
         // Without the empty `>` line, `text` would lazily continue the `q`
         // paragraph and end up inside the block quote.
-        assert_eq!(fmts_both(input).0, "* a\n   > \n   > q\n   >\n  text");
+        assert_eq!(fmts_both(input), "* a\n   > \n   > q\n   >\n  text");
         assert_events_eq_both(input);
         assert_events_eq_both(indoc!(
             "
@@ -1561,7 +1285,7 @@ mod list {
                 >
               text"
         );
-        assert_eq!(fmts_both(input).0, "* item\n  * a\n     > \n     > q\n     >\n  text");
+        assert_eq!(fmts_both(input), "* item\n  * a\n     > \n     > q\n     >\n  text");
         assert_events_eq_both(input);
         assert_events_eq_both(indoc!(
             "
@@ -1638,7 +1362,7 @@ mod list {
               # heading
             * c"
         );
-        assert_eq!(fmts_both(input).0, "* a\n  \n  # heading\n\n* c");
+        assert_eq!(fmts_both(input), "* a\n  \n  # heading\n\n* c");
         assert_events_eq_both(input);
         // When we write the gap before `c`, we don't yet know whether the list
         // is tight. In this case, that's correct because the list is loose.
@@ -1674,13 +1398,15 @@ mod list {
         ] {
             let events: Vec<_> = Parser::new_ext(input, Options::all()).collect();
             let mut expected = String::new();
-            cmark_resume(events.iter(), &mut expected, None).unwrap();
+            cmark(events.iter(), &mut expected).unwrap();
 
             for split in 0..=events.len() {
                 let (before, after) = events.split_at(split);
                 let mut output = String::new();
-                let state = cmark_resume(before.iter(), &mut output, None).unwrap();
-                cmark_resume(after.iter(), &mut output, Some(state)).unwrap();
+                let mut state = State::default();
+                state.process(before, &mut output).unwrap();
+                state.process(after, &mut output).unwrap();
+                state.finish(&mut output).unwrap();
                 assert_eq!(output, expected, "input {input:?} split at event {split}");
             }
         }
@@ -1688,41 +1414,27 @@ mod list {
 
     #[test]
     fn ordered_and_unordered_nested_and_ordered() {
-        let mut state = State::default();
-        state.newlines_before_start = 2;
-        assert_eq!(
-            fmts_both("1. *b*\n   * *b*\n1. c"),
-            ("1. *b*\n   * *b*\n1. c".into(), state)
-        );
+        assert_eq!(fmts_both("1. *b*\n   * *b*\n1. c"), "1. *b*\n   * *b*\n1. c");
     }
 
     #[test]
     fn ordered_and_multiple_unordered() {
-        let mut state = State::default();
-        state.newlines_before_start = 2;
-        assert_eq!(
-            fmts_both("11. *b*\n    * *b*\n    * c"),
-            ("11. *b*\n    * *b*\n    * c".into(), state)
-        );
+        assert_eq!(fmts_both("11. *b*\n    * *b*\n    * c"), "11. *b*\n    * *b*\n    * c");
     }
 
     #[test]
     fn unordered_ordered_unordered() {
-        assert_eq!(fmts_both("* a\n  1. b\n* c").0, "* a\n  1. b\n* c",);
+        assert_eq!(fmts_both("* a\n  1. b\n* c"), "* a\n  1. b\n* c",);
     }
 
     #[test]
     fn ordered_and_unordered_nested() {
-        let mut state = State::default();
-        state.newlines_before_start = 2;
-        assert_eq!(fmts_both("1. *b*\n   * *b*"), ("1. *b*\n   * *b*".into(), state));
+        assert_eq!(fmts_both("1. *b*\n   * *b*"), "1. *b*\n   * *b*");
     }
 
     #[test]
     fn unordered() {
-        let mut state = State::default();
-        state.newlines_before_start = 2;
-        assert_eq!(fmts_both("* a\n* b"), ("* a\n* b".into(), state));
+        assert_eq!(fmts_both("* a\n* b"), "* a\n* b");
     }
 
     #[test]
@@ -1733,16 +1445,14 @@ mod list {
         };
 
         let original = "* a\n* b";
-        let (s, _) = fmts_with_options(original, custom_options);
+        let s = fmts_with_options(original, custom_options);
 
         assert_eq!(s, "- a\n- b".to_string());
     }
 
     #[test]
     fn ordered() {
-        let mut state = State::default();
-        state.newlines_before_start = 2;
-        assert_eq!(fmts_both("2. a\n2. b"), ("2. a\n2. b".into(), state));
+        assert_eq!(fmts_both("2. a\n2. b"), "2. a\n2. b");
     }
 
     #[test]
@@ -1751,12 +1461,8 @@ mod list {
             ordered_list_token: ')',
             ..Default::default()
         };
-        let mut state = State::default();
-        state.newlines_before_start = 2;
-        assert_eq!(
-            fmts_with_options("2. a\n2. b", custom_options),
-            ("2) a\n2) b".into(), state)
-        );
+
+        assert_eq!(fmts_with_options("2. a\n2. b", custom_options), "2) a\n2) b");
     }
 
     #[test]
@@ -1765,11 +1471,10 @@ mod list {
             increment_ordered_list_bullets: true,
             ..Default::default()
         };
-        let mut state = State::default();
-        state.newlines_before_start = 2;
+
         assert_eq!(
             fmts_with_options("2. a\n2. b\n2. c", custom_options),
-            ("2. a\n3. b\n4. c".into(), state)
+            "2. a\n3. b\n4. c"
         );
     }
 
@@ -1798,9 +1503,8 @@ mod list {
            2. level 2
         2. level 1"
         );
-        let mut state = State::default();
-        state.newlines_before_start = 2;
-        assert_eq!(fmts_with_options(input, custom_options), (expected.into(), state));
+
+        assert_eq!(fmts_with_options(input, custom_options), expected);
     }
 
     #[test]
@@ -1841,9 +1545,8 @@ mod list {
            2) level 2
         4) level 1"
         );
-        let mut state = State::default();
-        state.newlines_before_start = 2;
-        assert_eq!(fmts_with_options(input, custom_options), (expected.into(), state));
+
+        assert_eq!(fmts_with_options(input, custom_options), expected);
     }
 
     #[test]
@@ -1854,8 +1557,7 @@ mod list {
             * [ ] foo
             * [x] bar
             "
-            ))
-            .0,
+            )),
             "* [ ] foo\n* [x] bar",
         );
     }
@@ -1895,8 +1597,8 @@ key2: value2
         let events = Parser::new_ext(input, opts);
 
         let mut output = String::new();
-        let state = cmark(events, &mut output).unwrap();
-        state.finalize(&mut output).unwrap();
+        let mut state = cmark(events, &mut output).unwrap();
+        state.finish(&mut output).unwrap();
 
         assert_eq!(input, output);
     }
@@ -1915,8 +1617,8 @@ key = value2
 
         let events = Parser::new_ext(input, opts);
         let mut output = String::new();
-        let state = cmark(events, &mut output).unwrap();
-        state.finalize(&mut output).unwrap();
+        let mut state = cmark(events, &mut output).unwrap();
+        state.finish(&mut output).unwrap();
 
         assert_eq!(input, output);
     }
@@ -1939,7 +1641,7 @@ key: value2
 
             let events = Parser::new_ext(&input, opts);
             let mut output = String::new();
-            let state = cmark_with_options(
+            let mut state = cmark_with_options(
                 events,
                 &mut output,
                 pulldown_cmark_to_cmark::Options {
@@ -1948,7 +1650,7 @@ key: value2
                 },
             )
             .unwrap();
-            state.finalize(&mut output).unwrap();
+            state.finish(&mut output).unwrap();
 
             assert_eq!(input, output);
             newlines.push('\n');
@@ -1973,7 +1675,7 @@ key = value2
 
             let events = Parser::new_ext(&input, opts);
             let mut output = String::new();
-            let state = cmark_with_options(
+            let mut state = cmark_with_options(
                 events,
                 &mut output,
                 pulldown_cmark_to_cmark::Options {
@@ -1982,7 +1684,7 @@ key = value2
                 },
             )
             .unwrap();
-            state.finalize(&mut output).unwrap();
+            state.finish(&mut output).unwrap();
 
             assert_eq!(input, output);
             newlines.push('\n');
@@ -2034,60 +1736,44 @@ Second Term
 }
 
 mod source_range {
-    // Copied from `fmt.rs`.
-
     use pulldown_cmark::{utils::TextMergeStream, Options, Parser};
     use pulldown_cmark_to_cmark::{
-        cmark_resume_with_source_range_and_options, cmark_with_source_range, Options as CmarkToCmarkOptions, State,
+        cmark_with_source_range, cmark_with_source_range_and_options, Options as CmarkToCmarkOptions,
     };
 
-    pub fn fmts(s: &str) -> (String, State<'_>) {
-        let mut buf = String::new();
-        let mut s = cmark_with_source_range(
-            Parser::new_ext(s, Options::all())
-                .into_offset_iter()
-                .map(|(e, r)| (e, Some(r))),
-            s,
-            &mut buf,
-        )
-        .unwrap();
-        // Not testing this field.
-        s.last_event_end_index = Default::default();
-        (buf, s)
-    }
-
-    pub fn fmts_with_options<'a>(s: &'a str, options: CmarkToCmarkOptions<'a>) -> (String, State<'a>) {
-        let mut buf = String::new();
-        let mut s = cmark_resume_with_source_range_and_options(
-            Parser::new_ext(s, Options::all())
-                .into_offset_iter()
-                .map(|(e, r)| (e, Some(r))),
-            s,
-            &mut buf,
-            None,
-            options,
-        )
-        .unwrap();
-        // Not testing this field.
-        s.last_event_end_index = Default::default();
-        (buf, s)
-    }
-
-    /// Asserts that if we parse our `str` s into a series of events, then serialize them with `cmark`
-    /// that we'll get the same series of events when we parse them again.
-    pub fn assert_events_eq(s: &str) {
-        let mut buf = String::new();
+    pub fn fmts(s: &str) -> String {
+        let mut output = String::new();
         cmark_with_source_range(
             Parser::new_ext(s, Options::all())
                 .into_offset_iter()
-                .map(|(e, r)| (e, Some(r))),
+                .map(|(event, range)| (event, Some(range))),
             s,
-            &mut buf,
+            &mut output,
         )
         .unwrap();
+        output
+    }
 
-        let before_events = TextMergeStream::new(Parser::new_ext(s, Options::all()));
-        let after_events = TextMergeStream::new(Parser::new_ext(&buf, Options::all()));
-        assert_eq!(before_events.collect::<Vec<_>>(), after_events.collect::<Vec<_>>());
+    pub fn fmts_with_options(s: &str, options: CmarkToCmarkOptions<'_>) -> String {
+        let mut output = String::new();
+        cmark_with_source_range_and_options(
+            Parser::new_ext(s, Options::all())
+                .into_offset_iter()
+                .map(|(event, range)| (event, Some(range))),
+            s,
+            &mut output,
+            options,
+        )
+        .unwrap();
+        output
+    }
+
+    pub fn assert_events_eq(s: &str) {
+        let output = fmts(s);
+        assert_eq!(
+            TextMergeStream::new(Parser::new_ext(s, Options::all())).collect::<Vec<_>>(),
+            TextMergeStream::new(Parser::new_ext(&output, Options::all())).collect::<Vec<_>>(),
+            "source-range round trip failed for {s:?}: {output:?}",
+        );
     }
 }
