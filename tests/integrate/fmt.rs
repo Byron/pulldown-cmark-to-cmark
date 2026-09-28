@@ -1430,6 +1430,18 @@ mod list {
     }
 
     #[test]
+    fn inline_content_after_html_in_tight_item() {
+        for content in ["`code`", "text", "$x$", "$$x$$", "*emphasis*", "<i>inline</i>"] {
+            let input = format!("* <!-- comment -->\n  {content}");
+            assert_events_eq_both(&input);
+        }
+        assert_events_eq_both("* <!-- comment -->\n  [^1]\n\n[^1]: footnote");
+        assert_events_eq_both("> * <!-- comment -->\n>   `code`");
+        assert_events_eq_both("* <!-- comment -->\n\n  `code`");
+        assert_events_eq_both("* item\n  <!-- comment -->\n  ```\n  code\n  ```");
+    }
+
+    #[test]
     fn fenced_code_in_tight_list() {
         assert_events_eq_both(indoc!(
             "
@@ -1651,6 +1663,7 @@ mod list {
     fn tight_list_output_is_independent_of_resume_points() {
         for input in [
             "* item\n  # heading",
+            "* <!-- comment -->\n  `code`",
             "* a\n* item\n  # heading\n* c",
             "* a\n  > q\n  >\n  text",
             "* item\n  * a\n    > q\n    >\n  text",

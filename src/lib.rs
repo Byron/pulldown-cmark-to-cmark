@@ -188,6 +188,8 @@ pub struct State<'a> {
     pub code_block: Option<CodeBlockKind>,
     /// True if the last event was text and the text does not have trailing newline. Used to inject additional newlines before code block end fence.
     pub last_was_text_without_trailing_newline: bool,
+    /// True if the preceding HTML block already wrote a newline with the current padding.
+    pub html_block_has_trailing_newline: bool,
     /// True if the last event was a paragraph start. Used to escape spaces at start of line (prevent spurrious indented code).
     pub last_was_paragraph_start: bool,
     /// True if the next event is a link, image, or footnote.
@@ -592,6 +594,13 @@ where
     };
     let child_kind = ChildKind::of(event.borrow());
     fit_newlines_to_tight_list(child_kind, formatter, state)?;
+    let html_block_has_trailing_newline = state.html_block_has_trailing_newline;
+    state.html_block_has_trailing_newline = match event.borrow() {
+        Html(text) if !text.is_empty() => text.ends_with('\n'),
+        Html(_) | End(TagEnd::HtmlBlock) => html_block_has_trailing_newline,
+        // Other events can change the padding or write content on this line.
+        _ => false,
+    };
     match event.borrow() {
         Start(List(_)) => state.open_tags.push(OpenTag::List(ListSpacing::Unknown)),
         Start(Item) => state.open_tags.push(OpenTag::Item),
@@ -744,7 +753,7 @@ where
             if needs_blank_line {
                 state.set_minimum_newlines_before_start(options.newlines_after_list);
             }
-            let consumed_newlines = state.newlines_before_start != 0;
+            let consumed_newlines = state.newlines_before_start != 0 || html_block_has_trailing_newline;
             consume_newlines(formatter, state)?;
             match tag {
                 Item => {
@@ -1485,7 +1494,8 @@ where
         // A new list item can't cause a block quote to be continued, so we
         // don't need to output the pending block quote end line in that case.
         (ChildKind::ListItem, _) | (ChildKind::Block | ChildKind::Inline, None) => {
-            state.newlines_before_start = state.newlines_before_start.min(1);
+            let newlines = usize::from(!state.html_block_has_trailing_newline);
+            state.newlines_before_start = state.newlines_before_start.min(newlines);
         }
     }
     Ok(())
