@@ -139,6 +139,32 @@ pub enum LastEvent {
     NestedListEnd(ItemTail),
 }
 
+/// What the serializer knows so far about whether a list is tight.
+///
+/// If an item directly contains inline content, it is always tight.
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum ListSpacing {
+    /// The list might be either tight or loose.
+    Unknown,
+    /// The list is known to be tight.
+    Tight,
+}
+
+/// A tag that has started but not yet ended.
+///
+/// Part of [`State::open_tags`], which maintains a stack of such tags.
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum OpenTag {
+    /// `Tag::List`.
+    List(ListSpacing),
+    /// `Tag::Item`.
+    Item,
+    /// Some other tag.
+    Other,
+}
+
 /// The state of the [`cmark_resume()`] and [`cmark_resume_with_options()`] functions.
 /// This does not only allow introspection, but enables the user
 /// to halt the serialization at any time, and resume it later.
@@ -190,6 +216,64 @@ pub struct State<'a> {
     // last_was_text_without_trailing_newline into this field -- this should be
     // done the next time the crate has a breaking change.
     pub last_event: LastEvent,
+    /// A stack of tags that have started but not yet ended.
+    pub open_tags: Vec<OpenTag>,
+    /// A `>` line to write before the next child of a tight list item, to
+    /// close a block quote that just ended.
+    ///
+    /// Consider this tight list:
+    ///
+    /// ```md
+    /// * item
+    ///   * a
+    ///      > q
+    ///      >
+    ///   text
+    /// ```
+    ///
+    /// The empty `>` line is required. Without it, we would write:
+    ///
+    /// ```md
+    /// * item
+    ///   * a
+    ///      > q
+    ///   text
+    /// ```
+    ///
+    /// i.e., `text` would be a lazy continuation of `q`, and end up inside the
+    /// block quote.
+    ///
+    /// But the `>` line isn't always needed. Here, it isn't, because a new
+    /// list item can't continue `q`:
+    ///
+    /// ```md
+    /// * item
+    ///   * a
+    ///      > q
+    ///   * c
+    /// ```
+    ///
+    /// The two lists only differ in the line after the block quote, so when the
+    /// block quote ends, we can't tell which one we're in. We don't write the `>`
+    /// line yet. Instead, we store it here: in both examples, this is set to
+    /// `Some("     >")`. Then, we decide on seeing the next child:
+    ///
+    /// * `text` isn't a list item, so it could continue `q`. We write this line
+    ///   before it.
+    /// * `* c` is a list item, so it can't. We don't write this line.
+    ///
+    /// Either way, this goes back to `None`.
+    ///
+    /// We store the whole line, including indentation, because by the time
+    /// `text` arrives, `a` has ended, and its indentation is gone from
+    /// [`State::padding`].
+    ///
+    /// This is also `None`:
+    ///
+    /// * when a block quote ends outside a list item, e.g. `> q` at the top
+    ///   level. The `>` line is only ever needed inside a tight list item.
+    /// * after the outermost list item ends.
+    pub pending_block_quote_end_line: Option<String>,
 }
 
 /// The category of link being serialized.
@@ -506,13 +590,19 @@ where
     } else {
         LastEvent::Other
     };
+    let child_kind = ChildKind::of(event.borrow());
+    fit_newlines_to_tight_list(child_kind, formatter, state)?;
+    match event.borrow() {
+        Start(List(_)) => state.open_tags.push(OpenTag::List(ListSpacing::Unknown)),
+        Start(Item) => state.open_tags.push(OpenTag::Item),
+        Start(_) => state.open_tags.push(OpenTag::Other),
+        End(_) => {
+            state.open_tags.pop();
+        }
+        Rule | Code(_) | Text(_) | InlineHtml(_) | Html(_) | InlineMath(_) | DisplayMath(_) | FootnoteReference(_)
+        | SoftBreak | HardBreak | TaskListMarker(_) => {}
+    }
 
-    let starts_block = match event.borrow() {
-        Start(tag) => is_block_tag(tag),
-        Rule => true,
-        End(_) | Code(_) | Text(_) | InlineHtml(_) | Html(_) | InlineMath(_) | DisplayMath(_)
-        | FootnoteReference(_) | SoftBreak | HardBreak | TaskListMarker(_) => false,
-    };
     let needs_line_break = match last_event {
         // Consider this standard list:
         //
@@ -545,7 +635,10 @@ where
         // If the last event was inline content and this starts a block, add a
         // line break. In Markdown, a block can only begin at the start of a
         // line, so this is always correct.
-        LastEvent::InlineContent => starts_block,
+        LastEvent::InlineContent => match child_kind {
+            Some(ChildKind::ListItem | ChildKind::Block) => true,
+            Some(ChildKind::Inline) | None => false,
+        },
         LastEvent::Other | LastEvent::ItemStart | LastEvent::ItemEnd(_) | LastEvent::NestedListEnd(_) => false,
     };
     if needs_line_break {
@@ -1055,6 +1148,11 @@ where
             TagEnd::Item => {
                 state.padding.pop();
                 state.set_minimum_newlines_before_start(options.newlines_after_rest);
+                // The pending block quote end line is only written inside a
+                // list item, so drop it once the outermost item ends.
+                if !state.open_tags.contains(&OpenTag::Item) {
+                    state.pending_block_quote_end_line = None;
+                }
                 let tail = match last_event {
                     LastEvent::InlineContent => ItemTail::OpenParagraph,
                     LastEvent::ItemStart => ItemTail::Empty,
@@ -1112,6 +1210,17 @@ where
                 state.padding.pop();
 
                 state.set_minimum_newlines_before_start(options.newlines_after_blockquote);
+                state.pending_block_quote_end_line = if state.open_tags.contains(&OpenTag::Item) {
+                    let mut pending = state.padding.concat();
+                    pending.push_str(" >");
+                    Some(pending)
+                } else {
+                    // The pending block quote end line is only ever written
+                    // inside a tight list item -- there's no need to track it
+                    // if the stack of open tags doesn't contain any Item
+                    // instances in it.
+                    None
+                };
 
                 Ok(())
             }
@@ -1189,6 +1298,195 @@ where
     };
 
     Ok(res?)
+}
+
+/// What an event adds to the innermost open tag.
+///
+/// For example, in this list:
+///
+/// ```md
+/// * item
+///   # heading
+/// * c
+/// ```
+///
+/// `Text("item")` adds `Inline` content to the first item, `Start(Heading)`
+/// adds a `Block` to it, and `Start(Item)` for `c` adds a `ListItem` to the
+/// list. `End` events close a tag rather than adding to one, so
+/// `ChildKind::of` returns `None` for them.
+///
+/// This is used by `fit_newlines_to_tight_list` to decide whether a blank line
+/// may come before the event.
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+enum ChildKind {
+    ListItem,
+    Block,
+    Inline,
+}
+
+impl ChildKind {
+    fn of(event: &Event<'_>) -> Option<Self> {
+        match event {
+            Event::Start(Tag::Item) => Some(ChildKind::ListItem),
+            Event::Start(tag) => {
+                if is_block_tag(tag) {
+                    Some(ChildKind::Block)
+                } else {
+                    Some(ChildKind::Inline)
+                }
+            }
+            Event::Rule => Some(ChildKind::Block),
+            Event::Text(_)
+            | Event::Code(_)
+            | Event::InlineHtml(_)
+            | Event::InlineMath(_)
+            | Event::DisplayMath(_)
+            | Event::FootnoteReference(_)
+            | Event::SoftBreak
+            | Event::HardBreak
+            | Event::TaskListMarker(_) => Some(ChildKind::Inline),
+            // Html only appears inside an HtmlBlock, whose Start was already
+            // the Block.
+            Event::End(_) | Event::Html(_) => None,
+        }
+    }
+}
+
+// Consider this tight list:
+//
+// * a
+// * item
+//   # heading
+// * c
+//
+// When the heading ends, we ask for a blank line before whatever comes next,
+// so we would write:
+//
+// * a
+// * item
+//   # heading
+//
+// * c
+//
+// i.e., a loose list, which isn't correct. A blank line between two children
+// of the same item does the same thing:
+//
+// * item
+//   # heading
+//
+//   text
+//
+// So before each event, if we're in a tight list and the event starts the
+// next item or the next child of an item, cut the pending newlines down to
+// one.
+fn fit_newlines_to_tight_list<F>(kind: Option<ChildKind>, formatter: &mut F, state: &mut State<'_>) -> fmt::Result
+where
+    F: fmt::Write,
+{
+    // End(Item) and End(List) can come between a block quote's end and the
+    // content after it, so End events leave the pending line in place.
+    let Some(kind) = kind else {
+        return Ok(());
+    };
+    let pending_block_quote_end_line = state.pending_block_quote_end_line.take();
+    let in_tight_list = match state.open_tags.as_mut_slice() {
+        [parents @ .., OpenTag::Item] => {
+            // The item's list is the tag just below it on the stack.
+            let list_spacing = match parents.last_mut() {
+                Some(OpenTag::List(spacing)) => Some(spacing),
+                Some(OpenTag::Item | OpenTag::Other) | None => None,
+            };
+            match kind {
+                ChildKind::Inline => {
+                    // In a loose list, item text is wrapped in a paragraph:
+                    //
+                    // * item
+                    //
+                    //   # heading
+                    //
+                    // produces `Start(Item), Start(Paragraph), Text("item")`.
+                    // So inline content directly inside an item means the list
+                    // is tight. Record that for the rest of the list.
+                    if let Some(spacing) = list_spacing {
+                        *spacing = ListSpacing::Tight;
+                    }
+                    true
+                }
+                ChildKind::Block => match list_spacing {
+                    Some(ListSpacing::Tight) => true,
+                    // We don't know yet whether the list is tight. Consider
+                    // these two lists:
+                    //
+                    // * # heading
+                    //
+                    //   # heading 2
+                    // * c
+                    //
+                    // * # heading
+                    //   # heading 2
+                    // * c
+                    //
+                    // The first is loose, so `c` is wrapped in a paragraph. The
+                    // second is tight, so it isn't. Their events are otherwise
+                    // the same, and `c` comes after the gap before `heading 2`,
+                    // so when we write that gap we can't tell the two apart.
+                    //
+                    // Keep the blank line, which is correct for the first list.
+                    // This does mean that the second list comes out loose, with
+                    // a paragraph around `c`; fixing that would require some
+                    // kind of lookahead, either by us or within pulldown-cmark.
+                    Some(ListSpacing::Unknown) | None => false,
+                },
+                // An item can't start directly inside another item (a nested
+                // item is inside a nested list).
+                ChildKind::ListItem => false,
+            }
+        }
+        [.., OpenTag::List(spacing)] => match kind {
+            ChildKind::ListItem => match spacing {
+                ListSpacing::Tight => true,
+                ListSpacing::Unknown => false,
+            },
+            ChildKind::Block | ChildKind::Inline => false,
+        },
+        [.., OpenTag::Other] | [] => false,
+    };
+    if !in_tight_list {
+        return Ok(());
+    }
+
+    match (kind, pending_block_quote_end_line) {
+        (ChildKind::Block | ChildKind::Inline, Some(pending)) => {
+            // Consider this tight list:
+            //
+            // * a
+            //   > q
+            //   >
+            //   text
+            //
+            // After the block quote ends, `text` needs its own line. But with
+            // just a newline, we would write:
+            //
+            // * a
+            //   > q
+            //   text
+            //
+            // i.e., `text` would be a lazy continuation of the `q` paragraph,
+            // and end up inside the block quote. A blank line would make the
+            // list loose. Instead, write an empty `>` line. It ends the `q`
+            // paragraph, and since it's inside the block quote, it doesn't
+            // make the list loose.
+            formatter.write_char('\n')?;
+            formatter.write_str(&pending)?;
+            state.newlines_before_start = 1;
+        }
+        // A new list item can't cause a block quote to be continued, so we
+        // don't need to output the pending block quote end line in that case.
+        (ChildKind::ListItem, _) | (ChildKind::Block | ChildKind::Inline, None) => {
+            state.newlines_before_start = state.newlines_before_start.min(1);
+        }
+    }
+    Ok(())
 }
 
 fn is_inline_content(event: &Event<'_>) -> bool {
