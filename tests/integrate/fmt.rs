@@ -1,6 +1,6 @@
 use pulldown_cmark::{utils::TextMergeStream, Alignment, CodeBlockKind, Event, LinkType, Options, Parser, Tag, TagEnd};
 pub use pulldown_cmark_to_cmark::{
-    cmark, cmark_resume, cmark_resume_with_options, ItemTail, LastEvent, Options as CmarkToCmarkOptions, State,
+    cmark, cmark_resume, cmark_resume_with_options, ItemTail, LastEvent, OpenTag, Options as CmarkToCmarkOptions, State,
 };
 
 fn assert_output_and_states_eq(output0: &str, state0: &State, output1: &str, state1: &State) {
@@ -150,6 +150,7 @@ fn it_applies_newlines_before_start_before_any_start_tag() {
     second.newlines_before_start = 0;
     second.last_was_text_without_trailing_newline = true;
     second.last_event = LastEvent::InlineContent;
+    second.open_tags = vec![OpenTag::Other];
 
     assert_eq!(
         fmtes(&[Event::Start(Tag::Paragraph), Event::Text("h".into())], first,),
@@ -158,7 +159,7 @@ fn it_applies_newlines_before_start_before_any_start_tag() {
 }
 
 mod padding {
-    use super::{fmtes, Event, LastEvent, State, Tag};
+    use super::{fmtes, Event, LastEvent, OpenTag, State, Tag};
 
     #[test]
     fn is_used_before_newlines() {
@@ -172,6 +173,7 @@ mod padding {
         second.padding = vec!["  ".into()];
         second.last_was_text_without_trailing_newline = true;
         second.last_event = LastEvent::InlineContent;
+        second.open_tags = vec![OpenTag::Other];
 
         assert_eq!(
             fmtes(&[Event::Start(Tag::Paragraph), Event::Text("h".into())], first,),
@@ -430,7 +432,7 @@ println!("Hello, world!");
 }
 
 mod blockquote {
-    use super::{assert_events_eq_both, fmte, fmtes, fmts_both, Event, State, Tag, TagEnd};
+    use super::{assert_events_eq_both, fmte, fmtes, fmts_both, Event, OpenTag, State, Tag, TagEnd};
     use indoc::indoc;
 
     #[test]
@@ -450,6 +452,7 @@ mod blockquote {
         let mut state = State::default();
         state.newlines_before_start = 1;
         state.padding = vec![" > ".into()];
+        state.open_tags = vec![OpenTag::Other];
         assert_eq!(fmte(&[Event::Start(Tag::BlockQuote(None)),]).1, state);
     }
 
@@ -656,12 +659,13 @@ mod blockquote {
 }
 
 mod codeblock {
-    use super::{fmte, fmts_both, fmts_with_options, CmarkToCmarkOptions, CodeBlockKind, Event, State, Tag};
+    use super::{fmte, fmts_both, fmts_with_options, CmarkToCmarkOptions, CodeBlockKind, Event, OpenTag, State, Tag};
 
     #[test]
     fn it_keeps_track_of_the_presence_of_a_code_block() {
         let mut state = State::default();
         state.code_block = Some(pulldown_cmark_to_cmark::CodeBlockKind::Fenced);
+        state.open_tags = vec![OpenTag::Other];
         assert_eq!(
             fmte(&[Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced("s".into()))),]).1,
             state
@@ -746,7 +750,7 @@ mod table {
     use pretty_assertions::assert_eq;
     use pulldown_cmark_to_cmark::Alignment;
 
-    use super::{fmte, fmtes, Alignment as TableAlignment, Event, State, Tag, TagEnd};
+    use super::{fmte, fmtes, Alignment as TableAlignment, Event, OpenTag, State, Tag, TagEnd};
 
     #[test]
     fn it_forgets_alignments_and_headers_at_the_end_of_tables() {
@@ -765,6 +769,7 @@ mod table {
         let mut state = State::default();
         state.table_alignments = vec![Alignment::None, Alignment::Center];
         state.table_headers = vec!["a".into(), "b".into()];
+        state.open_tags = vec![OpenTag::Other, OpenTag::Other];
         assert_eq!(
             fmte(&[
                 Event::Start(Tag::Table(vec![TableAlignment::None, TableAlignment::Center])),
@@ -1254,6 +1259,434 @@ mod list {
     }
 
     #[test]
+    fn heading_after_text_in_tight_item() {
+        let input = indoc!(
+            "
+            * item
+              # heading"
+        );
+        assert_eq!(fmts_both(input).0, "* item\n  # heading");
+        assert_events_eq_both(input);
+        assert_events_eq_both(indoc!(
+            "
+            1. item
+               # heading"
+        ));
+    }
+
+    #[test]
+    fn heading_after_inline_content_in_tight_item() {
+        assert_events_eq_both(indoc!(
+            "
+            * *item*
+              # heading"
+        ));
+        assert_events_eq_both(indoc!(
+            "
+            * `item`
+              # heading"
+        ));
+        assert_events_eq_both(indoc!(
+            "
+            * [x] item
+              # heading"
+        ));
+        assert_events_eq_both(indoc!(
+            "
+            * item\\
+              # heading"
+        ));
+    }
+
+    #[test]
+    fn heading_after_text_in_nested_tight_item() {
+        assert_events_eq_both(indoc!(
+            "
+            * a
+              * item
+                # heading"
+        ));
+        assert_events_eq_both(indoc!(
+            "
+            > * item
+            >   # heading"
+        ));
+    }
+
+    #[test]
+    fn rule_after_text_in_tight_item() {
+        let input = indoc!(
+            "
+            * item
+              ***"
+        );
+        assert_eq!(fmts_both(input).0, "* item\n  ***");
+        assert_events_eq_both(input);
+    }
+
+    #[test]
+    fn html_block_after_text_in_tight_item() {
+        assert_events_eq_both(indoc!(
+            "
+            * item
+              <div>
+              </div>"
+        ));
+        assert_events_eq_both(indoc!(
+            "
+            * item
+              <!-- comment -->"
+        ));
+    }
+
+    #[test]
+    fn table_after_text_in_tight_item() {
+        assert_events_eq_both(indoc!(
+            "
+            * item
+              | a | b |
+              | - | - |"
+        ));
+    }
+
+    #[test]
+    fn footnote_definition_after_text_in_tight_item() {
+        assert_events_eq_both(indoc!(
+            "
+            * item
+              [^1]: footnote"
+        ));
+    }
+
+    #[test]
+    fn heading_between_items_in_tight_list() {
+        let input = indoc!(
+            "
+            * a
+            * item
+              # heading
+            * c"
+        );
+        assert_eq!(fmts_both(input).0, "* a\n* item\n  # heading\n* c");
+        assert_events_eq_both(input);
+    }
+
+    #[test]
+    fn text_after_heading_in_tight_item() {
+        let input = indoc!(
+            "
+            * # heading
+              text"
+        );
+        assert_eq!(fmts_both(input).0, "* # heading\n  text");
+        assert_events_eq_both(input);
+        assert_events_eq_both(indoc!(
+            "
+            * item
+              ## heading
+              more"
+        ));
+    }
+
+    #[test]
+    fn consecutive_headings_in_tight_item() {
+        assert_events_eq_both(indoc!(
+            "
+            * item
+              # heading
+              # heading2"
+        ));
+    }
+
+    #[test]
+    fn inline_content_after_heading_in_tight_item() {
+        assert_events_eq_both(indoc!(
+            "
+            * # heading
+              `code`"
+        ));
+        assert_events_eq_both(indoc!(
+            "
+            * # heading
+              $x$"
+        ));
+        assert_events_eq_both(indoc!(
+            "
+            * # heading
+              $$x$$"
+        ));
+        assert_events_eq_both(indoc!(
+            "
+            * # heading
+              *emphasis*"
+        ));
+        assert_events_eq_both(indoc!(
+            "
+            * # heading
+              [^1]
+
+            [^1]: footnote"
+        ));
+    }
+
+    #[test]
+    fn inline_content_after_html_in_tight_item() {
+        for content in ["`code`", "text", "$x$", "$$x$$", "*emphasis*", "<i>inline</i>"] {
+            let input = format!("* <!-- comment -->\n  {content}");
+            assert_events_eq_both(&input);
+        }
+        assert_events_eq_both("* <!-- comment -->\n  [^1]\n\n[^1]: footnote");
+        assert_events_eq_both("> * <!-- comment -->\n>   `code`");
+        assert_events_eq_both("* <!-- comment -->\n\n  `code`");
+        assert_events_eq_both("* item\n  <!-- comment -->\n  ```\n  code\n  ```");
+    }
+
+    #[test]
+    fn fenced_code_in_tight_list() {
+        assert_events_eq_both(indoc!(
+            "
+            * a
+            * ```
+              x
+              ```
+            * c"
+        ));
+        assert_events_eq_both(indoc!(
+            "
+            * item
+              ```
+              x
+              ```
+              more"
+        ));
+    }
+
+    #[test]
+    fn table_in_tight_list() {
+        assert_events_eq_both(indoc!(
+            "
+            * a
+            * | x |
+              | - |
+            * c"
+        ));
+        assert_events_eq_both(indoc!(
+            "
+            * a
+              | x |
+              | - |
+              # heading
+            * c"
+        ));
+    }
+
+    #[test]
+    fn blockquote_between_items_in_tight_list() {
+        assert_events_eq_both(indoc!(
+            "
+            * a
+              > b
+              >
+            * c"
+        ));
+        assert_events_eq_both(indoc!(
+            "
+            - a
+              > b
+              ```
+              c
+              ```
+            - d"
+        ));
+    }
+
+    #[test]
+    fn text_after_blockquote_in_tight_item() {
+        let input = indoc!(
+            "
+            * a
+              > q
+              >
+              text"
+        );
+        // Without the empty `>` line, `text` would lazily continue the `q`
+        // paragraph and end up inside the block quote.
+        assert_eq!(fmts_both(input).0, "* a\n   > \n   > q\n   >\n  text");
+        assert_events_eq_both(input);
+        assert_events_eq_both(indoc!(
+            "
+            * a
+              > q
+              >
+                  code
+            "
+        ));
+        assert_events_eq_both(indoc!(
+            "
+            * a
+              > > q
+              >
+              text"
+        ));
+    }
+
+    #[test]
+    fn blank_lines_inside_blockquote_in_tight_item_are_kept() {
+        assert_events_eq_both(indoc!(
+            "
+            - a
+              > p1
+              >
+              > p2
+            - d"
+        ));
+        assert_events_eq_both(indoc!(
+            "
+            - a
+              > | x |
+              > | - |
+              >
+              > para
+            - d"
+        ));
+    }
+
+    #[test]
+    fn content_after_nested_blockquote_in_tight_item() {
+        let input = indoc!(
+            "
+            * item
+              * a
+                > q
+                >
+              text"
+        );
+        assert_eq!(fmts_both(input).0, "* item\n  * a\n     > \n     > q\n     >\n  text");
+        assert_events_eq_both(input);
+        assert_events_eq_both(indoc!(
+            "
+            * item
+              * a
+                > q
+                >
+              | x |
+              | - |"
+        ));
+        assert_events_eq_both(indoc!(
+            "
+            1. item
+               1. a
+                  > q
+                  >
+               text"
+        ));
+        assert_events_eq_both(indoc!(
+            "
+            * item
+              * a
+                * b
+                  > q
+                  >
+              text"
+        ));
+        assert_events_eq_both(indoc!(
+            "
+            * item
+              > * a
+              >   > q
+              >
+              text"
+        ));
+    }
+
+    #[test]
+    fn loose_nested_list_in_tight_list() {
+        assert_events_eq_both(indoc!(
+            "
+            - a
+              - b
+
+                c
+            - d"
+        ));
+    }
+
+    #[test]
+    fn heading_in_nested_tight_list() {
+        assert_events_eq_both(indoc!(
+            "
+            * a
+              * b
+                # heading
+              * c
+            * d"
+        ));
+        assert_events_eq_both(indoc!(
+            "
+            > * a
+            >   # heading
+            > * c"
+        ));
+    }
+
+    #[test]
+    fn loose_list_with_blocks_keeps_blank_lines() {
+        let input = indoc!(
+            "
+            * a
+
+              # heading
+            * c"
+        );
+        assert_eq!(fmts_both(input).0, "* a\n  \n  # heading\n\n* c");
+        assert_events_eq_both(input);
+        // When we write the gap before `c`, we don't yet know whether the list
+        // is tight. In this case, that's correct because the list is loose.
+        // (But fixing this properly would require some kind of lookahead.)
+        assert_events_eq_both(indoc!(
+            "
+            * # heading
+
+            * c"
+        ));
+        assert_events_eq_both(indoc!(
+            "
+            * ```
+              x
+              ```
+
+            * c"
+        ));
+    }
+
+    #[test]
+    fn output_is_independent_of_resume_points() {
+        for input in [
+            "* item\n  # heading",
+            "* <!-- comment -->\n  `code`",
+            "`term`\n\n: def",
+            "* `term`\n\n  : def",
+            "* term\n  : > quote\n\n  text",
+            "* a\n* item\n  # heading\n* c",
+            "* a\n  > q\n  >\n  text",
+            "* item\n  * a\n    > q\n    >\n  text",
+            "- a\n  - b\n\n    c\n- d",
+        ] {
+            let events: Vec<_> = Parser::new_ext(input, Options::all()).collect();
+            let mut expected = String::new();
+            cmark_resume(events.iter(), &mut expected, None).unwrap();
+
+            for split in 0..=events.len() {
+                let (before, after) = events.split_at(split);
+                let mut output = String::new();
+                let state = cmark_resume(before.iter(), &mut output, None).unwrap();
+                cmark_resume(after.iter(), &mut output, Some(state)).unwrap();
+                assert_eq!(output, expected, "input {input:?} split at event {split}");
+            }
+        }
+    }
+
+    #[test]
     fn ordered_and_unordered_nested_and_ordered() {
         let mut state = State::default();
         state.newlines_before_start = 2;
@@ -1558,7 +1991,34 @@ key = value2
 }
 
 mod definition_list {
-    use super::assert_events_eq;
+    use super::{assert_events_eq, assert_events_eq_both};
+
+    #[test]
+    fn ending_definition_does_not_restart_blockquote() {
+        assert_events_eq_both("* term\n  : > quote\n\n  text");
+        assert_events_eq_both("* outer\n  * term\n    : > quote\n\n  text");
+        assert_events_eq_both("* term\n  : * item\n      > quote\n\n  text");
+        assert_events_eq_both("> * term\n>   : > quote\n>\n>   text");
+    }
+
+    #[test]
+    fn loose_definitions_keep_paragraphs() {
+        for term in ["`term`", "term", "*term*", "$term$", "$$term$$", "[term](url)"] {
+            assert_events_eq_both(&format!("{term}\n\n: def"));
+            assert_events_eq_both(&format!("{term}\n: def"));
+        }
+        for input in [
+            "`term`\n\n: first\n: second",
+            "`term`\n: first\n\n  second",
+            "`term`\n: first\n\n`other`\n\n: second",
+            "* `term`\n\n  : def",
+            "> `term`\n>\n> : def",
+            "> term\n> : first\n>\n>   second",
+            "`term`\n:",
+        ] {
+            assert_events_eq_both(input);
+        }
+    }
 
     #[test]
     fn round_trip() {
