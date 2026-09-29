@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 23.0.0 (2026-09-29)
 
 Beware that this is basically an SI rewrite, which I reviewed from an API perspective.
 It *should* be way more correct than the previous version, at least tests would
@@ -13,6 +13,100 @@ say so.
 
 Reason: I wanted to prevent piece-meal SI-PRs to fix individual aspects of the prior
 version, which was pretty sub-par in the correctness department.
+
+### New Features (BREAKING)
+
+ - <csr-id-a0779808d34ee0672837d9393a8572416bc7ca38/> require parser options and validate round-trip configurations
+   <!-- Byron -->
+   
+   Checked public API, rest is mostly rubber-stamped
+   
+   <!-- agent -->
+   Make the originating parser flags mandatory in State::new and every cmark
+   helper so escaping and source validation agree with the parser. Remove
+   State::default(), default to symbolic superscripts/subscripts, and add
+   optional, recommended Options::validate. Support all subsets of twelve modern
+   extensions with standard markers: 491,520 finite configurations are accepted
+   and 5,799,936 are explicitly rejected.
+   
+   Preserve mandatory list and definition boundaries, nested delimiter runs,
+   math/table interactions, and raw blocks ending at EOF or by dedentation.
+   Validate delimiter choices before emitting them and report unrepresentable
+   blocks instead of silently changing events. Preserve list structure that
+   relied on invisible definitions by reserving a collision-free label; these
+   exceptional lists buffer the remaining input until finish.
+   
+   Keep accumulated reference occurrences and labels out of block-rendering
+   snapshots. Criterion benchmarks cover shared, distinct, edited, and nested
+   references at 1,000–8,000 paragraphs and show proportional scaling.
+   
+   Add permanent differential tests with exact merged-event comparisons across
+   both rendering paths, 860 retained regressions, 91,446 generated inputs,
+   symbolic extension combinations, numeric preferences, and every accepted
+   configuration. Run the exhaustive release suite in CI. Document migration,
+   validation, coverage counts, and commands that print the results.
+ - <csr-id-c8d91905e9d0ea203492e46a123e264f0d6bfcb4/> round-trip the full CommonMark 0.31.2 spec
+   <!-- Byron -->
+   
+   Rubber-stamp mostly, and nearly 1000 SLOC less seem to speak a clear language.
+   I at least validated the public API which seemed sensible.
+   The new API is definitely nicer, the tests are cleaned up.
+   
+   <!-- agent -->
+   All 652 CommonMark 0.31.2 examples now round-trip with their parsed
+   structure intact under default formatting. This includes paragraph
+   boundaries, tight and loose lists, link types, and indented versus fenced
+   code blocks. Strict event comparisons cover ordinary and source-range
+   serialization, every event boundary, and event-by-event input.
+   
+   Markdown decisions often need context that arrives later: a later list
+   item can make the entire list loose, and the following block affects how
+   the list must end. The serializer now retains one top-level block until
+   that context is available. It can therefore keep adjacent lists distinct,
+   keep following code outside a list, and choose valid heading, emphasis,
+   fence, and reference syntax. Consistent newline and container handling
+   also preserves tight HTML lists and loose definitions without introducing
+   extra block quotes.
+   
+   The new opaque `State` owns its options and retained input, so borrowed
+   event chunks and source strings need not outlive a processing call.
+   `process` and `process_with_source_range` accept all supplied events on
+   success and report consumed events and written UTF-8 bytes through
+   `Progress`. Output uses `fmt::Write` and may be buffered. `finish` flushes
+   the last block and reference definitions; repeated successful calls write
+   nothing. Invalid ranges and unbalanced events are reported as errors,
+   and a failed state cannot be reused.
+   
+   Source ranges preserve original spelling only when it reparses to the
+   supplied events. Edited text uses safe escaping, and edited shortcut
+   labels can become explicit references to retain their original targets.
+
+### Test
+
+ - <csr-id-c4d4f284a34ddd9974aa6a29082273c8d679a4ca/> print CommonMark conformance totals
+   <!-- agent -->
+   Print passed example totals for ordinary/source-range and incremental
+   serialization so cargo test --test integrate spec:: -- --nocapture shows
+   the number of CommonMark examples covered. Check the expected fixture
+   count when running the incremental test on its own as well.
+ - <csr-id-f16d71b06c2d888a42dca730cbf7d19fb3031194/> update CommonMark fixtures to 0.31.2
+   <!-- agent -->
+   Vendor the latest published specification and record its source and
+   checksum. Decode the spec's tab markers and retain final newlines when
+   extracting examples, matching the official JSON inputs and HTML.
+   
+   The corrected 652-example corpus currently passes 622 round trips.
+   Add a focused regression for fixture extraction.
+
+### Documentation
+
+ - <csr-id-e173adbc6cf673f68fe67b3f65208e962550646c/> explain migration to the owning State API
+   <!-- agent -->
+   Document replacements for resume functions, owned input and configuration,
+   progress counts, block buffering, source spelling, terminal errors, and
+   idempotent finishing. Describe the strict CommonMark 0.31.2 coverage and
+   formatting changes, update fence-count documentation, and add compiled
+   incremental and source-range examples.
 
 ### Changed
 
@@ -34,7 +128,6 @@ version, which was pretty sub-par in the correctness department.
   example across standard formatting choices, retained review regressions, and a
   deterministic generated corpus under six parser profiles. Run the full suite
   in CI and document commands that print coverage and failure totals.
-
 - **Breaking:** replace `cmark_resume*` and the public `State` fields with an
   owning `State::new`, `process`, `process_with_source_range`, and `finish` API.
   Successful calls return event and UTF-8 byte counts. Finishing is idempotent;
@@ -46,6 +139,32 @@ version, which was pretty sub-par in the correctness department.
 - Buffer blocks to choose list spacing and boundaries, heading and emphasis
   delimiters, code fences, and reference labels. Centralize newline and prefix
   handling, retaining tight HTML lists and loose definition spacing.
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 8 commits contributed to the release.
+ - 1 day passed between releases.
+ - 5 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Prepare changelog prior to release ([`c2772f5`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/c2772f5ab5cf5230a84a14fdd6274721920e9675))
+    - Merge pull request #114 from Byron/more-fixes ([`b69f3ea`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/b69f3ea56e723713e75d69131cb06ed01b9dea05))
+    - Require parser options and validate round-trip configurations ([`a077980`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/a0779808d34ee0672837d9393a8572416bc7ca38))
+    - Merge pull request #113 from Byron/more-fixes ([`96eebbd`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/96eebbdd5b48b2b12bc6a25f472d0d3537acefad))
+    - Print CommonMark conformance totals ([`c4d4f28`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/c4d4f284a34ddd9974aa6a29082273c8d679a4ca))
+    - Explain migration to the owning State API ([`e173adb`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/e173adbc6cf673f68fe67b3f65208e962550646c))
+    - Round-trip the full CommonMark 0.31.2 spec ([`c8d9190`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/c8d91905e9d0ea203492e46a123e264f0d6bfcb4))
+    - Update CommonMark fixtures to 0.31.2 ([`f16d71b`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/f16d71b06c2d888a42dca730cbf7d19fb3031194))
+</details>
 
 ## 22.0.3 (2026-09-28)
 
@@ -81,7 +200,7 @@ version, which was pretty sub-par in the correctness department.
    
    ```
    * # heading
-     `code`
+   `code`
    ```
    
    would roundtrip as:
@@ -95,10 +214,10 @@ version, which was pretty sub-par in the correctness department.
    
    ```markdown
    * item
-     * a
-       > q
-       >
-     text
+   * a
+   > q
+   >
+   text
    ```
    
    Most of the commit is about dealing with this case.
@@ -108,7 +227,7 @@ version, which was pretty sub-par in the correctness department.
    
    ```
    * item
-     ***
+   ***
    ```
    
    would roundtrip as:
@@ -129,7 +248,7 @@ version, which was pretty sub-par in the correctness department.
 
 <csr-read-only-do-not-edit/>
 
- - 8 commits contributed to the release.
+ - 9 commits contributed to the release.
  - 7 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
@@ -140,6 +259,7 @@ version, which was pretty sub-par in the correctness department.
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release pulldown-cmark-to-cmark v22.0.3 ([`a14b105`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/a14b105a277e6e23db7778a7d5e4eadef638daf6))
     - Merge pull request #112 from sunshowers/more-fixes ([`299ed9b`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/299ed9b86fa43d4778037cbf05b30f044928c9c9))
     - Discard quote terminators when definitions end ([`9905181`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/9905181d4721007b27c2ce2a214314450067d28e))
     - Preserve paragraph spacing in loose definitions ([`a7d1f06`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/a7d1f06907d22b13ec7aad3b62b4c4e049a2e2b9))
@@ -1943,3 +2063,4 @@ Thanks to the author of [this PR](https://github.com/Byron/pulldown-cmark-to-cma
     - First minor adjustment before all links change. ([`5b4c1ef`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/5b4c1ef9617acc3151a862ed1e536809846f0ed2))
     - Move everything from 'termbook'. ([`7666772`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/76667725b61be24890fbdfed5e7ecdb4c1ad1dc8))
 </details>
+
