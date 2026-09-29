@@ -28,7 +28,7 @@ mod fuzzed {
             Event::End(TagEnd::Heading(HeadingLevel::H2)),
         ];
         assert!(matches!(
-            cmark(events.iter(), String::new()),
+            cmark(events.iter(), String::new(), pulldown_cmark::Options::empty()),
             Err(Error::UnexpectedEvent)
         ));
     }

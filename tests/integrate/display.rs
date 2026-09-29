@@ -6,7 +6,7 @@ fn s(e: Event) -> String {
 }
 fn es<'a>(es: impl IntoIterator<Item = Event<'a>>) -> String {
     let mut buf = String::new();
-    cmark(es, &mut buf).unwrap();
+    cmark(es, &mut buf, SUPPORTED_PARSER_OPTIONS).unwrap();
     buf
 }
 mod code {
@@ -47,13 +47,10 @@ mod containers {
             (Tag::Emphasis, "*x*"),
             (Tag::Strong, "**x**"),
             (Tag::Strikethrough, "~~x~~"),
-            (Tag::Superscript, "<sup>x</sup>"),
-            (Tag::Subscript, "<sub>x</sub>"),
+            (Tag::Superscript, "^x^"),
+            (Tag::Subscript, "~x~"),
             (Tag::BlockQuote(None), "\n > \n > x"),
-            (
-                Tag::CodeBlock(CodeBlockKind::Fenced("asdf".into())),
-                "\n````asdf\nx\n````",
-            ),
+            (Tag::CodeBlock(CodeBlockKind::Fenced("asdf".into())), "\n````asdf\nx"),
             (Tag::FootnoteDefinition("asdf".into()), "[^asdf]: x"),
         ] {
             assert_eq!(wrap(tag, "x"), expected);
@@ -166,7 +163,7 @@ mod end {
                 Start(Tag::List(None)),
                 Start(Tag::Item),
                 Start(Tag::CodeBlock(CodeBlockKind::Fenced("".into()))),
-                Text("foo".into()),
+                Text("foo\n".into()),
                 End(TagEnd::CodeBlock),
                 End(TagEnd::Item),
                 End(TagEnd::List(false)),
@@ -174,7 +171,7 @@ mod end {
                 Text("bar".into()),
                 End(TagEnd::Paragraph),
             ]),
-            "* \n  ````\n  foo\n  ````\n\nbar"
+            "* ````\n  foo\n  ````\n\nbar"
         );
     }
     #[test]
@@ -184,7 +181,7 @@ mod end {
                 Start(Tag::List(None)),
                 Start(Tag::Item),
                 Start(Tag::CodeBlock(CodeBlockKind::Indented)),
-                Text("foo".into()),
+                Text("foo\n".into()),
                 End(TagEnd::CodeBlock),
                 End(TagEnd::Item),
                 End(TagEnd::List(false)),
@@ -192,7 +189,7 @@ mod end {
                 Text("bar".into()),
                 End(TagEnd::Paragraph),
             ]),
-            "* \n      foo\n\nbar"
+            "*     foo\n\nbar"
         );
     }
     #[test]

@@ -9,6 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Breaking:** require the originating parser flags in `State::new` and all
+  `cmark*` helpers. Remove `State::default()` and default to symbolic superscript
+  and subscript output so reparsing retains their event types.
+- Add optional, recommended `Options::validate` and `SUPPORTED_PARSER_OPTIONS`.
+  Support every subset of twelve modern parser extensions and standard Markdown
+  markers; reject unsupported flags, invalid markers, overflowing lengths, and
+  HTML output conflicting with symbolic scripts. The finite matrix accepts
+  491,520 configurations and rejects 5,799,936.
+- Preserve required list and definition boundaries, delimiter run nesting,
+  extension-sensitive punctuation, and raw blocks ending at EOF. Retain list
+  structure created by invisible reference definitions with collision-free labels.
+- Validate source blocks using only their own reference definitions, keeping
+  document-wide reference history out of trial rendering. Add Criterion scaling
+  benchmarks for shared, distinct, edited, and nested reference-link workloads.
+- Add strict differential tests for all accepted configurations, every CommonMark
+  example across standard formatting choices, retained review regressions, and a
+  deterministic generated corpus under six parser profiles. Run the full suite
+  in CI and document commands that print coverage and failure totals.
+
 - **Breaking:** replace `cmark_resume*` and the public `State` fields with an
   owning `State::new`, `process`, `process_with_source_range`, and `finish` API.
   Successful calls return event and UTF-8 byte counts. Finishing is idempotent;

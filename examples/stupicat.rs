@@ -3,7 +3,7 @@ use std::{
     io::{stdout, Write},
 };
 
-use pulldown_cmark::{Options, Parser};
+use pulldown_cmark::Parser;
 use pulldown_cmark_to_cmark::{cmark_with_options, State};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -14,22 +14,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let md = std::fs::read_to_string(&path)?;
     let mut buf = String::with_capacity(md.len() + 128);
-    let mut options = Options::all();
-    options.remove(Options::ENABLE_SMART_PUNCTUATION);
+    let options = pulldown_cmark_to_cmark::SUPPORTED_PARSER_OPTIONS;
 
-    let mut render_options = pulldown_cmark_to_cmark::Options::default();
-    if env::var_os("STUPICAT_SUB_SUPER_SYMBOLIC").is_some() {
-        render_options.use_html_for_super_sub_script = false;
-    }
+    let render_options = pulldown_cmark_to_cmark::Options::default();
+
+    render_options.validate(options)?;
 
     if event_by_event {
-        let mut state = State::new(render_options);
+        let mut state = State::new(options, render_options);
         for event in Parser::new_ext(&md, options) {
             state.process(std::iter::once(event), &mut buf)?;
         }
         state.finish(&mut buf)?;
     } else {
-        cmark_with_options(Parser::new_ext(&md, options), &mut buf, render_options)?;
+        cmark_with_options(Parser::new_ext(&md, options), &mut buf, options, render_options)?;
     }
 
     stdout().write_all(buf.as_bytes())?;

@@ -18,7 +18,7 @@ $$\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \
 
 Inline math expressions cannot be empty, but display mode expressions can.
 
-Oops empty $$ expression.
+Oops empty \$\$ expression.
 
 $$$$
 
@@ -26,9 +26,9 @@ This is a greedy, left-to-right parser.
 
 $x$$$$$$$y$$
 
-$x$$$$$$y$$
+$x$$$$$$y$\$
 
-$$x$$$$$$y$$
+$$x$$$$$$y\$\$
 
 Math expressions pass their content through as-is, ignoring any other inline
 Markdown constructs:
@@ -48,9 +48,9 @@ $&alpha;$
 Sole `$` characters without a matching pair in the same block element
 are handled as normal text.
 
-Hello $world.
+Hello \$world.
 
-Dollar at end of line$
+Dollar at end of line\$
 
 Mathematical expressions can continue across multiple lines:
 
@@ -75,24 +75,24 @@ $$y = \$ x$$
 Inline mode math expressions cannot contain unescaped `$` characters.
 Neither can display math.
 
-$x $ x$
+\$x \$ x\$
 
-$$ $ $$
+\$\$ \$ \$\$
 
-alpha$$beta$gamma$$delta
+alpha\$$beta$gamma\$\$delta
 
 Inline math expressions cannot start or end with whitespace, including newlines:
 
-these are not math texts: $ y=x$, $y=x $, $
-y=x$ and $y=x
-$
+these are not math texts: \$ y=x\$, \$y=x \$, \$
+y=x\$ and \$y=x
+\$
 
  > 
- > The start of a line counts as whitespace $2 +
- > $
+ > The start of a line counts as whitespace \$2 +
+ > \$
 
-While displays can start with whitespace, {${
-they should not allow inlines to do that $$2 +
+While displays can start with whitespace, {\${
+they should not allow inlines to do that \$\$2 +
 $*$
 
 Inline math expressions do not need to be surrounded with whitespace:
@@ -126,45 +126,44 @@ precedence as code spans. The leftmost valid element takes priority:
 
 $Inline `first$ then\` code
 
-`Code $first` then$ inline
+`Code $first` then\$ inline
 
 $$ Display `first $$ then\` code
 
-`Code $$ first` then $$ display
+`Code $$ first` then \$\$ display
 
 Indicators of block structure take precedence over math expressions:
 
 $x + y - z$
 
-$x + y
+\$x + y
 
-* z$
+* z\$
 
-$$ x + y
+\$\$ x + y
 
  > 
- > z $$
+ > z \$\$
 
 This also means that math expressions cannot contain empty lines, since they
 start a new paragraph:
 
-$not
+\$not
 
-math$
+math\$
 
-$$
+\$\$
 not
 
 math
-$$
+\$\$
 
 It also implies that math notation has lower
 parsing power than block elements.
 
-* $not
-  * 
-    * 
-  math$
+* \$not
+  * - 
+  math\$
 
 Note that math can contain embedded math.  In scanning
 for a closing delimiter, we skip material in balanced
@@ -180,48 +179,48 @@ $\text{Hello $x$ there!}$
 Math expressions must be nested within balanced curly braces.
 Backslash-escaped braces do not count.
 
-This is not valid math: $}{$
+This is not valid math: \$}{\$
 
-Neither is this: { $}{$ }
+Neither is this: { \$}{\$ }
 
 This is: $\}\{$
 
 This is: $\}$
 
-Math environment contains 2+2: $}$2+2$
+Math environment contains 2+2: \$}$2+2$
 
-Math environment contains y: $x {$ $ } $y$
+Math environment contains y: \$x {\$ \$ } $y$
 
 Math expressions must contain properly nested braces.
 
 This is not display math. It is inline math:
 
-$$\text{first $$ second}$
+\$$\text{first $$ second}$
 
-$$$\text{first $$ second}$
+\$\$$\text{first $$ second}$
 
 This is display math:
 
 $$\text{first $$ second}$$
 
-$$$\text{first $$ second}$$
+\$$$\text{first $$ second}$$
 
 This is also display math, but (counterintuitively) it's allowed to be empty
 and expected to be as short as possible:
 
-$$$$\text{first $$ second}$$
+$$$$\text{first \$\$ second}\$\$
 
 Dollar signs must also be backslash-escaped if they occur within math:
 
 $\text{\$}$
 
-$$x$x$$
+\$$x$x\$\$
 
-${$^$$
+\${$^$\$
 
-$}$$$$
+\$}$$$$
 
-$}$\] $$
+\$}\$\] \$\$
 
 ## Edge case tests comparison with GitHub
 
@@ -244,8 +243,7 @@ Inline and display math in the same list
   a
   $$
 
-* 
-  ````math
+* ````math
   b
   ````
   
@@ -347,9 +345,9 @@ $\pi$
 
 As a block element, tables parsing is stronger than math.
 
-|first $|$ second|
+|first \$|\$ second|
 |-------|--------|
-|a ${|}$ b|
+|a \${|}\$ b|
 
 As a special case, pipes in math environments in tables are escaped
 with backslashes. Though backslash-escaped characters in math
@@ -362,25 +360,25 @@ of the table cell in a separate pass that only looked for the
 strings `|` and `\|`, treating pipes as boundaries and removing the
 escaping backslash before passing the string to the inline parser.
 
-|first $|$ second|
+|first $\|$ second|
 |-------------|
-|a ${   | }$ b|
+|a ${   \| }$ b|
 
 |Description|Test case|
 |-----------|---------|
-|Single|$$|
+|Single|\$\$|
 |Double|$\\$|
-|Basic test|$|$|
-|Basic test 2|$\|\|$|
-|Basic test 3|$x\|y\|z$|
+|Basic test|$\|$|
+|Basic test 2|\$\|\|\$|
+|Basic test 3|\$x\|y\|z\$|
 |Not pipe|$\.$|
-|Combo|$\.|$|
-|Combo 2|$.\|$|
+|Combo|$\.\|$|
+|Combo 2|\$.\|\$|
 |Extra|$\\\.$|
-|Wait, what?|$\|$|
 |Wait, what?|$\\|$|
 |Wait, what?|$\\\|$|
 |Wait, what?|$\\\\|$|
+|Wait, what?|$\\\\\|$|
 
 ## Implementation limits
 
@@ -405,7 +403,7 @@ This is also deeply nested, but, unlike the first example,
 they don't have an equal number of close braces and open braces,
 so aren't detected as math.
 {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
-improperly $}$ nested ${$ example
+improperly \$}\$ nested \${\$ example
 }}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
 This, however, is detected ${}$
 
@@ -435,7 +433,7 @@ ${}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}  20 brace pairs
    the ID space. This means that the below example, even though it nests 255
    levels deep, parses correctly anyway.
 
-${{{{{{{{{{{{{{{{{{{{ 20 open braces
+\${{{{{{{{{{{{{{{{{{{{ 20 open braces
 {{{{{{{{{{{{{{{{{{{{  40 open braces
 {{{{{{{{{{{{{{{{{{{{  60 open braces
 {{{{{{{{{{{{{{{{{{{{  80 open braces
@@ -461,6 +459,6 @@ ${{{{{{{{{{{{{{{{{{{{ 20 open braces
 }}}}}}}}}}}}}}}}}}}} 200 close braces
 }}}}}}}}}}}}}}}}}}}} 220 close braces
 }}}}}}}}}}}}}}}}}}}} 240 close braces
-}}}}}}}}}}}}}}}{$ 255 close braces and one open brace
+}}}}}}}}}}}}}}}{\$ 255 close braces and one open brace
 
 [^a]: Lorem $a$

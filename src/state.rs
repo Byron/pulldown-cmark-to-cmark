@@ -1,5 +1,5 @@
 use super::{Borrow, Error, Event, Options, Range, Renderer, TagEnd};
-use pulldown_cmark::CowStr;
+use pulldown_cmark::{CowStr, Options as ParserOptions};
 use std::fmt;
 
 /// Input accepted and output written by a successful serializer call.
@@ -31,12 +31,15 @@ pub(crate) struct BufferedEvent {
 /// Use the same logical output stream for every call. After any error the state
 /// is unusable, since a [`fmt::Write`] failure can leave partial output behind.
 ///
+/// Lists whose structure depends on invisible reference definitions can buffer
+/// the remaining input until `finish`, to reserve a label without collisions.
+///
 /// ```
 /// use pulldown_cmark::Parser;
 /// use pulldown_cmark_to_cmark::{Options, State};
 ///
 /// let events: Vec<_> = Parser::new("a *b*").collect();
-/// let mut state = State::new(Options::default());
+/// let mut state = State::new(pulldown_cmark::Options::empty(), Options::default());
 /// let mut output = String::new();
 /// let first = state.process(&events[..2], &mut output)?;
 /// assert_eq!(first.events_consumed, 2);
@@ -54,28 +57,26 @@ pub struct State {
     open: Vec<TagEnd>,
     status: Status,
     last_source_end: usize,
-}
-
-impl Default for State {
-    fn default() -> Self {
-        Self::new(Options::default())
-    }
+    defer_output: bool,
 }
 
 impl State {
     /// Create a serializer, copying any borrowed configuration strings.
-    pub fn new(options: Options<'_>) -> Self {
+    /// `parser_options` must match the parser producing the supplied events.
+    /// Calling [`Options::validate`] first is recommended.
+    pub fn new(parser_options: ParserOptions, options: Options<'_>) -> Self {
         Self {
             strong_token: options.strong_token.to_owned(),
             options: Options {
                 strong_token: "",
                 ..options
             },
-            renderer: Renderer::default(),
+            renderer: Renderer::new(parser_options),
             pending: Vec::new(),
             open: Vec::new(),
             status: Status::Active,
             last_source_end: 0,
+            defer_output: false,
         }
     }
 
@@ -106,7 +107,7 @@ impl State {
     /// let source = "a < b &amp; c";
     /// let events = Parser::new(source).into_offset_iter()
     ///     .map(|(event, range)| (event, Some(range)));
-    /// let mut state = State::default();
+    /// let mut state = State::new(pulldown_cmark::Options::empty(), Default::default());
     /// let mut output = String::new();
     /// state.process_with_source_range(events, source, &mut output)?;
     /// state.finish(&mut output)?;
@@ -155,8 +156,12 @@ impl State {
                     }
                     _ => None,
                 };
-                if self.open.is_empty() && !self.pending.is_empty() {
-                    progress.bytes_written += self.flush(Some(event), &mut writer)?;
+                if self.open.is_empty() && !self.pending.is_empty() && !self.defer_output {
+                    if crate::render::needs_list_placeholder(&self.pending) {
+                        self.defer_output = true;
+                    } else {
+                        progress.bytes_written += self.flush(Some(event), &mut writer)?;
+                    }
                 }
                 match event {
                     Event::Start(tag) => self.open.push(tag.to_end()),
@@ -210,6 +215,9 @@ impl State {
             self.require_active()?;
             if !self.open.is_empty() {
                 return Err(Error::UnexpectedEvent);
+            }
+            if self.defer_output || crate::render::needs_list_placeholder(&self.pending) {
+                self.renderer.reserve_list_label(&self.pending);
             }
             let mut bytes_written = self.flush(None, &mut writer)?;
             let output = self.renderer.finish()?;

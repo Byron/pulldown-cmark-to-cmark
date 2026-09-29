@@ -11,7 +11,7 @@
 //! let input_markdown = "# Hello\n\nWorld!";
 //! let events = Parser::new(input_markdown);
 //! let mut output_markdown = String::new();
-//! cmark(events, &mut output_markdown).unwrap();
+//! cmark(events, &mut output_markdown, pulldown_cmark::Options::empty()).unwrap();
 //! assert_eq!(output_markdown, input_markdown);
 //! ```
 
@@ -24,18 +24,21 @@ use std::{
     ops::Range,
 };
 
-use pulldown_cmark::{Event, Tag, TagEnd};
+use pulldown_cmark::{Event, Options as ParserOptions, Tag, TagEnd};
 
 mod source_range {
-    use super::{fmt, Borrow, Error, Event, Options, Range, State};
+    use super::{fmt, Borrow, Error, Event, Options, ParserOptions, Range, State};
 
     /// Serialize events with source ranges, returning a finished [`State`].
     ///
+    /// `parser_options` must match the parser that produced the events.
+    /// Calling [`Options::validate`] first is recommended.
     /// See [`State::process_with_source_range`] for source spelling and range handling.
     pub fn cmark_with_source_range_and_options<'a, I, E, F>(
         event_and_ranges: I,
         source: &str,
         mut formatter: F,
+        parser_options: ParserOptions,
         options: Options<'_>,
     ) -> Result<State, Error>
     where
@@ -43,7 +46,7 @@ mod source_range {
         E: Borrow<Event<'a>>,
         F: fmt::Write,
     {
-        let mut state = State::new(options);
+        let mut state = State::new(parser_options, options);
         state.process_with_source_range(event_and_ranges, source, &mut formatter)?;
         state.finish(formatter)?;
         Ok(state)
@@ -54,13 +57,20 @@ mod source_range {
         event_and_ranges: I,
         source: &str,
         mut formatter: F,
+        parser_options: ParserOptions,
     ) -> Result<State, Error>
     where
         I: IntoIterator<Item = (E, Option<Range<usize>>)>,
         E: Borrow<Event<'a>>,
         F: fmt::Write,
     {
-        cmark_with_source_range_and_options(event_and_ranges, source, &mut formatter, Default::default())
+        cmark_with_source_range_and_options(
+            event_and_ranges,
+            source,
+            &mut formatter,
+            parser_options,
+            Default::default(),
+        )
     }
 }
 pub use source_range::{cmark_with_source_range, cmark_with_source_range_and_options};
@@ -73,6 +83,26 @@ mod text_modifications;
 
 /// The minimum number of tokens in a fenced code block.
 pub const DEFAULT_CODE_BLOCK_TOKEN_COUNT: usize = 3;
+
+/// Parser extensions supported by validated formatting configurations.
+///
+/// Every subset is supported. Smart punctuation, old footnotes, wikilinks, and
+/// unknown flags are rejected by [`Options::validate`]. Use the same flags for
+/// parsing the input, serializing it, and parsing the output.
+pub const SUPPORTED_PARSER_OPTIONS: ParserOptions = ParserOptions::from_bits_retain(
+    ParserOptions::ENABLE_TABLES.bits()
+        | ParserOptions::ENABLE_FOOTNOTES.bits()
+        | ParserOptions::ENABLE_STRIKETHROUGH.bits()
+        | ParserOptions::ENABLE_TASKLISTS.bits()
+        | ParserOptions::ENABLE_HEADING_ATTRIBUTES.bits()
+        | ParserOptions::ENABLE_YAML_STYLE_METADATA_BLOCKS.bits()
+        | ParserOptions::ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS.bits()
+        | ParserOptions::ENABLE_MATH.bits()
+        | ParserOptions::ENABLE_GFM.bits()
+        | ParserOptions::ENABLE_DEFINITION_LIST.bits()
+        | ParserOptions::ENABLE_SUPERSCRIPT.bits()
+        | ParserOptions::ENABLE_SUBSCRIPT.bits(),
+);
 
 /// Formatting preferences for [`State`] and [`cmark_with_options()`].
 /// The defaults should provide decent spacing and most importantly, will
@@ -120,13 +150,10 @@ pub struct Options<'a> {
     pub emphasis_token: char,
     /// The string to use for strong emphasis (bold)
     pub strong_token: &'a str,
-    /// If `true` (default) then use HTML tags `<sup>` and `<sub>`.
-    /// If `false`, use the Markdown symbols `^` and `~` instead.
-    ///
-    /// If you use [`ENABLE_SUPERSCRIPT`](pulldown_cmark::Options::ENABLE_SUPERSCRIPT) and
-    /// [`ENABLE_SUBSCRIPT`](pulldown_cmark::Options::ENABLE_SUBSCRIPT) when parsing, then
-    /// you might need this in order to round-trip Markdown byte-for-byte, with knowledge
-    /// of whether the parsed documents use `<sub>`/`<sup>` or `^`/`~` instead.
+    /// Use HTML tags for superscript/subscript events instead of `^` and `~`.
+    /// Defaults to `false` to preserve the parser's symbolic event types.
+    /// [`Self::validate`] rejects HTML output with either symbolic parser extension.
+    /// Original HTML events are written unchanged regardless of this preference.
     pub use_html_for_super_sub_script: bool,
 }
 
@@ -148,7 +175,7 @@ const DEFAULT_OPTIONS: Options<'_> = Options {
     increment_ordered_list_bullets: false,
     emphasis_token: '*',
     strong_token: "**",
-    use_html_for_super_sub_script: true,
+    use_html_for_super_sub_script: false,
 };
 
 impl Default for Options<'_> {
@@ -158,6 +185,54 @@ impl Default for Options<'_> {
 }
 
 impl Options<'_> {
+    /// Check that parser flags and formatting preferences support exact event round trips.
+    ///
+    /// Calling this before creating a [`State`] or calling a `cmark*` helper is
+    /// recommended, but optional. Unvalidated configurations remain available
+    /// for applications that deliberately change Markdown semantics.
+    /// This checks configuration, not whether arbitrary edited events are representable.
+    /// Spacing and fence lengths are preferences, clamped to syntactic minima.
+    pub fn validate(&self, parser_options: ParserOptions) -> Result<(), OptionsError> {
+        let unsupported = parser_options.difference(SUPPORTED_PARSER_OPTIONS);
+        if !unsupported.is_empty() {
+            return Err(OptionsError::UnsupportedParserOptions(unsupported));
+        }
+        for (field, valid) in [
+            ("code_block_token", matches!(self.code_block_token, '`' | '~')),
+            ("list_token", matches!(self.list_token, '*' | '-' | '+')),
+            ("ordered_list_token", matches!(self.ordered_list_token, '.' | ')')),
+            ("emphasis_token", matches!(self.emphasis_token, '*' | '_')),
+            ("strong_token", matches!(self.strong_token, "**" | "__")),
+        ] {
+            if !valid {
+                return Err(OptionsError::InvalidToken(field));
+            }
+        }
+        if self.use_html_for_super_sub_script
+            && parser_options.intersects(ParserOptions::ENABLE_SUPERSCRIPT | ParserOptions::ENABLE_SUBSCRIPT)
+        {
+            return Err(OptionsError::HtmlSuperSubscript);
+        }
+        for (field, value) in [
+            ("newlines_after_headline", self.newlines_after_headline),
+            ("newlines_after_paragraph", self.newlines_after_paragraph),
+            ("newlines_after_codeblock", self.newlines_after_codeblock),
+            ("newlines_after_htmlblock", self.newlines_after_htmlblock),
+            ("newlines_after_table", self.newlines_after_table),
+            ("newlines_after_rule", self.newlines_after_rule),
+            ("newlines_after_list", self.newlines_after_list),
+            ("newlines_after_blockquote", self.newlines_after_blockquote),
+            ("newlines_after_rest", self.newlines_after_rest),
+            ("newlines_after_metadata", self.newlines_after_metadata),
+            ("code_block_token_count", self.code_block_token_count),
+        ] {
+            if value >= isize::MAX as usize {
+                return Err(OptionsError::SizeOverflow(field));
+            }
+        }
+        Ok(())
+    }
+
     /// Returns the baseline punctuation considered for backslash escaping.
     /// Context can require escaping other characters or writing character references.
     pub fn special_characters(&self) -> Cow<'static, str> {
@@ -180,6 +255,37 @@ impl Options<'_> {
     }
 }
 
+/// An unsupported parser/formatting configuration, reported by [`Options::validate`].
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum OptionsError {
+    /// Flags outside [`SUPPORTED_PARSER_OPTIONS`], including unknown bits.
+    UnsupportedParserOptions(ParserOptions),
+    /// The named formatting field uses a nonstandard Markdown marker.
+    InvalidToken(&'static str),
+    /// HTML output would replace symbolic superscript/subscript events with HTML events.
+    HtmlSuperSubscript,
+    /// The named field cannot fit its output and required separator in a Rust string.
+    SizeOverflow(&'static str),
+}
+
+impl fmt::Display for OptionsError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::UnsupportedParserOptions(flags) => write!(
+                f,
+                "unsupported parser flags: {flags:?}; use a subset of SUPPORTED_PARSER_OPTIONS"
+            ),
+            Self::InvalidToken(field) => write!(f, "{field} must use a standard Markdown delimiter"),
+            Self::HtmlSuperSubscript => f.write_str(
+                "set use_html_for_super_sub_script to false when parsing symbolic superscripts or subscripts",
+            ),
+            Self::SizeOverflow(field) => write!(f, "{field} is too large for a Markdown output string"),
+        }
+    }
+}
+
+impl std::error::Error for OptionsError {}
+
 /// An error encountered while serializing Markdown.
 #[derive(Debug)]
 pub enum Error {
@@ -187,6 +293,8 @@ pub enum Error {
     FormatFailed(fmt::Error),
     /// An event was encountered that cannot be produced by valid markdown
     UnexpectedEvent,
+    /// No lossless Markdown spelling was found for the supplied event block.
+    Unrepresentable,
     /// A source range is out of bounds or is not on UTF-8 character boundaries.
     InvalidSourceRange,
     /// More input was supplied after finishing the serializer.
@@ -200,6 +308,7 @@ impl fmt::Display for Error {
         match self {
             Self::FormatFailed(e) => e.fmt(f),
             Self::UnexpectedEvent => f.write_str("Unexpected event while reconstructing Markdown"),
+            Self::Unrepresentable => f.write_str("Cannot preserve this event block with the supplied parser options"),
             Self::InvalidSourceRange => f.write_str("Invalid Markdown source range"),
             Self::Finished => f.write_str("Markdown serializer has already finished"),
             Self::Failed => f.write_str("Markdown serializer cannot be used after an error"),
@@ -216,27 +325,35 @@ impl From<fmt::Error> for Error {
 }
 
 /// Serialize Markdown with default [`Options`], returning a finished [`State`].
-pub fn cmark<'a, I, E, F>(events: I, formatter: F) -> Result<State, Error>
+/// `parser_options` must match the parser that produced the events.
+pub fn cmark<'a, I, E, F>(events: I, formatter: F, parser_options: ParserOptions) -> Result<State, Error>
 where
     I: IntoIterator<Item = E>,
     E: Borrow<Event<'a>>,
     F: fmt::Write,
 {
-    cmark_with_options(events, formatter, Options::default())
+    cmark_with_options(events, formatter, parser_options, Options::default())
 }
 
 /// Serialize a stream of Markdown events using `options`.
 ///
+/// `parser_options` must match the parser that produced the events.
+/// Calling [`Options::validate`] first is recommended.
 /// The returned [`State`] is finished, including any reference definitions.
 /// For incremental serialization use [`State::process`] and [`State::finish`].
 /// Errors report invalid event streams or a failure of the [`fmt::Write`] writer.
-pub fn cmark_with_options<'a, I, E, F>(events: I, mut formatter: F, options: Options<'_>) -> Result<State, Error>
+pub fn cmark_with_options<'a, I, E, F>(
+    events: I,
+    mut formatter: F,
+    parser_options: ParserOptions,
+    options: Options<'_>,
+) -> Result<State, Error>
 where
     I: IntoIterator<Item = E>,
     E: Borrow<Event<'a>>,
     F: fmt::Write,
 {
-    let mut state = State::new(options);
+    let mut state = State::new(parser_options, options);
     state.process(events, &mut formatter)?;
     state.finish(formatter)?;
     Ok(state)
@@ -263,7 +380,8 @@ where
 ///     ..Default::default()
 /// };
 /// let mut buf = String::new();
-/// cmark_with_options(events.iter(), &mut buf, options);
+/// cmark_with_options(events.iter(), &mut buf, pulldown_cmark::Options::empty(), options)?;
+/// # Ok::<(), pulldown_cmark_to_cmark::Error>(())
 /// ```
 pub fn calculate_code_block_token_count<'a, I, E>(events: I) -> Option<usize>
 where
