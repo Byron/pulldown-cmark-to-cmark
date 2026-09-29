@@ -4,7 +4,7 @@ use std::{
 };
 
 use pulldown_cmark::{Options, Parser};
-use pulldown_cmark_to_cmark::{cmark_resume_with_options, cmark_with_options};
+use pulldown_cmark_to_cmark::{cmark_with_options, State};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let path = env::args_os()
@@ -23,14 +23,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     if event_by_event {
-        let mut state = None;
+        let mut state = State::new(render_options);
         for event in Parser::new_ext(&md, options) {
-            state = cmark_resume_with_options(std::iter::once(event), &mut buf, state.take(), render_options.clone())?
-                .into();
+            state.process(std::iter::once(event), &mut buf)?;
         }
-        if let Some(state) = state {
-            state.finalize(&mut buf)?;
-        }
+        state.finish(&mut buf)?;
     } else {
         cmark_with_options(Parser::new_ext(&md, options), &mut buf, render_options)?;
     }
