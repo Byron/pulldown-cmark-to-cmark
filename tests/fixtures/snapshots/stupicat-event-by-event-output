@@ -198,12 +198,12 @@ $$\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \
 
 This expression uses `\$` to display a dollar sign: $`\sqrt{\$4}`$
 
-To split <span>$</span>100 in half, we calculate $100/2$
+To split <span>\$</span>100 in half, we calculate $100/2$
 
 ## Escapes
 
 We now support escaping special characters, such as in \_\_init\_\_.py and in formulas
-like \\( \int x dx = \frac{x^2}{2} + C \\).
+like \\( \int x dx = \frac{x\^2}{2} + C \\).
 
 What about \*this\* or \*\*that\*\*?
 
@@ -217,8 +217,8 @@ What about \*this\* or \*\*that\*\*?
 
 \[disabled named link\]\[disabled\]
 
-\|table|
-\|-----|
+\|table\|
+\|-----\|
 
 \`code\`
 

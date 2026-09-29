@@ -22,8 +22,14 @@ rust-version = "1.71.1"
 
 [dependencies]
 pulldown-cmark = { version = "0.13.0", default-features = false }
+unicase = "2.6"
 
 [dev-dependencies]
+criterion = { version = "0.5", default-features = false, features = ["cargo_bench_support"] }
 indoc = "2.0.5"
 pretty_assertions = "1.4.0"
 yansi = "1.0.1"
+
+[[bench]]
+name = "reference_links"
+harness = false

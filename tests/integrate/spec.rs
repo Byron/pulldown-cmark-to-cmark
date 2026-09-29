@@ -1,72 +1,11 @@
 use std::ops::Range;
 
-use pulldown_cmark::{utils::TextMergeStream, CodeBlockKind, Event, Options, Parser, Tag, TagEnd};
+use pulldown_cmark::{utils::TextMergeStream, Event, Parser};
 use pulldown_cmark_to_cmark::{cmark, cmark_with_source_range, Progress, State};
 
-const COMMONMARK_SPEC_TEXT: &str = include_str!("../spec/CommonMark/spec.txt");
-const COMMONMARK_SPEC_EXAMPLE_COUNT: usize = 652;
-
-struct MarkdownTestCase {
-    markdown: String,
-    expected_html: String,
-    line_number: usize,
-}
-
-fn is_example_fence(tag: &Tag<'_>) -> bool {
-    if let Tag::CodeBlock(CodeBlockKind::Fenced(fence_value)) = tag {
-        &**fence_value == "example"
-    } else {
-        false
-    }
-}
-
-fn collect_test_case<'a>(events: &mut impl Iterator<Item = (Event<'a>, Range<usize>)>) -> Option<(String, String)> {
-    let Event::Start(begin_tag) = events.next()?.0 else {
-        return None;
-    };
-    let Event::Text(text) = events.next()?.0 else {
-        return None;
-    };
-    let Event::End(end_tag) = events.next()?.0 else {
-        return None;
-    };
-    if !(is_example_fence(&begin_tag) && end_tag == TagEnd::CodeBlock) {
-        return None;
-    }
-    let Some((input, output)) = text.split_once("\n.\n") else {
-        panic!("CommonMark spec example code block has unexpected form.");
-    };
-    Some((format!("{}\n", input.replace('→', "\t")), output.replace('→', "\t")))
-}
-
-fn parse_common_mark_testsuite() -> Vec<MarkdownTestCase> {
-    let opts = Options::empty();
-    let p = Parser::new_ext(COMMONMARK_SPEC_TEXT, opts).into_offset_iter();
-
-    let mut testsuite = vec![];
-    let mut p = p.peekable();
-    while let Some((peeked_event, range)) = p.peek() {
-        match peeked_event {
-            Event::Start(tag) if is_example_fence(tag) => (),
-            _ => {
-                let _ = p.next();
-                continue;
-            }
-        }
-
-        let line_number = COMMONMARK_SPEC_TEXT[..range.start].lines().count() + 1;
-
-        // a new example, insert it into the testsuite.
-        let (markdown, expected_html) = collect_test_case(&mut p).expect("Error parsing example text from spec.");
-        testsuite.push(MarkdownTestCase {
-            line_number,
-            markdown,
-            expected_html,
-        });
-    }
-
-    testsuite
-}
+#[path = "../support/spec.rs"]
+mod fixtures;
+use fixtures::*;
 
 fn assert_roundtrip(case: &MarkdownTestCase, output: &str, example: usize, mode: &str) {
     let expected = TextMergeStream::new(Parser::new(&case.markdown)).collect::<Vec<_>>();
@@ -93,7 +32,12 @@ fn commonmark_spec() {
     assert_eq!(COMMONMARK_SPEC_EXAMPLE_COUNT, cases.len());
     for (index, case) in cases.iter().enumerate() {
         let mut ordinary = String::new();
-        cmark(Parser::new(&case.markdown), &mut ordinary).unwrap();
+        cmark(
+            Parser::new(&case.markdown),
+            &mut ordinary,
+            pulldown_cmark::Options::empty(),
+        )
+        .unwrap();
         assert_roundtrip(case, &ordinary, index + 1, "ordinary");
 
         let mut with_source = String::new();
@@ -103,6 +47,7 @@ fn commonmark_spec() {
                 .map(|(event, range)| (event, Some(range))),
             &case.markdown,
             &mut with_source,
+            pulldown_cmark::Options::empty(),
         )
         .unwrap();
         assert_roundtrip(case, &with_source, index + 1, "source ranges");
@@ -156,14 +101,14 @@ fn commonmark_spec_at_every_event_boundary() {
         let events: Vec<_> = Parser::new(&case.markdown).into_offset_iter().collect();
         for source in [None, Some(case.markdown.as_str())] {
             let mut expected = String::new();
-            let mut state = State::default();
+            let mut state = State::new(pulldown_cmark::Options::empty(), Default::default());
             process(&mut state, &events, source, &mut expected);
             finish(&mut state, &mut expected);
             assert_roundtrip(case, &expected, index + 1, "incremental");
 
             for split in 0..=events.len() {
                 let mut actual = String::new();
-                let mut state = State::default();
+                let mut state = State::new(pulldown_cmark::Options::empty(), Default::default());
                 process(&mut state, &events[..split], source, &mut actual);
                 process(&mut state, &events[split..], source, &mut actual);
                 finish(&mut state, &mut actual);
@@ -176,7 +121,7 @@ fn commonmark_spec_at_every_event_boundary() {
                 );
             }
             let mut actual = String::new();
-            let mut state = State::default();
+            let mut state = State::new(pulldown_cmark::Options::empty(), Default::default());
             for event in &events {
                 process(&mut state, std::slice::from_ref(event), source, &mut actual);
             }

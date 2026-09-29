@@ -5,8 +5,16 @@ fn fmts_both(s: &str) -> String {
     let output = fmts(s);
     let with_source = source_range::fmts(s);
     assert_eq!(
-        TextMergeStream::new(Parser::new_ext(&output, Options::all())).collect::<Vec<_>>(),
-        TextMergeStream::new(Parser::new_ext(&with_source, Options::all())).collect::<Vec<_>>(),
+        TextMergeStream::new(Parser::new_ext(
+            &output,
+            pulldown_cmark_to_cmark::SUPPORTED_PARSER_OPTIONS
+        ))
+        .collect::<Vec<_>>(),
+        TextMergeStream::new(Parser::new_ext(
+            &with_source,
+            pulldown_cmark_to_cmark::SUPPORTED_PARSER_OPTIONS
+        ))
+        .collect::<Vec<_>>(),
         "ordinary and source-range output differ for {s:?}",
     );
     output
@@ -14,24 +22,48 @@ fn fmts_both(s: &str) -> String {
 
 fn fmts(s: &str) -> String {
     let mut output = String::new();
-    cmark(Parser::new_ext(s, Options::all()), &mut output).unwrap();
+    cmark(
+        Parser::new_ext(s, pulldown_cmark_to_cmark::SUPPORTED_PARSER_OPTIONS),
+        &mut output,
+        pulldown_cmark_to_cmark::SUPPORTED_PARSER_OPTIONS,
+    )
+    .unwrap();
     output
 }
 
 fn fmts_with_options(s: &str, options: CmarkToCmarkOptions<'_>) -> String {
     let with_source = source_range::fmts_with_options(s, options.clone());
     let mut output = String::new();
-    cmark_with_options(Parser::new_ext(s, Options::all()), &mut output, options).unwrap();
+    cmark_with_options(
+        Parser::new_ext(s, pulldown_cmark_to_cmark::SUPPORTED_PARSER_OPTIONS),
+        &mut output,
+        pulldown_cmark_to_cmark::SUPPORTED_PARSER_OPTIONS,
+        options,
+    )
+    .unwrap();
     assert_eq!(
-        TextMergeStream::new(Parser::new_ext(&output, Options::all())).collect::<Vec<_>>(),
-        TextMergeStream::new(Parser::new_ext(&with_source, Options::all())).collect::<Vec<_>>(),
+        TextMergeStream::new(Parser::new_ext(
+            &output,
+            pulldown_cmark_to_cmark::SUPPORTED_PARSER_OPTIONS
+        ))
+        .collect::<Vec<_>>(),
+        TextMergeStream::new(Parser::new_ext(
+            &with_source,
+            pulldown_cmark_to_cmark::SUPPORTED_PARSER_OPTIONS
+        ))
+        .collect::<Vec<_>>(),
     );
     output
 }
 
 fn fmte<'a>(events: impl AsRef<[Event<'a>]>) -> String {
     let mut output = String::new();
-    cmark(events.as_ref(), &mut output).unwrap();
+    cmark(
+        events.as_ref(),
+        &mut output,
+        pulldown_cmark_to_cmark::SUPPORTED_PARSER_OPTIONS,
+    )
+    .unwrap();
     output
 }
 
@@ -43,15 +75,23 @@ fn assert_events_eq_both(s: &str) {
 /// Asserts that if we parse our `str` s into a series of events, then serialize them with `cmark`
 /// that we'll get the same series of events when we parse them again.
 fn assert_events_eq(s: &str) {
-    let before_events = Parser::new_ext(s, Options::all());
+    let before_events = Parser::new_ext(s, pulldown_cmark_to_cmark::SUPPORTED_PARSER_OPTIONS);
 
     let mut buf = String::new();
-    cmark(before_events, &mut buf).unwrap();
+    cmark(
+        before_events,
+        &mut buf,
+        pulldown_cmark_to_cmark::SUPPORTED_PARSER_OPTIONS,
+    )
+    .unwrap();
 
-    let before_events = TextMergeStream::new(Parser::new_ext(s, Options::all()));
-    let after_events = TextMergeStream::new(Parser::new_ext(&buf, Options::all()));
-    println!("{buf}");
-    assert_eq!(before_events.collect::<Vec<_>>(), after_events.collect::<Vec<_>>());
+    let before_events = TextMergeStream::new(Parser::new_ext(s, pulldown_cmark_to_cmark::SUPPORTED_PARSER_OPTIONS));
+    let after_events = TextMergeStream::new(Parser::new_ext(&buf, pulldown_cmark_to_cmark::SUPPORTED_PARSER_OPTIONS));
+    assert_eq!(
+        before_events.collect::<Vec<_>>(),
+        after_events.collect::<Vec<_>>(),
+        "round trip failed for {s:?}: {buf:?}",
+    );
 }
 
 mod lazy_newlines {
@@ -157,6 +197,57 @@ mod inline_elements {
     }
 
     #[test]
+    fn nested_emphasis_keeps_intraword_delimiters() {
+        for input in [
+            "***a*b*c*",
+            "_*a* x*y*z_",
+            "_*a* x*y* z_",
+            "_*a* x *y*z_",
+            "_*a* x*é*世_",
+            "_(*!y*z)_",
+            "__b *b*\u{301}_]__",
+        ] {
+            super::assert_events_eq_both(input);
+        }
+    }
+
+    #[test]
+    fn nested_delimiter_runs_round_trip() {
+        for depth in 1..=8 {
+            for markers in 0..1 << depth {
+                let mut input = String::from("a");
+                for level in 0..depth {
+                    let marker = if markers & (1 << level) == 0 { '*' } else { '_' };
+                    input = format!("{marker}a {input} b{marker}");
+                }
+                super::assert_events_eq_both(&input);
+            }
+        }
+        for depth in 1..=32 {
+            for marker in ['*', '_'] {
+                let run = marker.to_string().repeat(depth);
+                super::assert_events_eq_both(&format!("{run}a{}", format!(" b{marker}").repeat(depth)));
+                super::assert_events_eq_both(&format!("{}a{run}", format!("{marker}b ").repeat(depth)));
+            }
+        }
+        for input in [
+            "*a*_b_",
+            "*a*__b__",
+            r"*\**_a_",
+            r"*_\*\*_*a* b*",
+            "**_a_**",
+            "__a**b**c__",
+            "***a*b*c*",
+            "_*a*b_",
+            "___a!***b****c?___",
+            "****a* b **c****",
+            "****a** b *c****",
+        ] {
+            super::assert_events_eq_both(input);
+        }
+    }
+
+    #[test]
     fn various_with_custom_options() {
         let custom_options = CmarkToCmarkOptions {
             emphasis_token: '_',
@@ -167,6 +258,16 @@ mod inline_elements {
         let s = fmts_with_options("_a_ b **c**\n<br>\nd\n\ne `c`", custom_options);
 
         assert_eq!(s, "_a_ b **c**\n<br>\nd\n\ne `c`".to_string());
+    }
+
+    #[test]
+    fn delimiter_validation_preserves_nonstandard_tokens() {
+        let options = CmarkToCmarkOptions {
+            emphasis_token: '^',
+            strong_token: "!!",
+            ..Default::default()
+        };
+        assert_eq!(fmts_with_options("*a* *b* **c** **d**", options), "^a^ ^b^ !!c!! !!d!!");
     }
 
     #[test]
@@ -233,6 +334,7 @@ println!("Hello, world!");
             iter.map(|e| (e, None)),
             input,
             &mut actual,
+            pulldown_cmark::Options::empty(),
             Default::default(),
         )
         .unwrap();
@@ -413,10 +515,7 @@ mod blockquote {
 
         assert_events_eq_both(s);
 
-        assert_eq!(
-            fmts_both(s),
-            "* \n   > \n   > * foo\n   >   * baz\n   >\n  * \n     > \n     > bar"
-        );
+        assert_eq!(fmts_both(s), "* > \n   > * foo\n   >   * baz\n  \n  * > bar");
     }
 
     #[test]
@@ -508,9 +607,10 @@ mod codeblock {
 
     #[test]
     fn html_indented() {
+        super::assert_events_eq_both("  <!-- foo -->\n\n    <!-- foo -->");
         assert_eq!(
             fmts_both("  <!-- foo -->\n\n    <!-- foo -->"),
-            "  <!-- foo -->\n\n    <!-- foo -->\n"
+            "  <!-- foo -->\n\n    <!-- foo -->"
         );
     }
 }
@@ -523,7 +623,7 @@ mod table {
 
     #[test]
     fn it_generates_equivalent_table_markdown() {
-        use pulldown_cmark::{Options, Parser};
+        use pulldown_cmark::Parser;
 
         let original_table_markdown = indoc!(
             "
@@ -533,8 +633,11 @@ mod table {
             | col 2 is      | centered      |   $12 | y  |02|
             | zebra stripes | are neat      |    $1 | z  |03|"
         );
-        let p = Parser::new_ext(original_table_markdown, Options::all());
-        let original_events: Vec<_> = p.into_iter().collect();
+        let p = Parser::new_ext(
+            original_table_markdown,
+            pulldown_cmark_to_cmark::SUPPORTED_PARSER_OPTIONS,
+        );
+        let original_events: Vec<_> = pulldown_cmark::utils::TextMergeStream::new(p).collect();
 
         let generated_markdown = fmte(&original_events);
 
@@ -544,21 +647,21 @@ mod table {
                 "
             |Tables|Are|Cool|yo||
             |------|:-:|---:|:-|-|
-            |col 3 is|right-aligned|$1600|x|01|
-            |col 2 is|centered|$12|y|02|
-            |zebra stripes|are neat|$1|z|03|"
+            |col 3 is|right-aligned|\\$1600|x|01|
+            |col 2 is|centered|\\$12|y|02|
+            |zebra stripes|are neat|\\$1|z|03|"
             )
         );
 
-        let p = Parser::new_ext(&generated_markdown, Options::all());
-        let generated_events: Vec<_> = p.into_iter().collect();
+        let p = Parser::new_ext(&generated_markdown, pulldown_cmark_to_cmark::SUPPORTED_PARSER_OPTIONS);
+        let generated_events: Vec<_> = pulldown_cmark::utils::TextMergeStream::new(p).collect();
 
         assert_eq!(original_events, generated_events);
     }
 
     #[test]
     fn it_generates_equivalent_table_markdown_with_empty_headers() {
-        use pulldown_cmark::{Options, Parser};
+        use pulldown_cmark::Parser;
 
         let original_table_markdown = indoc!(
             "
@@ -568,8 +671,11 @@ mod table {
             | col 2 is      | centered      |   $12 | y  |02|
             | zebra stripes | are neat      |    $1 | z  |03|"
         );
-        let p = Parser::new_ext(original_table_markdown, Options::all());
-        let original_events: Vec<_> = p.into_iter().collect();
+        let p = Parser::new_ext(
+            original_table_markdown,
+            pulldown_cmark_to_cmark::SUPPORTED_PARSER_OPTIONS,
+        );
+        let original_events: Vec<_> = pulldown_cmark::utils::TextMergeStream::new(p).collect();
 
         let generated_markdown = fmte(&original_events);
 
@@ -579,20 +685,20 @@ mod table {
                 "
             ||||||
             |:-:|:-|-:|:-:|:-:|
-            |col 3 is|right-aligned|$1600|x|01|
-            |col 2 is|centered|$12|y|02|
-            |zebra stripes|are neat|$1|z|03|"
+            |col 3 is|right-aligned|\\$1600|x|01|
+            |col 2 is|centered|\\$12|y|02|
+            |zebra stripes|are neat|\\$1|z|03|"
             )
         );
 
-        let p = Parser::new_ext(&generated_markdown, Options::all());
-        let generated_events: Vec<_> = p.into_iter().collect();
+        let p = Parser::new_ext(&generated_markdown, pulldown_cmark_to_cmark::SUPPORTED_PARSER_OPTIONS);
+        let generated_events: Vec<_> = pulldown_cmark::utils::TextMergeStream::new(p).collect();
 
         assert_eq!(original_events, generated_events);
     }
     #[test]
     fn table_with_pipe_in_column() {
-        use pulldown_cmark::{Options, Parser};
+        use pulldown_cmark::Parser;
 
         let original_table_markdown = indoc!(
             r"
@@ -600,8 +706,11 @@ mod table {
             |----|------|
             | \| | a\|b |"
         );
-        let p = Parser::new_ext(original_table_markdown, Options::all());
-        let original_events: Vec<_> = p.into_iter().collect();
+        let p = Parser::new_ext(
+            original_table_markdown,
+            pulldown_cmark_to_cmark::SUPPORTED_PARSER_OPTIONS,
+        );
+        let original_events: Vec<_> = pulldown_cmark::utils::TextMergeStream::new(p).collect();
 
         let generated_markdown = fmte(&original_events);
 
@@ -615,8 +724,8 @@ mod table {
             )
         );
 
-        let p = Parser::new_ext(&generated_markdown, Options::all());
-        let generated_events: Vec<_> = p.into_iter().collect();
+        let p = Parser::new_ext(&generated_markdown, pulldown_cmark_to_cmark::SUPPORTED_PARSER_OPTIONS);
+        let generated_events: Vec<_> = pulldown_cmark::utils::TextMergeStream::new(p).collect();
 
         assert_eq!(original_events, generated_events);
     }
@@ -807,7 +916,7 @@ mod escapes {
 
 mod list {
     use super::{
-        assert_events_eq_both, cmark, fmts_both, fmts_with_options, CmarkToCmarkOptions, Event, Options, Parser, State,
+        assert_events_eq_both, fmts_both, fmts_with_options, CmarkToCmarkOptions, Event, Options, Parser, State,
         TagEnd, TextMergeStream,
     };
     use indoc::indoc;
@@ -925,8 +1034,16 @@ mod list {
             ..Default::default()
         };
         let output = fmts_with_options(input, options);
-        let before: Vec<_> = TextMergeStream::new(Parser::new_ext(input, Options::all())).collect();
-        let after: Vec<_> = TextMergeStream::new(Parser::new_ext(&output, Options::all())).collect();
+        let before: Vec<_> = TextMergeStream::new(Parser::new_ext(
+            input,
+            pulldown_cmark_to_cmark::SUPPORTED_PARSER_OPTIONS,
+        ))
+        .collect();
+        let after: Vec<_> = TextMergeStream::new(Parser::new_ext(
+            &output,
+            pulldown_cmark_to_cmark::SUPPORTED_PARSER_OPTIONS,
+        ))
+        .collect();
         assert_eq!(before, after, "output:\n{output}");
     }
 
@@ -967,7 +1084,7 @@ mod list {
 
                para"
         );
-        let events: Vec<_> = Parser::new_ext(input, Options::all()).collect();
+        let events: Vec<_> = Parser::new_ext(input, pulldown_cmark_to_cmark::SUPPORTED_PARSER_OPTIONS).collect();
         let split = 1 + events
             .iter()
             .position(|event| *event == Event::End(TagEnd::List(false)))
@@ -975,7 +1092,7 @@ mod list {
         let (before, after) = events.split_at(split);
 
         let mut output = String::new();
-        let mut state = State::default();
+        let mut state = State::new(pulldown_cmark_to_cmark::SUPPORTED_PARSER_OPTIONS, Default::default());
         state.process(before, &mut output).unwrap();
         state.process(after, &mut output).unwrap();
         state.finish(&mut output).unwrap();
@@ -1384,8 +1501,36 @@ mod list {
     }
 
     #[test]
+    fn block_only_list_items_keep_block_boundaries() {
+        for input in [
+            "- <hr>\n\n  # h",
+            "- > a\n\n  > b",
+            "- <hr>\n\n  > b",
+            "- <hr>\n\n  ---",
+            "1. <hr>\n\n   # h",
+            "> - <hr>\n>\n>   # h",
+            "- <pre/>\n\n  # h",
+            "- <script/>\n\n  > b",
+            "- | a |\n  | - |\n  | b |\n\n  text",
+            "- [^a]: def\n\n  text",
+        ] {
+            assert_events_eq_both(input);
+            assert_events_eq_both(&format!("{input}\n- last"));
+        }
+    }
+
+    #[test]
     fn output_is_independent_of_resume_points() {
         for input in [
+            "***a*b*c*",
+            "_*a*b_",
+            "_*a* x*y*z_",
+            "*a*_b_",
+            "****a* b **c****",
+            "- term\n  : def\n\n  text",
+            "> - term\n>   : def\n>\n>   text",
+            "- <hr>\n\n  # h",
+            "- > a\n\n  > b",
             "* item\n  # heading",
             "* <!-- comment -->\n  `code`",
             "`term`\n\n: def",
@@ -1396,18 +1541,43 @@ mod list {
             "* item\n  * a\n    > q\n    >\n  text",
             "- a\n  - b\n\n    c\n- d",
         ] {
-            let events: Vec<_> = Parser::new_ext(input, Options::all()).collect();
-            let mut expected = String::new();
-            cmark(events.iter(), &mut expected).unwrap();
-
-            for split in 0..=events.len() {
-                let (before, after) = events.split_at(split);
-                let mut output = String::new();
-                let mut state = State::default();
-                state.process(before, &mut output).unwrap();
-                state.process(after, &mut output).unwrap();
-                state.finish(&mut output).unwrap();
-                assert_eq!(output, expected, "input {input:?} split at event {split}");
+            for options in [
+                Options::empty(),
+                Options::ENABLE_DEFINITION_LIST,
+                pulldown_cmark_to_cmark::SUPPORTED_PARSER_OPTIONS,
+            ] {
+                let events: Vec<_> = Parser::new_ext(input, options).into_offset_iter().collect();
+                let expected_events = TextMergeStream::new(Parser::new_ext(input, options)).collect::<Vec<_>>();
+                for source in [false, true] {
+                    let mut expected = None;
+                    for split in 0..=events.len() {
+                        let mut output = String::new();
+                        let mut state = State::new(options, Default::default());
+                        for part in [&events[..split], &events[split..]] {
+                            if source {
+                                state.process_with_source_range(
+                                    part.iter().map(|(event, range)| (event, Some(range.clone()))),
+                                    input,
+                                    &mut output,
+                                )
+                            } else {
+                                state.process(part.iter().map(|(event, _)| event), &mut output)
+                            }
+                            .unwrap();
+                        }
+                        state.finish(&mut output).unwrap();
+                        assert_eq!(
+                            expected_events,
+                            TextMergeStream::new(Parser::new_ext(&output, options)).collect::<Vec<_>>(),
+                            "input {input:?}, split {split}, source {source}, options {options:?}: {output:?}",
+                        );
+                        assert_eq!(
+                            &output,
+                            expected.get_or_insert_with(|| output.clone()),
+                            "input {input:?}, split {split}, source {source}, options {options:?}",
+                        );
+                    }
+                }
             }
         }
     }
@@ -1597,7 +1767,7 @@ key2: value2
         let events = Parser::new_ext(input, opts);
 
         let mut output = String::new();
-        let mut state = cmark(events, &mut output).unwrap();
+        let mut state = cmark(events, &mut output, opts).unwrap();
         state.finish(&mut output).unwrap();
 
         assert_eq!(input, output);
@@ -1617,7 +1787,7 @@ key = value2
 
         let events = Parser::new_ext(input, opts);
         let mut output = String::new();
-        let mut state = cmark(events, &mut output).unwrap();
+        let mut state = cmark(events, &mut output, opts).unwrap();
         state.finish(&mut output).unwrap();
 
         assert_eq!(input, output);
@@ -1644,6 +1814,7 @@ key: value2
             let mut state = cmark_with_options(
                 events,
                 &mut output,
+                opts,
                 pulldown_cmark_to_cmark::Options {
                     newlines_after_metadata: i,
                     ..Default::default()
@@ -1678,6 +1849,7 @@ key = value2
             let mut state = cmark_with_options(
                 events,
                 &mut output,
+                opts,
                 pulldown_cmark_to_cmark::Options {
                     newlines_after_metadata: i,
                     ..Default::default()
@@ -1694,6 +1866,21 @@ key = value2
 
 mod definition_list {
     use super::{assert_events_eq, assert_events_eq_both};
+
+    #[test]
+    fn following_text_stays_outside_a_definition_in_a_tight_item() {
+        for term in ["term", "`term`", "*term*"] {
+            for definition in ["def", "`def`", "*def*", "<!-- comment -->", "> quote", "<hr>"] {
+                for following in ["text", "`code`", "*emphasis*", "other\n: second"] {
+                    let input = format!("- {term}\n  : {definition}\n\n  {}", following.replace('\n', "\n  "));
+                    assert_events_eq_both(&input);
+                    assert_events_eq_both(&format!("{input}\n- last"));
+                    assert_events_eq_both(&format!("> {}", input.replace('\n', "\n> ")));
+                    assert_events_eq_both(&format!("-\n  {}", input.replace('\n', "\n  ")));
+                }
+            }
+        }
+    }
 
     #[test]
     fn ending_definition_does_not_restart_blockquote() {
@@ -1736,7 +1923,7 @@ Second Term
 }
 
 mod source_range {
-    use pulldown_cmark::{utils::TextMergeStream, Options, Parser};
+    use pulldown_cmark::{utils::TextMergeStream, Parser};
     use pulldown_cmark_to_cmark::{
         cmark_with_source_range, cmark_with_source_range_and_options, Options as CmarkToCmarkOptions,
     };
@@ -1744,11 +1931,12 @@ mod source_range {
     pub fn fmts(s: &str) -> String {
         let mut output = String::new();
         cmark_with_source_range(
-            Parser::new_ext(s, Options::all())
+            Parser::new_ext(s, pulldown_cmark_to_cmark::SUPPORTED_PARSER_OPTIONS)
                 .into_offset_iter()
                 .map(|(event, range)| (event, Some(range))),
             s,
             &mut output,
+            pulldown_cmark_to_cmark::SUPPORTED_PARSER_OPTIONS,
         )
         .unwrap();
         output
@@ -1757,11 +1945,12 @@ mod source_range {
     pub fn fmts_with_options(s: &str, options: CmarkToCmarkOptions<'_>) -> String {
         let mut output = String::new();
         cmark_with_source_range_and_options(
-            Parser::new_ext(s, Options::all())
+            Parser::new_ext(s, pulldown_cmark_to_cmark::SUPPORTED_PARSER_OPTIONS)
                 .into_offset_iter()
                 .map(|(event, range)| (event, Some(range))),
             s,
             &mut output,
+            pulldown_cmark_to_cmark::SUPPORTED_PARSER_OPTIONS,
             options,
         )
         .unwrap();
@@ -1771,8 +1960,13 @@ mod source_range {
     pub fn assert_events_eq(s: &str) {
         let output = fmts(s);
         assert_eq!(
-            TextMergeStream::new(Parser::new_ext(s, Options::all())).collect::<Vec<_>>(),
-            TextMergeStream::new(Parser::new_ext(&output, Options::all())).collect::<Vec<_>>(),
+            TextMergeStream::new(Parser::new_ext(s, pulldown_cmark_to_cmark::SUPPORTED_PARSER_OPTIONS))
+                .collect::<Vec<_>>(),
+            TextMergeStream::new(Parser::new_ext(
+                &output,
+                pulldown_cmark_to_cmark::SUPPORTED_PARSER_OPTIONS
+            ))
+            .collect::<Vec<_>>(),
             "source-range round trip failed for {s:?}: {output:?}",
         );
     }

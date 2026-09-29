@@ -17,6 +17,8 @@ jobs:
       - name: tests
         run: |
           make tests
+      - name: exhaustive differential round trips
+        run: cargo test --release --test differential -- --include-ignored --nocapture
 
   msrv:
     runs-on: ubuntu-latest
