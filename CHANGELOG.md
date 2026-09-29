@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+Beware that this is basically an SI rewrite, which I reviewed from an API perspective.
+It *should* be way more correct than the previous version, at least tests would
+say so.
+
+Reason: I wanted to prevent piece-meal SI-PRs to fix individual aspects of the prior
+version, which was pretty sub-par in the correctness department.
+
 ### Changed
 
 - **Breaking:** require the originating parser flags in `State::new` and all
