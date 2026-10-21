@@ -18,5 +18,8 @@ clippy: ## run clippy
 journeytests: ## run journey tests
 	./tests/cat.sh
 
+fuzz: ## run fuzz tests for 30 seconds
+	cargo install cargo-fuzz
+	cargo fuzz run round-trip -- -only_ascii=1 -max_total_time=30
 
-tests: docs clippy unittests journeytests  ## run all tests
+tests: docs clippy unittests journeytests fuzz  ## run all tests
