@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 23.0.1 (2026-11-04)
+
+### Bug Fixes
+
+ - <csr-id-d4fb2938562ecc3c7f539bafcb22223aefede227/> avoid block-marker escapes in table cells
+   <!-- agent -->
+   Version 23.0.0 added unnecessary escapes to decimals, lone hyphens, and
+   ordered markers inside GFM table cells. The issue reproduction and header/body
+   regression test fail before this change.
+   
+   GFM section 4.10 specifies inline parsing in cells and excludes block-level
+   elements: https://github.github.com/gfm/#tables-extension-. Keep block-only
+   escaping outside tables while preserving inline delimiter and pipe escaping
+   within them, including nested links and emphasis.
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 2 commits contributed to the release.
+ - 36 days passed between releases.
+ - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
+ - 1 unique issue was worked on: [#115](https://github.com/Byron/pulldown-cmark-to-cmark/issues/115)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#115](https://github.com/Byron/pulldown-cmark-to-cmark/issues/115)**
+    - Avoid block-marker escapes in table cells ([`d4fb293`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/d4fb2938562ecc3c7f539bafcb22223aefede227))
+ * **Uncategorized**
+    - Merge pull request #116 from Byron/fix-escapes ([`aa3b91a`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/aa3b91ae70c9e222af7ca735e1e18a21dc7d5334))
+</details>
+
 ## 23.0.0 (2026-09-29)
 
 Beware that this is basically an SI rewrite, which I reviewed from an API perspective.
@@ -144,7 +180,7 @@ version, which was pretty sub-par in the correctness department.
 
 <csr-read-only-do-not-edit/>
 
- - 8 commits contributed to the release.
+ - 9 commits contributed to the release.
  - 1 day passed between releases.
  - 5 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
@@ -156,6 +192,7 @@ version, which was pretty sub-par in the correctness department.
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release pulldown-cmark-to-cmark v23.0.0 ([`bae0dd3`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/bae0dd3472a2e11d9badf93dc18437dac6197461))
     - Prepare changelog prior to release ([`c2772f5`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/c2772f5ab5cf5230a84a14fdd6274721920e9675))
     - Merge pull request #114 from Byron/more-fixes ([`b69f3ea`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/b69f3ea56e723713e75d69131cb06ed01b9dea05))
     - Require parser options and validate round-trip configurations ([`a077980`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/a0779808d34ee0672837d9393a8572416bc7ca38))
