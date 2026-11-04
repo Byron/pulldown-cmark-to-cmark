@@ -622,6 +622,56 @@ mod table {
     use super::fmte;
 
     #[test]
+    fn block_markers_in_cells_do_not_need_escaping() {
+        // GFM §4.10: cells parse inlines; block-level elements cannot be inserted.
+        for (input, expected) in [
+            ("0.05", "0.05"),
+            ("1. one<br>2. two", "1. one<br>2. two"),
+            ("1) one<br>2) two", "1) one<br>2) two"),
+            ("-", "-"),
+            ("+", "+"),
+            ("- item", "- item"),
+            ("+ item", "+ item"),
+            ("---", "---"),
+            ("===", "==="),
+            ("# heading", "# heading"),
+            ("> quote", "> quote"),
+            (": definition", ": definition"),
+            ("[0.05](/url)", "[0.05](/url)"),
+            ("*1. one*", "*1. one*"),
+            (r"\*literal\*", r"\*literal\*"),
+            (r"a\|b", r"a\|b"),
+        ] {
+            let markdown = format!("|{input}|\n|-|\n|{input}|");
+            let output = super::fmts_both(&markdown);
+            let row = format!("|{expected}|");
+            assert_eq!(output.lines().next(), Some(row.as_str()), "header: {input:?}");
+            assert_eq!(output.lines().last(), Some(row.as_str()), "body: {input:?}");
+            super::assert_events_eq_both(&markdown);
+        }
+    }
+
+    #[test]
+    fn issue_115_table_output() {
+        let markdown = "| a | b |\n|---|---|\n| x | 0.05 |\n| y | - |\n| z | 1. one<br>2. two |\n";
+        let parser_options = pulldown_cmark::Options::ENABLE_TABLES
+            | pulldown_cmark::Options::ENABLE_STRIKETHROUGH
+            | pulldown_cmark::Options::ENABLE_HEADING_ATTRIBUTES;
+        let mut output = String::new();
+        super::cmark_with_options(
+            pulldown_cmark::Parser::new_ext(markdown, parser_options),
+            &mut output,
+            parser_options,
+            super::CmarkToCmarkOptions {
+                increment_ordered_list_bullets: true,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(output, "|a|b|\n|-|-|\n|x|0.05|\n|y|-|\n|z|1. one<br>2. two|");
+    }
+
+    #[test]
     fn it_generates_equivalent_table_markdown() {
         use pulldown_cmark::Parser;
 

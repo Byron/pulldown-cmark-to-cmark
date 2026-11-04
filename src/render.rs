@@ -1546,9 +1546,12 @@ impl Renderer {
         literal_runs: bool,
     ) -> String {
         let mut escaped = String::with_capacity(text.len());
-        let line_start = self.output.line_start
-            || self.output.text.is_empty()
-            || self.frames.last().is_some_and(|f| f.start == self.output.text.len());
+        let in_table = self.in_table();
+        // Table cells only contain inlines, so block markers need no escaping.
+        let line_start = !in_table
+            && (self.output.line_start
+                || self.output.text.is_empty()
+                || self.frames.last().is_some_and(|f| f.start == self.output.text.len()));
         let marker_end = text.as_bytes().get(1).map_or(
             matches!(next, None | Some(Event::End(_) | Event::SoftBreak | Event::HardBreak)),
             |c| c.is_ascii_whitespace() || matches!(c, b'-' | b'+' | b'='),
@@ -1582,7 +1585,7 @@ impl Renderer {
                 _ => {
                     if matches!(c, '*' | '[' | ']' | '`' | '<' | '~')
                         || (c == '\\' && text[i + 1..].chars().next().map_or(true, |c| c.is_ascii_punctuation()))
-                        || (c == '>' && i == 0)
+                        || (c == '>' && i == 0 && !in_table)
                         || (c == '^'
                             && (self.parser_options.contains(ParserOptions::ENABLE_SUPERSCRIPT)
                                 || !text[..i].chars().next_back().is_some_and(char::is_alphanumeric)))
@@ -1599,12 +1602,13 @@ impl Renderer {
                             && !(text[..i].chars().next_back().is_some_and(char::is_alphanumeric)
                                 && text[i + 1..].chars().next().is_some_and(char::is_alphanumeric)))
                         || (c == '|'
-                            && (i == 0
-                                || self.in_table()
-                                || self.parser_options.contains(ParserOptions::ENABLE_TABLES)))
-                        || (c == '#' && (i == 0 || heading))
+                            && (i == 0 || in_table || self.parser_options.contains(ParserOptions::ENABLE_TABLES)))
+                        || (c == '#' && (i == 0 && !in_table || heading))
                         || (matches!(c, '-' | '+' | '=') && i == 0 && line_start && marker_end)
-                        || (matches!(c, '.' | ')') && i > 0 && text[..i].bytes().all(|c| c.is_ascii_digit()))
+                        || (matches!(c, '.' | ')')
+                            && !in_table
+                            && i > 0
+                            && text[..i].bytes().all(|c| c.is_ascii_digit()))
                         || (c == '!' && i + 1 == text.len() && link_next)
                         || (c == options.emphasis_token && !matches!(c, '*' | '_'))
                     {
