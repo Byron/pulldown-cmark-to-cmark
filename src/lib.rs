@@ -316,7 +316,14 @@ impl fmt::Display for Error {
     }
 }
 
-impl std::error::Error for Error {}
+impl std::error::Error for Error {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::FormatFailed(e) => Some(e),
+            _ => None,
+        }
+    }
+}
 
 impl From<fmt::Error> for Error {
     fn from(e: fmt::Error) -> Self {
