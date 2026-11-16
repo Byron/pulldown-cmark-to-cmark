@@ -120,6 +120,27 @@ mod containers {
     }
 }
 
+mod footnote {
+    use pulldown_cmark::{Event::*, Tag, TagEnd};
+
+    use super::es;
+
+    #[test]
+    fn footnote_near_delimited() {
+        assert_eq!(
+            es([
+                Start(Tag::Paragraph),
+                Start(Tag::Emphasis), // This introduces delimiters, forcing actual validation.
+                Text("ita".into()),
+                End(TagEnd::Emphasis),
+                FootnoteReference("ref".into()),
+                End(TagEnd::Paragraph)
+            ]),
+            "*ita*[^ref]"
+        );
+    }
+}
+
 mod end {
     use pulldown_cmark::{BlockQuoteKind, CodeBlockKind, CowStr, Event::*, HeadingLevel, LinkType::*, Tag, TagEnd};
 
