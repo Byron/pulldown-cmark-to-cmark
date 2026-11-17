@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 23.0.2 (2026-11-17)
 
 add `Error::source()` implementation.
 
@@ -13,7 +13,7 @@ add `Error::source()` implementation.
 
 <csr-read-only-do-not-edit/>
 
-- 3 commits contributed to the release.
+- 4 commits contributed to the release.
 - 12 days passed between releases.
 - 0 commits were understood as [conventional](https://www.conventionalcommits.org).
 - 0 issues like '(#ID)' were seen in commit messages
@@ -25,13 +25,12 @@ add `Error::source()` implementation.
 <details><summary>view details</summary>
 
 - **Uncategorized**
+  - Edit changelog prior to release ([`19c243d`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/19c243d751199a17345f449da787ab8cb9c4798a))
   - Adjusting changelogs prior to release of pulldown-cmark-to-cmark v23.0.2 ([`f2209ba`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/f2209babeb8e313d76e07a6668e5659d3a817122))
   - Merge pull request #117 from ISSOtm/err-src ([`a0d0dbe`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/a0d0dbe1f8538506eb93f30f707e47d63b86fc33))
   - Implement `Error::source` ([`6cde5b1`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/6cde5b1f5a75a2dc8151d9d01dd7f7ac1c027453))
 
 </details>
-
-## 23.0.2 (2026-11-16)
 
 ## 23.0.1 (2026-11-04)
 
