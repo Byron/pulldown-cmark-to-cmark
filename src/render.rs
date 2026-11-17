@@ -288,6 +288,8 @@ impl Renderer {
                 }
             }
             if !has_delimiters {
+                // Without context-sensitive delimiters, ordinary rendering has
+                // no alternate delimiter spellings to select by trial parsing.
                 let output = self.render_block(events, next, options, false, Delimiters::PREFERRED)?;
                 return Ok((output, self.reference_definitions()?));
             }
@@ -1891,7 +1893,7 @@ fn events_match(
     use pulldown_cmark::{utils::TextMergeStream, BrokenLink};
     // Leading blank lines disable metadata recognition, so only prefix a
     // separator when this block actually has reference definitions.
-    let markdown = if definitions.is_empty() {
+    let mut markdown = if definitions.is_empty() {
         Cow::Borrowed(output)
     } else {
         Cow::Owned(format!("{definitions}\n\n{output}"))
@@ -1910,6 +1912,18 @@ fn events_match(
         expected.insert(0, Event::Start(Tag::Paragraph));
         expected.push(Event::End(TagEnd::Paragraph));
     }
+    let block_end = markdown.len();
+    if parser_options.contains(ParserOptions::ENABLE_FOOTNOTES)
+        && !parser_options.contains(ParserOptions::ENABLE_OLD_FOOTNOTES)
+    {
+        // GFM resolves references only with definitions, which may be in other
+        // blocks or absent from an inline fragment. Supply them only for validation.
+        for event in &expected {
+            if let Event::FootnoteReference(name) = event {
+                markdown.to_mut().push_str(&format!("\n\n[^{name}]:"));
+            }
+        }
+    }
     {
         // Definitions needed by this block are in `markdown`. An otherwise
         // unresolved label can still become a link through an earlier block.
@@ -1919,7 +1933,11 @@ fn events_match(
             None
         };
         let parser = Parser::new_with_broken_link_callback(&markdown, parser_options, Some(callback));
-        let matches = TextMergeStream::new(parser).eq(expected.iter().cloned());
+        // Compare the rendered block, excluding the temporary footnote definitions.
+        let parsed = parser
+            .into_offset_iter()
+            .filter_map(|(event, range)| (range.start <= block_end).then_some(event));
+        let matches = TextMergeStream::new(parsed).eq(expected.iter().cloned());
         matches && !resolves_earlier
     }
 }

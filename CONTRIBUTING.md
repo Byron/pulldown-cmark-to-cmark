@@ -9,6 +9,10 @@
 * Add yourself to the `authors` line in the [`Cargo.toml`][cargo-authors] file.
 * Initiate a pull request
 
+### Commit messages and AI contributions
+
+All contributors must follow the [commit-message and AI communication rules](AGENTS.md).
+
 [fork]: https://github.com/Byron/pulldown-cmark-to-cmark/fork
 [cargo-authors]: https://github.com/Byron/pulldown-cmark-to-cmark/blob/master/Cargo.toml#L4 
 [unit-tests]: https://github.com/Byron/pulldown-cmark-to-cmark/blob/76667725b61be24890fbdfed5e7ecdb4c1ad1dc8/tests/fmt.rs#L146 

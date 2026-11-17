@@ -316,7 +316,7 @@ fn retained_regressions(multiline: bool) {
     checks.finish("Retained regressions");
 }
 
-const INTERACTIONS: &str = "# Heading *emphasis* {#id .class}\n\n***a*b*c* _*a* x*y*z_\n\n- [x] task\n- term\n  : def\n\n  text\n\n> [!NOTE]\n> a ~~strike~~ and ^up^ ~down~\n\nA [link] and [^note].\n\n[link]: /target \"title\"\n\n[^note]: footnote\n\n| a | b |\n|:-|--:|\n| $x\\|y$ | `a\\|b` |\n\nterm\n\n: definition\n\n$$x+y$$\n\n~~~ rust\ncode\n~~~\n\n<!-- comment -->\n";
+const INTERACTIONS: &str = "# Heading *emphasis* {#id .class}\n\n***a*b*c* _*a* x*y*z_\n\n- [x] task\n- term\n  : def\n\n  text\n\n> [!NOTE]\n> a ~~strike~~ and ^up^ ~down~\n\nA [link] and *emphasis*[^note].\n\n[link]: /target \"title\"\n\n[^note]: footnote\n\n| a | b |\n|:-|--:|\n| $x\\|y$ | `a\\|b` |\n\nterm\n\n: definition\n\n$$x+y$$\n\n~~~ rust\ncode\n~~~\n\n<!-- comment -->\n";
 
 #[test]
 #[ignore = "exhaustive configuration probes; run in release mode"]
