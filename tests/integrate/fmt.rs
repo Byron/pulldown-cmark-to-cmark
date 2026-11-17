@@ -130,6 +130,22 @@ mod inline_elements {
     }
 
     #[test]
+    fn footnotes_with_delimiters_round_trip() {
+        for input in [
+            "*ita*[^ref]\n\n[^ref]: note",
+            "[^ref]: *note*\n\n*ita*[^ref]",
+            "_*a* x*y*z_[^ref]\n\n[^ref]: note",
+            "*ita*[^ref][^REF] [^missing]\n\n[^ref]: *first*\n\n    **second**\n\n[^other]: *third*",
+            "- *ita*[^ref]\n\n  [^ref]: *note*",
+            "| *ita*[^ref] |\n| --- |\n\n[^ref]: note",
+        ] {
+            super::assert_events_eq_both(input);
+        }
+        let input = "*a < b &amp; c*[^ref]\n\n[^ref]: note";
+        assert_eq!(source_range::fmts(input), input);
+    }
+
+    #[test]
     fn multiline_footnote() {
         assert_eq!(
             fmts_both("a [^b]\n\n[^b]: this is\n    one footnote"),
