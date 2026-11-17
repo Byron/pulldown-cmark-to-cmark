@@ -5,6 +5,50 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 23.0.3 (2026-11-17)
+
+### Bug Fixes
+
+- <csr-id-6226b77f3c6977be4fa5d4bcd8bed3cf8ea2f8e0/> validate GFM footnote references alongside emphasis
+  <!-- agent -->
+  Codex addressed the reported failure when `Emphasis` occurs next to a
+  `FootnoteReference`. Delimiters trigger trial parsing of the rendered
+  block, but GFM recognizes a footnote reference only when its definition
+  is present. Definitions elsewhere in the document are absent from that
+  block, so validation incorrectly returns `Error::Unrepresentable`.
+  
+  Supply temporary definitions for the expected references during trial
+  parsing and exclude their events by source offset. This preserves GFM
+  parsing rules and does not emit the temporary definitions.
+  
+  Explain why the delimiter-free path has no alternate delimiter spellings
+  to validate. Cover complete documents, source ranges, repeated and
+  undefined references, multiline definitions, lists, and tables. Include
+  emphasis next to a reference in the differential fixture to exercise
+  parser configurations and incremental input boundaries.
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+- 4 commits contributed to the release.
+- 1 commit was understood as [conventional](https://www.conventionalcommits.org).
+- 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+- **Uncategorized**
+  - Merge pull request #118 from ISSOtm/delim-and-gfm-footnote ([`4032841`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/4032841c74b1adea7e7f36b73806fba25d97e150))
+  - Validate GFM footnote references alongside emphasis ([`6226b77`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/6226b77f3c6977be4fa5d4bcd8bed3cf8ea2f8e0))
+  - Document commit messages and agent disclosure rules ([`c85fdfb`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/c85fdfb5ccd5662e7feecb9008bd9b71c253fc61))
+  - Add a test showing how GFM footnotes are broken when near delimiters ([`7b64ddb`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/7b64ddb63e6a5ca043a552b97e734845aef78403))
+
+</details>
+
 ## 23.0.2 (2026-11-17)
 
 add `Error::source()` implementation.
@@ -13,8 +57,8 @@ add `Error::source()` implementation.
 
 <csr-read-only-do-not-edit/>
 
-- 4 commits contributed to the release.
-- 12 days passed between releases.
+- 5 commits contributed to the release.
+- 13 days passed between releases.
 - 0 commits were understood as [conventional](https://www.conventionalcommits.org).
 - 0 issues like '(#ID)' were seen in commit messages
 
@@ -25,6 +69,7 @@ add `Error::source()` implementation.
 <details><summary>view details</summary>
 
 - **Uncategorized**
+  - Release pulldown-cmark-to-cmark v23.0.2 ([`ebb1e5b`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/ebb1e5b1f558758c2a26fd8af2f267cb213af7a4))
   - Edit changelog prior to release ([`19c243d`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/19c243d751199a17345f449da787ab8cb9c4798a))
   - Adjusting changelogs prior to release of pulldown-cmark-to-cmark v23.0.2 ([`f2209ba`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/f2209babeb8e313d76e07a6668e5659d3a817122))
   - Merge pull request #117 from ISSOtm/err-src ([`a0d0dbe`](https://github.com/Byron/pulldown-cmark-to-cmark/commit/a0d0dbe1f8538506eb93f30f707e47d63b86fc33))
